@@ -190,6 +190,30 @@ apply_event_filters(
 )
 
 
+# Apply lepton veto
+process.looseMuons = cms.EDFilter('PATMuonSelector',
+    src = cms.InputTag('slimmedMuons'),
+    cut = cms.string('pt() > 10. & isLooseMuon() & (pfIsolationR04().sumChargedHadronPt + ' + \
+        'max(0., pfIsolationR04().sumNeutralHadronEt + pfIsolationR04().sumPhotonEt - ' + \
+        '0.5 * pfIsolationR04().sumPUPt)) / pt() < 0.25')
+)
+process.looseElectrons = cms.EDFilter('PATElectronSelector',
+    src = cms.InputTag('slimmedElectrons'),
+    cut = cms.string('pt() > 20. & ' + \
+        'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")')
+)
+
+process.vetoMuons = cms.EDFilter('PATCandViewCountFilter',
+    src = cms.InputTag('looseMuons'),
+    minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
+)
+process.vetoElectrons = cms.EDFilter('PATCandViewCountFilter',
+    src = cms.InputTag('looseElectrons'),
+    minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
+)
+paths.append(process.vetoMuons, process.vetoElectrons)
+
+
 # Save decisions of selected triggers.  The lists are aligned with
 # menu [1] used in 25 ns MC and menus deployed online.  Event that do
 # not fire any of the listed triggers are rejected.
