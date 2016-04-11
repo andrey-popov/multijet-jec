@@ -175,8 +175,9 @@ paths.append(process.goodOfflinePrimaryVertices)
 
 
 # Define basic reconstructed objects
-from Analysis.PECTuples.ObjectsDefinitions_cff import (define_jets, define_METs)
+from Analysis.PECTuples.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
 
+(phoQualityCuts, phoCutBasedIDMaps) = define_photons(process)
 (recorrectedJetsLabel, jetQualityCuts, pileUpIDMap) = \
     define_jets(process, reapplyJEC=True, runOnData=runOnData)
 define_METs(process, runOnData=runOnData)
@@ -212,6 +213,15 @@ process.vetoElectrons = cms.EDFilter('PATCandViewCountFilter',
     minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
 )
 paths.append(process.vetoMuons, process.vetoElectrons)
+
+
+# Apply photon veto
+process.vetoPhotons = cms.EDFilter('CandMapCountFilter',
+    src = cms.InputTag('analysisPatPhotons'),
+    acceptMap = cms.InputTag(phoCutBasedIDMaps[0]),
+    minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
+)
+paths.append(process.vetoPhotons)
 
 
 # Save decisions of selected triggers.  The lists are aligned with
