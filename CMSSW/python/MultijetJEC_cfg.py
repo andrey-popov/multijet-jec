@@ -174,13 +174,15 @@ process.goodOfflinePrimaryVertices = cms.EDFilter('FirstVertexFilter',
 paths.append(process.goodOfflinePrimaryVertices)
 
 
-# Define basic reconstructed objects
+# Define  and customize basic reconstructed objects
 from Analysis.PECTuples.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
 
 (phoQualityCuts, phoCutBasedIDMaps) = define_photons(process)
 (recorrectedJetsLabel, jetQualityCuts, pileUpIDMap) = \
     define_jets(process, reapplyJEC=True, runOnData=runOnData)
 define_METs(process, runOnData=runOnData)
+
+process.analysisPatJets.cut = ''
 
 
 # Apply event filters recommended for analyses involving MET
@@ -261,7 +263,7 @@ process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
     jetType = cms.string('AK4PFchs'),
-    jetMinPt = cms.double(20.),
+    jetMinPt = cms.double(10.),
     jetSelection = jetQualityCuts,
     contIDMaps = cms.VInputTag(pileUpIDMap),
     met = cms.InputTag('slimmedMETs', processName=process.name_()),
