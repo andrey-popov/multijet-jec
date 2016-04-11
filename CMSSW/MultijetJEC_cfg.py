@@ -204,7 +204,8 @@ if runOnData:
         filter = cms.bool(True),
         savePrescales = cms.bool(True),
         triggerBits = cms.InputTag('TriggerResults', processName='HLT'),
-        triggerPrescales = cms.InputTag('patTrigger')
+        hltPrescales = cms.InputTag('patTrigger'),
+        l1tPrescales = cms.InputTag('patTrigger', 'l1min')
     )
 else:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
@@ -215,8 +216,7 @@ else:
         ),
         filter = cms.bool(True),
         savePrescales = cms.bool(False),
-        triggerBits = cms.InputTag('TriggerResults', processName='HLT'),
-        triggerPrescales = cms.InputTag('patTrigger')
+        triggerBits = cms.InputTag('TriggerResults', processName='HLT')
     )
 
 paths.append(process.pecTrigger)
