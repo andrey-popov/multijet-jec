@@ -191,22 +191,15 @@ apply_event_filters(
 
 
 # Save decisions of selected triggers.  The lists are aligned with
-# menu [1] used in 25 ns MC and menus deployed online.  When processing
-# data, reject event that do not fire any of the listed triggers since
-# they cannot be used in an analysis anyway.
-# [1] /frozen/2015/25ns14e33/v1.2/HLT/V2
+# menu [1] used in 25 ns MC and menus deployed online.  Event that do
+# not fire any of the listed triggers are rejected.
+# [1] /frozen/2015/25ns14e33/v4.4/HLT/V2
 if runOnData:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(
-            # Single-lepton paths
-            'Mu45_eta2p1', 'Mu50',
-            'IsoMu18', 'IsoMu20', 'IsoTkMu20',
-            'Ele23_WPLoose_Gsf', 'Ele27_eta2p1_WPLoose_Gsf',
-            # Dilepton paths
-            'Mu17_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL',
-            'Mu8_TrkIsoVVL_Ele17_CaloIdL_TrackIdL_IsoVL',
-            'Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ',
-            'Ele17_Ele12_CaloIdL_TrackIdL_IsoVL_DZ'
+            'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
+            'PFHT200', 'PFHT250', 'PFHT300', 'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650',
+            'PFHT800'
         ),
         filter = cms.bool(True),
         savePrescales = cms.bool(True),
@@ -216,17 +209,11 @@ if runOnData:
 else:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(
-            # Single-lepton paths
-            'Mu45_eta2p1', 'Mu50',
-            'IsoMu18', 'IsoMu20', 'IsoTkMu20',
-            'Ele23_WPLoose_Gsf', 'Ele27_eta2p1_WPLoose_Gsf',
-            # Dilepton paths
-            'Mu17_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL',
-            'Mu8_TrkIsoVVL_Ele17_CaloIdL_TrackIdL_IsoVL',
-            'Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ',
-            'Ele17_Ele12_CaloIdL_TrackIdL_IsoVL_DZ'
+            'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
+            'PFHT200', 'PFHT250', 'PFHT300', 'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650',
+            'PFHT800'
         ),
-        filter = cms.bool(False),
+        filter = cms.bool(True),
         savePrescales = cms.bool(False),
         triggerBits = cms.InputTag('TriggerResults', processName='HLT'),
         triggerPrescales = cms.InputTag('patTrigger')
