@@ -133,13 +133,9 @@ if len(options.inputFile) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        # from PhysicsTools.PatAlgos.patInputFiles_cff import filesRelValSingleMuMINIAOD
-        # process.source.fileNames = filesRelValSingleMuMINIAOD
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2015D/SingleMuon/MINIAOD/16Dec2015-v1/10000/00006301-CAA8-E511-AD39-549F35AD8BC9.root')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2015D/JetHT/MINIAOD/16Dec2015-v1/00000/301A497D-70B0-E511-9630-002590D0AFA8.root')
     else:
-        # from PhysicsTools.PatAlgos.patInputFiles_cff import filesRelValTTbarPileUpMINIAODSIM
-        # process.source.fileNames = filesRelValTTbarPileUpMINIAODSIM
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall15MiniAODv2/TT_TuneCUETP8M1_13TeV-powheg-pythia8/MINIAODSIM/PU25nsData2015v1_76X_mcRun2_asymptotic_v12_ext3-v1/00000/00DF0A73-17C2-E511-B086-E41D2D08DE30.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall15MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/00000/0A5595D6-95BC-E511-BBF5-001E67396DCE.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
