@@ -18,10 +18,10 @@ Behaviour can be controlled with a number of command-line options (see
 their list in the code).
 """
 
-import sys
 import random
-import string
 import re
+import string
+import sys
 
 
 # Create a process
@@ -58,17 +58,6 @@ options.register(
     'globalTag', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
     'The relevant global tag'
 )
-# Leptonic channels to be processed.  Here 'e' and 'm' stand for
-# electron and muon respectively.
-options.register(
-    'channels', 'em', VarParsing.multiplicity.singleton, VarParsing.varType.string,
-    'The leptonic channels to process'
-)
-options.register(
-    'jetSel', '2j30', VarParsing.multiplicity.singleton, VarParsing.varType.string,
-    'Selection on jets. E.g. 2j30 means that an event must contain at least 2 jets with '
-    'pt > 30 GeV/c'
-)
 options.register(
     'runOnData', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'Indicates whether it runs on the real data'
@@ -77,22 +66,6 @@ options.register(
     'isPromptReco', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'In case of data, distinguishes PromptReco and ReReco. Ignored for simulation'
 )
-options.register(
-    'saveLHEWeightVars', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'Indicates whether LHE-level variations of event weights should be stored'
-)
-options.register(
-    'labelLHEEventProduct', 'externalLHEProducer', VarParsing.multiplicity.singleton,
-    VarParsing.varType.string, 'Label to access LHEEventProduct'
-)
-options.register(
-    'saveGenParticles', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'Save information about the hard(est) interaction and selected particles'
-)
-# options.register(
-#     'saveHeavyFlavours', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-#     'Saves information about heavy-flavour quarks in parton shower'
-# )
 options.register(
     'saveGenJets', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'Save information about generator-level jets'
@@ -103,8 +76,6 @@ options.parseArguments()
 
 # Make the shortcuts to access some of the configuration options easily
 runOnData = options.runOnData
-elChan = (options.channels.find('e') != -1)
-muChan = (options.channels.find('m') != -1)
 
 
 # Provide a default global tag if user has not given any.  It is set as
@@ -154,17 +125,6 @@ process.jerDB = cms.ESSource(
 process.jerDBPreference = cms.ESPrefer('PoolDBESSource', 'jerDB')
 
 
-# Parse jet selection
-jetSelParsed = re.match(r'(\d+)j(\d+)', options.jetSel)
-if jetSelParsed is None:
-    print 'Cannot parse jet selection "' + options.jetSel + '". Aborted.'
-    sys.exit(1)
- 
-minNumJets = int(jetSelParsed.group(1))
-jetPtThreshold = int(jetSelParsed.group(2))
-print 'Will select events with at least', minNumJets, 'jets with pt >', jetPtThreshold, 'GeV/c.'
-
-
 # Define the input files
 process.source = cms.Source('PoolSource')
 
@@ -190,13 +150,9 @@ else:
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
 
 
-# Create processing paths.  There is one path per each channel (electron
-# or muon).
-process.elPath = cms.Path()
-process.muPath = cms.Path()
-
-
-# A simple class to add modules to all the paths simultaneously
+# Create the processing path.  It is wrapped in a manager that
+# simplifies working with multiple paths (and also provides the
+# interface expected by python tools in the PEC-tuples package).
 class PathManager:
     
     def __init__(self, *paths):
@@ -209,7 +165,8 @@ class PathManager:
             for m in modules:
                 p += m
 
-paths = PathManager(process.elPath, process.muPath)
+process.p = cms.Path()
+paths = PathManager(process.p)
 
 
 # Filter on properties of the first vertex
@@ -222,41 +179,11 @@ paths.append(process.goodOfflinePrimaryVertices)
 
 
 # Define basic reconstructed objects
-from Analysis.PECTuples.ObjectsDefinitions_cff import (define_electrons, define_muons, define_jets,
-    define_METs)
+from Analysis.PECTuples.ObjectsDefinitions_cff import (define_jets, define_METs)
 
-(eleQualityCuts, eleEmbeddedCutBasedIDLabels, eleCutBasedIDMaps, eleMVAIDMaps) = \
-    define_electrons(process)
-muQualityCuts = define_muons(process)
 (recorrectedJetsLabel, jetQualityCuts, pileUpIDMap) = \
     define_jets(process, reapplyJEC=True, runOnData=runOnData)
 define_METs(process, runOnData=runOnData)
-
-
-# The loose event selection
-process.countTightPatElectrons = cms.EDFilter('PATCandViewCountFilter',
-    src = cms.InputTag('patElectronsForEventSelection'),
-    minNumber = cms.uint32(1), maxNumber = cms.uint32(999)
-)
-process.countTightPatMuons = cms.EDFilter('PATCandViewCountFilter',
-    src = cms.InputTag('patMuonsForEventSelection'),
-    minNumber = cms.uint32(1), maxNumber = cms.uint32(999)
-)
-if elChan:
-    process.elPath += process.countTightPatElectrons
-if muChan:
-    process.muPath += process.countTightPatMuons
-
-if minNumJets > 0:
-    process.countGoodJets = cms.EDFilter('PATCandViewCountMultiFilter',
-        src = cms.VInputTag('analysisPatJets'),
-        cut = cms.string('pt > ' + str(jetPtThreshold)),
-        minNumber = cms.uint32(minNumJets), maxNumber = cms.uint32(999)
-    )
-    if not runOnData:
-        process.countGoodJets.src = cms.VInputTag('analysisPatJets',
-            'analysisPatJetsScaleUp', 'analysisPatJetsScaleDown')
-    paths.append(process.countGoodJets)
 
 
 # Apply event filters recommended for analyses involving MET
@@ -315,22 +242,6 @@ paths.append(process.pecTrigger)
 # Save event ID and basic event content
 process.pecEventID = cms.EDAnalyzer('PECEventID')
 
-process.pecElectrons = cms.EDAnalyzer('PECElectrons',
-    src = cms.InputTag('analysisPatElectrons'),
-    rho = cms.InputTag('fixedGridRhoFastjetAll'),
-    effAreas = cms.FileInPath('RecoEgamma/ElectronIdentification/data/Spring15/effAreaElectrons_cone03_pfNeuHadronsAndPhotons_25ns.txt'),
-    embeddedBoolIDs = cms.vstring(eleEmbeddedCutBasedIDLabels),
-    boolIDMaps = cms.VInputTag(eleCutBasedIDMaps),
-    contIDMaps = cms.VInputTag(eleMVAIDMaps),
-    selection = eleQualityCuts
-)
-
-process.pecMuons = cms.EDAnalyzer('PECMuons',
-    src = cms.InputTag('analysisPatMuons'),
-    selection = muQualityCuts,
-    primaryVertices = cms.InputTag('offlineSlimmedPrimaryVertices')
-)
-
 process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
@@ -349,36 +260,16 @@ process.pecPileUp = cms.EDAnalyzer('PECPileUp',
     puInfo = cms.InputTag('slimmedAddPileupInfo')
 )
 
-paths.append(process.pecEventID, process.pecElectrons, process.pecMuons, process.pecJetMET,
-    process.pecPileUp)
+paths.append(process.pecEventID, process.pecJetMET, process.pecPileUp)
 
 
 # Save global generator information
 if not runOnData:
     process.pecGenerator = cms.EDAnalyzer('PECGenerator',
         generator = cms.InputTag('generator'),
-        saveLHEWeightVars = cms.bool(options.saveLHEWeightVars),
-        lheEventInfoProduct = cms.InputTag(options.labelLHEEventProduct)
+        saveLHEWeightVars = cms.bool(False)
     )
     paths.append(process.pecGenerator)
-
-
-# Save information about the hard interaction and selected particles
-if not runOnData and options.saveGenParticles:
-    process.pecGenParticles = cms.EDAnalyzer('PECGenParticles',
-        genParticles = cms.InputTag('prunedGenParticles'),
-        saveExtraParticles = cms.vuint32(6, 23, 24, 25)
-    )
-    paths.append(process.pecGenParticles)
-
-
-# # Save information on heavy-flavour quarks
-# if options.saveHeavyFlavours:
-#     process.heavyFlavours = cms.EDAnalyzer('PartonShowerOutcome',
-#         absPdgId = cms.vint32(4, 5),
-#         genParticles = cms.InputTag('genParticles')
-#     )
-#     paths.append(process.heavyFlavours)
 
 
 # Save information on generator-level jets and MET
@@ -391,14 +282,6 @@ if not runOnData and options.saveGenJets:
         met = cms.InputTag('slimmedMETs', processName=process.name_())
     )
     paths.append(process.pecGenJetMET)
-
-
-# If one of possible channels has not been requested by the user, clear
-# the corresponding path
-if not elChan:
-    process.elPath = cms.Path()
-if not muChan:
-    process.muPath = cms.Path()
 
 
 # The output file for the analyzers
