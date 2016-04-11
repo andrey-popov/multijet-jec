@@ -1,0 +1,7 @@
+<use  name = "DataFormats/Candidate" />
+<use  name = "FWCore/Framework" />
+
+<library  name = "AnalysisMultijetJEC_plugins" file = "*.cc">
+    <flags  EDM_PLUGIN = "1" />
+    <flags  CXXFLAGS = "-O2 -std=c++14" />
+</library>
