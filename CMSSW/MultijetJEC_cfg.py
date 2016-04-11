@@ -198,8 +198,7 @@ if runOnData:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(
             'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
-            'PFHT200', 'PFHT250', 'PFHT300', 'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650',
-            'PFHT800'
+            'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800'
         ),
         filter = cms.bool(True),
         savePrescales = cms.bool(True),
@@ -211,8 +210,7 @@ else:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(
             'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
-            'PFHT200', 'PFHT250', 'PFHT300', 'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650',
-            'PFHT800'
+            'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800'
         ),
         filter = cms.bool(True),
         savePrescales = cms.bool(False),
