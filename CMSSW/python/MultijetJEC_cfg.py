@@ -1,27 +1,19 @@
 """Configuration for cmsRun to produce PEC tuples from MiniAOD.
 
-The configuration uses reconstructed objects as defined in the module
-ObjectsDefinitions_cff.  They are exploited to perform a loose event
-selection requiring the presence of a loosely defined electron or muon
-and, possibly, some jets.  The selection on jets is easily configurable,
-and jet systematic uncertainties are taken into account when this
-selection is evaluated.  In addition, anomalous or otherwise problematic
-events are rejected using configuration provided in the module
-EventFilters_cff.
+This configuration exploits object definitions and modules from package
+PEC-tuples [1] to produce customized tuples intended for measurements of
+JEC with the multijet method.
 
-After reconstructed objects are defined and the loose event selection is
-performed, relevant reconstructed objects as well as some
-generator-level properties are saved in a ROOT file with the help of a
-set of dedicated EDAnalyzers.  The jobs does not produce and EDM output.
+Stored information mostly comprises reconstructed jets and MET,
+generator-level jets, and trigger decisions.  Events accepted by none of
+the selected triggers are rejected.  In addition, an event it rejected
+if it contains a loosely defined muon, electron, or photon.
 
-Behaviour can be controlled with a number of command-line options (see
-their list in the code).
+[1] https://github.com/andrey-popov/PEC-tuples
 """
 
 import random
-import re
 import string
-import sys
 
 
 # Create a process
@@ -256,7 +248,7 @@ else:
 paths.append(process.pecTrigger)
 
 
-# Save event ID and basic event content
+# Save event ID and relevant objects
 process.pecEventID = cms.EDAnalyzer('PECEventID')
 
 process.pecJetMET = cms.EDAnalyzer('PECJetMET',
