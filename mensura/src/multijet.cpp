@@ -1,3 +1,5 @@
+#include <RecoilBuilder.hpp>
+
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/RunManager.hpp>
 
@@ -94,6 +96,10 @@ int main(int argc, char **argv)
     PECJetMETReader *jetReader = new PECJetMETReader;
     jetReader->ConfigureLeptonCleaning("");  // Disabled
     manager.RegisterPlugin(jetReader);
+    
+    RecoilBuilder *recoilBuilder = new RecoilBuilder(30., {210., 290., 370., 470., 550., 610.});
+    recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
+    manager.RegisterPlugin(recoilBuilder);
     
     manager.RegisterPlugin(new PECPileUpReader);
     
