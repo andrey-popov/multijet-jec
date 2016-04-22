@@ -70,6 +70,13 @@ public:
      */
     double GetBeta() const;
     
+    /**
+     * \brief Returns the number of defined trigger bins
+     * 
+     * The underflow bin in pt(recoil) is counted.
+     */
+    unsigned GetNumTriggerBins() const;
+    
     /// Returns four-momentum of the leading jet
     TLorentzVector const &GetP4LeadingJet() const;
     

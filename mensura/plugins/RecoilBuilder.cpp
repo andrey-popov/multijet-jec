@@ -70,6 +70,12 @@ double RecoilBuilder::GetBeta() const
 }
 
 
+unsigned RecoilBuilder::GetNumTriggerBins() const
+{
+    return ptRecoilTriggerBins.size() + 1;
+}
+
+
 TLorentzVector const &RecoilBuilder::GetP4LeadingJet() const
 {
     return leadingJet->P4();
