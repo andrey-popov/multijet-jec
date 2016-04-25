@@ -1,8 +1,10 @@
-#include <RecoilBuilder.hpp>
 #include <BalanceVars.hpp>
+#include <DynamicPileUpWeight.hpp>
 #include <DynamicTriggerFilter.hpp>
+#include <RecoilBuilder.hpp>
 
 #include <mensura/core/Dataset.hpp>
+#include <mensura/core/FileInPath.hpp>
 #include <mensura/core/RunManager.hpp>
 
 #include <mensura/extensions/JetFilter.hpp>
@@ -110,11 +112,14 @@ int main(int argc, char **argv)
       {"PFJet260", 202.492}, {"PFJet320", 423.595}, {"PFJet400", 938.067},
       {"PFJet450", 2312.360}}));
     
-    manager.RegisterPlugin(new PECPileUpReader);
-    
     if (dataGroup != DatasetGroup::Data)
     {
-        //
+        manager.RegisterPlugin(new PECPileUpReader);
+        FileInPath::AddLocation("/gridgroup/cms/popov/Development/multijet-JEC/mensura/data/");
+        manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2015CD_PFJet140_finebin.root",
+          "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
+          "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
+          "pileup_Run2015CD_PFJet140_finebin.root"}, "simPUProfiles_76X.root", 0.05));
     }
     
     manager.RegisterPlugin(new BalanceVars);
