@@ -70,6 +70,9 @@ public:
      */
     double GetBeta() const;
     
+    /// Returns jet pt threshold used in definition of the recoil
+    double GetJetPtThreshold() const;
+    
     /**
      * \brief Returns the number of defined trigger bins
      * 

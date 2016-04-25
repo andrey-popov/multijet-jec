@@ -70,6 +70,12 @@ double RecoilBuilder::GetBeta() const
 }
 
 
+double RecoilBuilder::GetJetPtThreshold() const
+{
+    return minJetPt;
+}
+
+
 unsigned RecoilBuilder::GetNumTriggerBins() const
 {
     return ptRecoilTriggerBins.size() + 1;

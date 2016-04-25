@@ -85,8 +85,8 @@ int main(int argc, char **argv)
         //   1206 * 0.059, 5049267);
         // datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3.1.1_mIr.root",
         //   120.4 * 0.067, 3939077);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3.1.1_XWW_p1.root",
-          31630 * 0.067, 19665695);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p4.root",
+          6802 * 0.066, 13801981);
     }
     
     

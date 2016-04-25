@@ -6,6 +6,7 @@
 
 
 class EventWeightPlugin;
+class JetMETReader;
 class PECTriggerFilter;
 class RecoilBuilder;
 class TFileService;
@@ -15,8 +16,8 @@ class TFileService;
  * \class BalanceVars
  * \brief Produces tuples with variables that describe multijet balancing
  * 
- * Depends on the presence of a r ecoil builder, a trigger filter, and a plugin to reweight for
- * pile-up.
+ * Depends on the presence of a jet reader, a recoil builder, a trigger filter, and a plugin to
+ * reweight for pile-up.
  */
 class BalanceVars: public AnalysisPlugin
 {
@@ -53,6 +54,12 @@ private:
     
     /// Non-owning pointer to TFileService
     TFileService const *fileService;
+    
+    /// Name of a plugin that produces jets and MET
+    std::string jetmetPluginName;
+    
+    /// Non-owning pointer to a plugin that produces jets and MET
+    JetMETReader const *jetmetPlugin;
     
     /// Name of a plugin that reconstructs recoil
     std::string recoilBuilderName;
@@ -94,6 +101,7 @@ private:
     Float_t bfPtJ1, bfEtaJ1;
     Float_t bfA, bfAlpha, bfBeta;
     UShort_t bfTriggerBin;
-    Float_t bfMJB;
+    Float_t bfMJB, bfMPF;
+    Float_t bfCRecoil;
     Float_t bfWeight[3];
 };
