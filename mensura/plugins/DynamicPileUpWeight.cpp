@@ -52,7 +52,7 @@ DynamicPileUpWeight::DynamicPileUpWeight(std::string const &name,
 
 DynamicPileUpWeight::DynamicPileUpWeight(std::initializer_list<std::string> const &dataPUFileNames,
   std::string const &mcPUFileName, double systError):
-    DynamicPileUpWeight("DynamicPileUpWeight", dataPUFileNames, mcPUFileName, systError)
+    DynamicPileUpWeight("PileUpWeight", dataPUFileNames, mcPUFileName, systError)
 {}
 
 

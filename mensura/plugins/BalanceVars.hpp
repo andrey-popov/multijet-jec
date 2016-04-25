@@ -5,19 +5,23 @@
 #include <TTree.h>
 
 
+class EventWeightPlugin;
+class PECTriggerFilter;
 class RecoilBuilder;
 class TFileService;
 
 
 /**
  * \class BalanceVars
- * \brief
+ * \brief Produces tuples with variables that describe multijet balancing
  * 
- * 
+ * Depends on the presence of a r ecoil builder, a trigger filter, and a plugin to reweight for
+ * pile-up.
  */
 class BalanceVars: public AnalysisPlugin
 {
 public:
+    /// Constructs a plugin with the given name
     BalanceVars(std::string const name = "BalanceVars");
     
 public:
@@ -26,7 +30,7 @@ public:
      * 
      * Reimplemented from Plugin.
      */
-    virtual void BeginRun(Dataset const &) override;
+    virtual void BeginRun(Dataset const &dataset) override;
     
     /**
      * \brief Creates a newly configured clone
@@ -56,6 +60,32 @@ private:
     /// Non-owning pointer to a plugin that reconstruct recoil
     RecoilBuilder const *recoilBuilder;
     
+    /// Name of a trigger filter
+    std::string triggerFilterName;
+    
+    /**
+     * \brief Non-owning pointer to a trigger filter
+     * 
+     * Used only in simulation.
+     */
+    PECTriggerFilter const *triggerFilter;
+    
+    /// Name of a plugin that performs reweighting for pile-up
+    std::string puReweighterName;
+    
+    /**
+     * \brief Non-owning pointer to a plugin that performs reweighting for pile-up
+     * 
+     * Used only in simulation.
+     */
+    EventWeightPlugin const *puReweighter;
+    
+    /// Flag indicating whether current dataset is data or simulation
+    bool isMC;
+    
+    /// Common event weight in the current dataset
+    double weightDataset;
+    
     /// Non-owning pointer to output tree
     TTree *tree;
     
@@ -65,4 +95,5 @@ private:
     Float_t bfA, bfAlpha, bfBeta;
     UShort_t bfTriggerBin;
     Float_t bfMJB;
+    Float_t bfWeight[3];
 };
