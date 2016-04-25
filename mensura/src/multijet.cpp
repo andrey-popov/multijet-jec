@@ -15,6 +15,7 @@
 #include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
 
+#include <cstdlib>
 #include <iostream>
 #include <list>
 
@@ -89,6 +90,18 @@ int main(int argc, char **argv)
     }
     
     
+    // Add an additional location to seach for data files
+    char const *installPath = getenv("MULTIJET_JEC_INSTALL");
+    
+    if (not installPath)
+    {
+        cerr << "Mandatory environmental variable MULTIJET_JEC_INSTALL is not defined.\n";
+        return EXIT_FAILURE;
+    }
+    
+    FileInPath::AddLocation(string(installPath) + "/data/");
+    
+    
     // Construct the run manager
     RunManager manager(datasets.begin(), datasets.end());
     
@@ -115,7 +128,6 @@ int main(int argc, char **argv)
     if (dataGroup != DatasetGroup::Data)
     {
         manager.RegisterPlugin(new PECPileUpReader);
-        FileInPath::AddLocation("/gridgroup/cms/popov/Development/multijet-JEC/mensura/data/");
         manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2015CD_PFJet140_finebin.root",
           "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
           "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
