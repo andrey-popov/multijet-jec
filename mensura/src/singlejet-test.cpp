@@ -70,21 +70,21 @@ int main(int argc, char **argv)
         datasets.emplace_back(Dataset(Dataset::Process::QCD, Dataset::Generator::MadGraph,
           Dataset::ShowerGenerator::Pythia));
         datasets.back().AddFile(datasetsDir + "QCD-Ht-100-200-mg_3.1.1_Kah.root",
-          27540000 * 0.131, 82095800);
+          27540000, 82095800);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-200-300-mg_3.1.1_ilS.root",
-          1717000 * 0.098, 18784379);
+          1717000, 18784379);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-mg_3.1.1_UpJ_p*.root",
-          351300 * 0.088, 16909004);
+          351300, 16909004);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3.1.1_XWW_p*.root",
-          31630 * 0.067, 19665695);
+          31630, 19665695);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p*.root",
-          6802 * 0.066, 13801981);
+          6802, 13801981);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_3.1.1_MoZ.root",
-          1206 * 0.059, 5049267);
+          1206, 5049267);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3.1.1_mIr.root",
-          120.4 * 0.067, 3939077);
+          120.4, 3939077);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_3.1.1_DTg.root",
-          25.25 * 0.07, 1981228);
+          25.25, 1981228);
     }
     
     
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     jetReader->ConfigureLeptonCleaning("");  // Disabled
     manager.RegisterPlugin(jetReader);
     
-    manager.RegisterPlugin(new JetFunctorFilter([](Jet const &j){return (j.Pt() > 600.);}, 1.));
+    manager.RegisterPlugin(new JetFunctorFilter([](Jet const &j){return (j.Pt() > 1.e3);}, 1.));
     manager.RegisterPlugin(new PECPileUpReader);
     manager.RegisterPlugin(new PileUpWeight("pileup_Run2015CD_PFJet450_finebin.root",
       "simPUProfiles_76X.root", 0.05));
