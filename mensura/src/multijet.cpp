@@ -64,29 +64,32 @@ int main(int argc, char **argv)
     {
         datasets.emplace_back(Dataset({Dataset::Process::ppData, Dataset::Process::pp13TeV},
           Dataset::Generator::Nature, Dataset::ShowerGenerator::Nature));
-        // datasets.back().AddFile(datasetsDir + "JetHT-Run2015*.root");
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2015C_3.1.1_yDV.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2015*.root");
     }
     else
     {
         datasets.emplace_back(Dataset(Dataset::Process::QCD, Dataset::Generator::MadGraph,
           Dataset::ShowerGenerator::Pythia));
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-100-200-mg_3.1.1_Kah.root",
-        //   27540000 * 0.131, 82095800);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-200-300-mg_3.1.1_ilS.root",
-        //   1717000 * 0.098, 18784379);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-mg_3.1.1_UpJ_p*.root",
-        //   351300 * 0.088, 16909004);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3.1.1_XWW_p*.root",
-        //   31630 * 0.067, 19665695);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p*.root",
-        //   6802 * 0.066, 13801981);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_3.1.1_MoZ.root",
-        //   1206 * 0.059, 5049267);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3.1.1_mIr.root",
-        //   120.4 * 0.067, 3939077);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p4.root",
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-100-200-mg_3.1.1_Kah.root",
+          27540000 * 0.131, 82095800);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-200-300-mg_3.1.1_ilS.root",
+          1717000 * 0.098, 18784379);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-mg_3.1.1_UpJ_p*.root",
+          351300 * 0.088, 16909004);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3.1.1_XWW_p*.root",
+          31630 * 0.067, 19665695);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p*.root",
           6802 * 0.066, 13801981);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_3.1.1_MoZ.root",
+          1206 * 0.059, 5049267 + 10144378);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_ext1_3.1.1_pTT_p*.root",
+          1206 * 0.059, 5049267 + 10144378);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3.1.1_mIr.root",
+          120.4 * 0.067, 3939077);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_3.1.1_DTg.root",
+          25.25 * 0.07, 1981228 + 4016332);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_ext1_3.1.1_Nlw.root",
+          25.25 * 0.07, 1981228 + 4016332);
     }
     
     
@@ -138,7 +141,7 @@ int main(int argc, char **argv)
     
     
     // Process the datasets
-    manager.Process(1);
+    manager.Process(6);
     
     
     return EXIT_SUCCESS;
