@@ -28,7 +28,7 @@ LDFLAGS := $(shell root-config --libs) -lTreePlayer -lHistPainter \
 
 
 # Programs to be built
-PROGS := multijet
+PROGS := multijet singlejet-test
 
 
 # Location of various files of the project
@@ -37,7 +37,7 @@ SOURCE_DIR := src
 PLUGIN_DIR := plugins
 OBJ_DIR := obj
 OBJECTS := \
-	$(shell find ./ -regextype posix-extended -regex "\./($(SOURCE_DIR)|$(PLUGIN_DIR))/.*\.cpp" \
+	$(shell find ./ -regextype posix-extended -regex "\./$(PLUGIN_DIR)/.*\.cpp" \
 	-printf "%f\n" | while read f; do echo "$(OBJ_DIR)/$${f%.cpp}.o"; done)
 
 vpath %.cpp $(SOURCE_DIR) $(PLUGIN_DIR)
@@ -49,7 +49,7 @@ progs: $(PROGS)
 .PHONY: clean
 
 
-$(PROGS): $(OBJECTS)
+$(PROGS): % : $(OBJECTS) $(OBJ_DIR)/%.o
 	mkdir -p $(BIN_DIR)
 	g++ $^ $(CFLAGS) $(LDFLAGS) -o $(BIN_DIR)/$@
 

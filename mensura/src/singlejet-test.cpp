@@ -1,19 +1,18 @@
-#include <BalanceVars.hpp>
-#include <DynamicPileUpWeight.hpp>
-#include <DynamicTriggerFilter.hpp>
-#include <RecoilBuilder.hpp>
+#include <BasicJetVars.hpp>
 
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/FileInPath.hpp>
 #include <mensura/core/RunManager.hpp>
 
-#include <mensura/extensions/JetFilter.hpp>
+#include <mensura/extensions/JetFunctorFilter.hpp>
 #include <mensura/extensions/PileUpWeight.hpp>
 #include <mensura/extensions/TFileService.hpp>
+#include <mensura/extensions/WeightCollector.hpp>
 
 #include <mensura/PECReader/PECInputData.hpp>
 #include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
+#include <mensura/PECReader/PECTriggerFilter.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -35,7 +34,7 @@ int main(int argc, char **argv)
     // Parse arguments
     if (argc != 2)
     {
-        cerr << "Usage: multijet dataset-group\n";
+        cerr << "Usage: singlejet-test dataset-group\n";
         return EXIT_FAILURE;
     }
     
@@ -64,8 +63,7 @@ int main(int argc, char **argv)
     {
         datasets.emplace_back(Dataset({Dataset::Process::ppData, Dataset::Process::pp13TeV},
           Dataset::Generator::Nature, Dataset::ShowerGenerator::Nature));
-        // datasets.back().AddFile(datasetsDir + "JetHT-Run2015*.root");
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2015D_3.1.1_sqh_p1.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2015*.root");
     }
     else
     {
@@ -75,23 +73,24 @@ int main(int argc, char **argv)
           27540000 * 0.131, 82095800);
         datasets.back().AddFile(datasetsDir + "QCD-Ht-200-300-mg_3.1.1_ilS.root",
           1717000 * 0.098, 18784379);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-mg_3.1.1_UpJ_p*.root",
-        //   351300 * 0.088, 16909004);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3.1.1_XWW_p*.root",
-        //   31630 * 0.067, 19665695);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p*.root",
-        //   6802 * 0.066, 13801981);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_3.1.1_MoZ.root",
-        //   1206 * 0.059, 5049267 + 10144378);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_ext1_3.1.1_pTT_p*.root",
-        //   1206 * 0.059, 5049267 + 10144378);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3.1.1_mIr.root",
-        //   120.4 * 0.067, 3939077);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_3.1.1_DTg.root",
-        //   25.25 * 0.07, 1981228 + 4016332);
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_ext1_3.1.1_Nlw.root",
-        //   25.25 * 0.07, 1981228 + 4016332);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-mg_3.1.1_UpJ_p*.root",
+          351300 * 0.088, 16909004);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3.1.1_XWW_p*.root",
+          31630 * 0.067, 19665695);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3.1.1_mtk_p*.root",
+          6802 * 0.066, 13801981);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_3.1.1_MoZ.root",
+          1206 * 0.059, 5049267);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3.1.1_mIr.root",
+          120.4 * 0.067, 3939077);
+        datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_3.1.1_DTg.root",
+          25.25 * 0.07, 1981228);
     }
+    
+    
+    // Triggers
+    list<TriggerRange> triggerRanges;
+    triggerRanges.emplace_back(0, -1, "PFJet450", 2312.360, "PFJet450");
     
     
     // Add an additional location to seach for data files
@@ -111,38 +110,31 @@ int main(int argc, char **argv)
     
     
     // Register services
-    manager.RegisterService(new TFileService("output/%"));
+    manager.RegisterService(new TFileService("output_test/%"));
     
     
     // Register plugins
     manager.RegisterPlugin(new PECInputData);
+    manager.RegisterPlugin(BuildPECTriggerFilter((dataGroup == DatasetGroup::Data),
+      triggerRanges));
     
     PECJetMETReader *jetReader = new PECJetMETReader;
+    jetReader->SetSelection(30., 2.4);
     jetReader->ConfigureLeptonCleaning("");  // Disabled
     manager.RegisterPlugin(jetReader);
     
-    RecoilBuilder *recoilBuilder = new RecoilBuilder(30., {210., 290., 370., 470., 550., 610.});
-    recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
-    manager.RegisterPlugin(recoilBuilder);
+    manager.RegisterPlugin(new JetFunctorFilter([](Jet const &j){return (j.Pt() > 600.);}, 1.));
+    manager.RegisterPlugin(new PECPileUpReader);
+    manager.RegisterPlugin(new PileUpWeight("pileup_Run2015CD_PFJet450_finebin.root",
+      "simPUProfiles_76X.root", 0.05));
     
-    manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 2.896}, {"PFJet200", 19.898},
-      {"PFJet260", 202.492}, {"PFJet320", 423.595}, {"PFJet400", 938.067},
-      {"PFJet450", 2312.360}}));
     
-    if (dataGroup != DatasetGroup::Data)
-    {
-        manager.RegisterPlugin(new PECPileUpReader);
-        manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2015CD_PFJet140_finebin.root",
-          "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
-          "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
-          "pileup_Run2015CD_PFJet140_finebin.root"}, "simPUProfiles_76X.root", 0.05));
-    }
-    
-    manager.RegisterPlugin(new BalanceVars);
+    // Finally, the plugin to calculate some observables
+    manager.RegisterPlugin(new BasicJetVars);
     
     
     // Process the datasets
-    manager.Process(1);
+    manager.Process(6);
     
     
     return EXIT_SUCCESS;

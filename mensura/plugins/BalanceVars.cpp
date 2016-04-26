@@ -124,8 +124,7 @@ bool BalanceVars::ProcessEvent()
     // Compute event weight
     if (isMC)
     {
-        double w = weightDataset;
-        w *= triggerFilter->GetWeight();
+        double const w = weightDataset * triggerFilter->GetWeight();
         bfWeight[0] = w * puReweighter->GetWeight();
         bfWeight[1] = w * puReweighter->GetWeightUp(0);
         bfWeight[2] = w * puReweighter->GetWeightDown(0);
