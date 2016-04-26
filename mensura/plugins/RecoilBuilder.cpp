@@ -19,7 +19,8 @@ RecoilBuilder::RecoilBuilder(std::string const &name, double minJetPt_,
     minJetPt(minJetPt_), ptRecoilTriggerBins(ptRecoilTriggerBins_),
     maxA(std::numeric_limits<double>::infinity()),
     maxAlpha(std::numeric_limits<double>::infinity()),
-    minBeta(-std::numeric_limits<double>::infinity())
+    minBeta(-std::numeric_limits<double>::infinity()),
+    betaPtFraction(0.)
 {
     // Make sure the binning in pt(recoil) is not empty and sorted
     if (ptRecoilTriggerBins.size() == 0)
@@ -108,6 +109,12 @@ void RecoilBuilder::SetBalanceSelection(double maxA_, double maxAlpha_, double m
 }
 
 
+void RecoilBuilder::SetBetaPtFraction(double betaPtFraction_)
+{
+    betaPtFraction = betaPtFraction_;
+}
+
+
 bool RecoilBuilder::ProcessEvent()
 {
     // Make sure there is at least a couple of jets
@@ -122,7 +129,6 @@ bool RecoilBuilder::ProcessEvent()
     // Reconstruct the recoil. It is built from all jets that pass the kinematic selection,
     //excluding the leading one. At the same time compute the beta separation
     p4Recoil.SetPxPyPzE(0., 0., 0., 0.);
-    beta = std::numeric_limits<double>::infinity();
     
     for (unsigned i = 1; i < jets.size(); ++i)
     {
@@ -132,10 +138,6 @@ bool RecoilBuilder::ProcessEvent()
             break;
         
         p4Recoil += j.P4();
-        double const betaCurrent = std::abs(TVector2::Phi_mpi_pi(j.Phi() - leadingJet->Phi()));
-        
-        if (betaCurrent < beta)
-            beta = betaCurrent;
     }
     
     
@@ -147,6 +149,20 @@ bool RecoilBuilder::ProcessEvent()
     // Compute remaining balance variables and apply selection on them
     A = jets.at(1).Pt() / p4Recoil.Pt();
     alpha = TMath::Pi() - std::abs(TVector2::Phi_mpi_pi(p4Recoil.Phi() - leadingJet->Phi()));
+    beta = std::numeric_limits<double>::infinity();
+    
+    for (unsigned i = 1; i < jets.size(); ++i)
+    {
+        auto const &j = jets.at(i);
+        
+        if (j.Pt() < minJetPt or j.Pt() < betaPtFraction * p4Recoil.Pt())
+            break;
+        
+        double const betaCurrent = std::abs(TVector2::Phi_mpi_pi(j.Phi() - leadingJet->Phi()));
+        
+        if (betaCurrent < beta)
+            beta = betaCurrent;
+    }
     
     if (A > maxA or alpha > maxAlpha or beta < minBeta)
         return false;
