@@ -133,9 +133,9 @@ int main(int argc, char **argv)
     {
         manager.RegisterPlugin(new PECPileUpReader);
         manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2015CD_PFJet140_finebin.root",
-          "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
-          "pileup_Run2015CD_PFJet140_finebin.root", "pileup_Run2015CD_PFJet140_finebin.root",
-          "pileup_Run2015CD_PFJet140_finebin.root"}, "simPUProfiles_76X.root", 0.05));
+          "pileup_Run2015CD_PFJet200_finebin.root", "pileup_Run2015CD_PFJet260_finebin.root",
+          "pileup_Run2015CD_PFJet320_finebin.root", "pileup_Run2015CD_PFJet400_finebin.root",
+          "pileup_Run2015CD_PFJet450_finebin.root"}, "simPUProfiles_76X.root", 0.05));
     }
     
     manager.RegisterPlugin(new BalanceVars);
