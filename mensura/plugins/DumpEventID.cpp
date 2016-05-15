@@ -22,7 +22,7 @@ void DumpEventID::BeginRun(Dataset const &)
     
     
     // Create output tree
-    tree = fileService->Create<TTree>("", "EventID", "Event ID variables");
+    tree = fileService->Create<TTree>("", GetName().c_str(), "Event ID variables");
     
     ROOTLock::Lock();
     

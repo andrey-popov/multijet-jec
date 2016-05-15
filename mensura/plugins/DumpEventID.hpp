@@ -18,8 +18,12 @@ class TFileService;
 class DumpEventID: public AnalysisPlugin
 {
 public:
-    /// Constructs a plugin with the given name
-    DumpEventID(std::string const name = "DumpEventID");
+    /**
+     * \brief Constructs a plugin with the given name
+     * 
+     * This name will also be given to the output tree.
+     */
+    DumpEventID(std::string const name = "EventID");
     
 public:
     /**
