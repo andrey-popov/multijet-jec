@@ -65,14 +65,16 @@ options.parseArguments()
 runOnData = options.runOnData
 
 
-# Provide a default global tag if user has not given any.  It is set as
-# recommended for JEC.
-# https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=111
+# Provide a default global tag if user has not given any.  With data use
+# the global tag for prompt reconstruction [1].  With simulation take
+# the one recommended by JERC group [2].
+# [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideFrontierConditions?rev=568#Global_Tags_for_2016_data_taking
+# [2] https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=112
 if len(options.globalTag) == 0:
     if runOnData:
-        options.globalTag = '76X_dataRun2_16Dec2015_v0'
+        options.globalTag = '80X_dataRun2_Prompt_v8'
     else:
-        options.globalTag = '76X_mcRun2_asymptotic_RunIIFall15DR76_v1'
+        options.globalTag = '80X_mcRun2_asymptotic_2016_miniAODv2'
     
     print 'WARNING: No global tag provided. Will use the default one (' + options.globalTag + ')'
 
@@ -80,36 +82,6 @@ if len(options.globalTag) == 0:
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag)
-
-
-# Set up access to JER database as it is not included in the global tag
-# yet.  The snippet is adapted from [1].  The main change is using the
-# FileInPath extention to access the database file [2].
-# [1] https://github.com/cms-met/cmssw/blob/8b17ab5d8b28236e2d2215449f074cceccc4f132/PhysicsTools/PatAlgos/test/corMETFromMiniAOD.py
-# [2] https://hypernews.cern.ch/HyperNews/CMS/get/db-aligncal/58.html
-from CondCore.DBCommon.CondDBSetup_cfi import CondDBSetup
-process.jerDB = cms.ESSource(
-    'PoolDBESSource', CondDBSetup,
-    connect = cms.string('sqlite_fip:PhysicsTools/PatUtils/data/Fall15_25nsV2_MC.db'),
-    toGet = cms.VPSet(
-        cms.PSet(
-            record = cms.string('JetResolutionRcd'),
-            tag = cms.string('JR_Fall15_25nsV2_MC_PtResolution_AK4PFchs'),
-            label = cms.untracked.string('AK4PFchs_pt')
-        ),
-        cms.PSet(
-            record = cms.string('JetResolutionRcd'),
-            tag = cms.string('JR_Fall15_25nsV2_MC_PhiResolution_AK4PFchs'),
-            label = cms.untracked.string('AK4PFchs_phi')
-        ),
-        cms.PSet(
-            record = cms.string('JetResolutionScaleFactorRcd'),
-            tag = cms.string('JR_Fall15_25nsV2_MC_SF_AK4PFchs'),
-            label = cms.untracked.string('AK4PFchs')
-        ),
-    )
-)
-process.jerDBPreference = cms.ESPrefer('PoolDBESSource', 'jerDB')
 
 
 # Define the input files
@@ -120,9 +92,9 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2015D/JetHT/MINIAOD/16Dec2015-v1/00000/301A497D-70B0-E511-9630-002590D0AFA8.root')
+        process.source.fileNames = cms.untracked.vstring('')
     else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall15MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/00000/0A5595D6-95BC-E511-BBF5-001E67396DCE.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv1/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_v3-v1/00000/0AEC156E-9418-E611-AAF7-0CC47A6C17FC.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
