@@ -186,9 +186,9 @@ paths.append(process.vetoPhotons)
 
 
 # Save decisions of selected triggers.  The lists are aligned with
-# menu [1] used in 25 ns MC and menus deployed online.  Event that do
-# not fire any of the listed triggers are rejected.
-# [1] /frozen/2015/25ns14e33/v4.4/HLT/V2
+# menu [1] used in some of 80X MC.  Event that do not fire any of the
+# listed triggers, are rejected.
+# [1] /dev/CMSSW_8_0_0/GRun/V8
 if runOnData:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(
