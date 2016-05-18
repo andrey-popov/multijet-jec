@@ -207,7 +207,7 @@ else:
             'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
             'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800'
         ),
-        filter = cms.bool(True),
+        filter = cms.bool(False),
         savePrescales = cms.bool(False),
         triggerBits = cms.InputTag('TriggerResults', processName='HLT')
     )
