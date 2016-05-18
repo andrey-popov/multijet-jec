@@ -33,19 +33,11 @@ process.options = cms.untracked.PSet(
 )
 
 
-# Parse command-line options
+# Parse command-line options.  In addition to the options defined below,
+# use several standard ones: inputFiles, outputFile, maxEvents.
 from FWCore.ParameterSet.VarParsing import VarParsing
-options = VarParsing('python')
+options = VarParsing('analysis')
 
-options.register(
-    'inputFile', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
-    'The name of the source file'
-)
-# Name of the output file.  Extention .root is appended automatically.
-options.register(
-    'outputName', 'sample', VarParsing.multiplicity.singleton, VarParsing.varType.string,
-    'The name of the output ROOT file'
-)
 options.register(
     'globalTag', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
     'The relevant global tag'
@@ -62,6 +54,9 @@ options.register(
     'saveGenJets', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'Save information about generator-level jets'
 )
+
+# Override defaults for automatically defined options
+options.setDefault('maxEvents', 100)
 
 options.parseArguments()
 
@@ -120,8 +115,8 @@ process.jerDBPreference = cms.ESPrefer('PoolDBESSource', 'jerDB')
 # Define the input files
 process.source = cms.Source('PoolSource')
 
-if len(options.inputFile) > 0:
-    process.source.fileNames = cms.untracked.vstring(options.inputFile)
+if len(options.inputFiles) > 0:
+    process.source.fileNames = cms.untracked.vstring(options.inputFiles)
 else:
     # Default input files for testing
     if runOnData:
@@ -135,7 +130,7 @@ else:
 # process.source.eventsToProcess = cms.untracked.VEventRange('1:5')
 
 # Set the maximum number of events to process for a local run (it is overiden by CRAB)
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEvents))
 
 
 # Create the processing path.  It is wrapped in a manager that
@@ -296,5 +291,10 @@ if not runOnData and options.saveGenJets:
 # The output file for the analyzers
 postfix = '_' + string.join([random.choice(string.letters) for i in range(3)], '')
 
+if options.outputFile.endswith('.root'):
+    outputBaseName = options.outputFile[:-5] 
+else:
+    outputBaseName = options.outputFile
+
 process.TFileService = cms.Service('TFileService',
-    fileName = cms.string(options.outputName + postfix + '.root'))
+    fileName = cms.string(outputBaseName + postfix + '.root'))
