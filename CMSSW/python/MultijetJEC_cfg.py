@@ -224,7 +224,7 @@ process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
     jetType = cms.string('AK4PFchs'),
-    jetMinPt = cms.double(10.),
+    jetMinPt = cms.double(0.),
     jetSelection = jetQualityCuts,
     contIDMaps = cms.VInputTag(pileUpIDMap),
     met = cms.InputTag('slimmedMETs', processName=process.name_()),
@@ -254,8 +254,7 @@ if not runOnData:
 if not runOnData and options.saveGenJets:
     process.pecGenJetMET = cms.EDAnalyzer('PECGenJetMET',
         jets = cms.InputTag('slimmedGenJets'),
-        cut = cms.string('pt > 8.'),
-        # ^The pt cut above is the same as in JME-13-005
+        cut = cms.string(''),
         saveFlavourCounters = cms.bool(True),
         met = cms.InputTag('slimmedMETs', processName=process.name_())
     )
