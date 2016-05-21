@@ -57,6 +57,8 @@ options.register(
 
 # Override defaults for automatically defined options
 options.setDefault('maxEvents', 100)
+options.setType('outputFile', VarParsing.varType.string)
+options.setDefault('outputFile', 'sample.root')
 
 options.parseArguments()
 
@@ -92,7 +94,7 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/JetHT/MINIAOD/PromptReco-v2/000/273/450/00000/1EAF9289-581C-E611-B23D-02163E014777.root')
     else:
         process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv1/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_v3-v1/00000/0AEC156E-9418-E611-AAF7-0CC47A6C17FC.root')
 
