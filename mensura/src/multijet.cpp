@@ -130,19 +130,19 @@ int main(int argc, char **argv)
         
         // Corrections to be applied to jets. Same ones will be propagated to MET.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        jetCorrFull->SetJEC({"Spring16_25nsV1_DATA_L1FastJet_AK4PFchs.txt",
-          "Spring16_25nsV1_DATA_L2Relative_AK4PFchs.txt",
-          "Spring16_25nsV1_DATA_L3Absolute_AK4PFchs.txt",
+        jetCorrFull->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt",
+          "Spring16_25nsV2_DATA_L2Relative_AK4PFchs.txt",
+          "Spring16_25nsV2_DATA_L3Absolute_AK4PFchs.txt",
           "Fall15_25ns_COMB_LOGLIN_L2Residual_v2_AK4PFchs_nokFSR.txt"});
         manager.RegisterService(jetCorrFull);
         
         // Corrections applied in computation of T1-corrected MET. Needed to undo this MET
         //correction.
         JetCorrectorService *jetCorrOrig = new JetCorrectorService("JetCorrOrig");
-        jetCorrOrig->SetJEC({"Spring16_25nsV1_DATA_L1FastJet_AK4PFchs.txt",
-          "Spring16_25nsV1_DATA_L2Relative_AK4PFchs.txt",
-          "Spring16_25nsV1_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25nsV1_DATA_L2L3Residual_AK4PFchs.txt"});
+        jetCorrOrig->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt",
+          "Spring16_25nsV2_DATA_L2Relative_AK4PFchs.txt",
+          "Spring16_25nsV2_DATA_L3Absolute_AK4PFchs.txt",
+          "Spring16_25nsV2_DATA_L2L3Residual_AK4PFchs.txt"});
         manager.RegisterService(jetCorrOrig);
         
         
