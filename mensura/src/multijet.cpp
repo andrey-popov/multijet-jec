@@ -163,7 +163,7 @@ int main(int argc, char **argv)
     
     RecoilBuilder *recoilBuilder = new RecoilBuilder(30., {210., 290., 370., 470., 550., 610.});
     recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
-    // recoilBuilder->SetBetaPtFraction(0.05);
+    recoilBuilder->SetBetaPtFraction(0.05);
     manager.RegisterPlugin(recoilBuilder);
     
     if (dataGroup == DatasetGroup::Data)
