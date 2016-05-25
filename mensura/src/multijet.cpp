@@ -129,9 +129,17 @@ int main(int argc, char **argv)
     // recoilBuilder->SetBetaPtFraction(0.05);
     manager.RegisterPlugin(recoilBuilder);
     
-    manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 205.365}, {"PFJet200", 205.365},
-      {"PFJet260", 205.365}, {"PFJet320", 205.365}, {"PFJet400", 205.365},
-      {"PFJet450", 205.365}}));
+    if (dataGroup == DatasetGroup::Data)
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 205.365}, {"PFJet200", 205.365},
+          {"PFJet260", 205.365}, {"PFJet320", 205.365}, {"PFJet400", 205.365},
+          {"PFJet450", 205.365}}));
+    else
+    {
+        // Apply trivial selection since trigger is not simulated
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 205.365}, {"1", 205.365},
+          {"1", 205.365}, {"1", 205.365}, {"1", 205.365},
+          {"1", 205.365}}));
+    }
     
     if (dataGroup != DatasetGroup::Data)
     {

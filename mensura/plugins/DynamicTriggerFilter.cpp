@@ -58,24 +58,32 @@ void DynamicTriggerFilter::BeginRun(Dataset const &dataset)
     
     for (auto &t: triggers)
     {
-        // Get the corresponding branch of the tree and make sure it exists
-        TBranch *branch = triggerTree->GetBranch((t.name + "__accept").c_str());
-        
-        if (not branch)
+        if (t.name == "1")
         {
-            ROOTLock::Unlock();
-            
-            std::ostringstream message;
-            message << "DynamicTriggerFilter[\"" << GetName() <<
-              "\"]::BeginRun: Decision of trigger \"HLT_" << t.name <<
-              "_v*\" is not stored in the tree.";
-            throw std::runtime_error(message.str());
+            // Trivial selection. Write true to the buffer and never update it
+            t.buffer = true;
         }
-        
-        
-        // Set the status and address of the branch
-        branch->SetStatus(true);
-        branch->SetAddress(&t.buffer);
+        else
+        {
+            // Get the corresponding branch of the tree and make sure it exists
+            TBranch *branch = triggerTree->GetBranch((t.name + "__accept").c_str());
+            
+            if (not branch)
+            {
+                ROOTLock::Unlock();
+                
+                std::ostringstream message;
+                message << "DynamicTriggerFilter[\"" << GetName() <<
+                  "\"]::BeginRun: Decision of trigger \"HLT_" << t.name <<
+                  "_v*\" is not stored in the tree.";
+                throw std::runtime_error(message.str());
+            }
+            
+            
+            // Set the status and address of the branch
+            branch->SetStatus(true);
+            branch->SetAddress(&t.buffer);
+        }
     }
     
     ROOTLock::Unlock();
