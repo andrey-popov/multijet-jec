@@ -7,7 +7,9 @@
 #include <mensura/core/FileInPath.hpp>
 #include <mensura/core/RunManager.hpp>
 
+#include <mensura/extensions/JetCorrectorService.hpp>
 #include <mensura/extensions/JetFilter.hpp>
+#include <mensura/extensions/JetMETUpdate.hpp>
 #include <mensura/extensions/PileUpWeight.hpp>
 #include <mensura/extensions/TFileService.hpp>
 
@@ -113,16 +115,51 @@ int main(int argc, char **argv)
     RunManager manager(datasets.begin(), datasets.end());
     
     
-    // Register services
+    // Register services and plugins
     manager.RegisterService(new TFileService("output/%"));
-    
-    
-    // Register plugins
     manager.RegisterPlugin(new PECInputData);
+    manager.RegisterPlugin(new PECPileUpReader);
     
-    PECJetMETReader *jetReader = new PECJetMETReader;
-    jetReader->ConfigureLeptonCleaning("");  // Disabled
-    manager.RegisterPlugin(jetReader);
+    if (dataGroup == DatasetGroup::Data)
+    {
+        // Read jets with outdated corrections
+        PECJetMETReader *jetReader = new PECJetMETReader("OrigJetMET");
+        jetReader->ConfigureLeptonCleaning("");  // Disabled
+        manager.RegisterPlugin(jetReader);
+        
+        
+        // Corrections to be applied to jets. Same ones will be propagated to MET.
+        JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
+        jetCorrFull->SetJEC({"Spring16_25nsV1_DATA_L1FastJet_AK4PFchs.txt",
+          "Spring16_25nsV1_DATA_L2Relative_AK4PFchs.txt",
+          "Spring16_25nsV1_DATA_L3Absolute_AK4PFchs.txt",
+          "Fall15_25ns_COMB_LOGLIN_L2Residual_v2_AK4PFchs_nokFSR.txt"});
+        manager.RegisterService(jetCorrFull);
+        
+        // Corrections applied in computation of T1-corrected MET. Needed to undo this MET
+        //correction.
+        JetCorrectorService *jetCorrOrig = new JetCorrectorService("JetCorrOrig");
+        jetCorrOrig->SetJEC({"Spring16_25nsV1_DATA_L1FastJet_AK4PFchs.txt",
+          "Spring16_25nsV1_DATA_L2Relative_AK4PFchs.txt",
+          "Spring16_25nsV1_DATA_L3Absolute_AK4PFchs.txt",
+          "Spring16_25nsV1_DATA_L2L3Residual_AK4PFchs.txt"});
+        manager.RegisterService(jetCorrOrig);
+        
+        
+        // Plugin to update jets and MET. L1 JEC for MET are not specified because they do not
+        //differ between the original and new JEC.
+        JetMETUpdate *jetmetUpdater = new JetMETUpdate;
+        jetmetUpdater->SetJetCorrection("JetCorrFull");
+        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "", "JetCorrOrig", "");
+        manager.RegisterPlugin(jetmetUpdater);
+    }
+    else
+    {
+        // In simulation jets have proper corrections out of the box
+        PECJetMETReader *jetReader = new PECJetMETReader;
+        jetReader->ConfigureLeptonCleaning("");  // Disabled
+        manager.RegisterPlugin(jetReader);
+    }
     
     RecoilBuilder *recoilBuilder = new RecoilBuilder(30., {210., 290., 370., 470., 550., 610.});
     recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
@@ -130,9 +167,9 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(recoilBuilder);
     
     if (dataGroup == DatasetGroup::Data)
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 205.365}, {"PFJet200", 205.365},
-          {"PFJet260", 205.365}, {"PFJet320", 205.365}, {"PFJet400", 205.365},
-          {"PFJet450", 205.365}}));
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 205.365},
+          {"PFJet200", 205.365}, {"PFJet260", 205.365}, {"PFJet320", 205.365},
+          {"PFJet400", 205.365}, {"PFJet450", 205.365}}));
     else
     {
         // Apply trivial selection since trigger is not simulated
@@ -143,7 +180,6 @@ int main(int argc, char **argv)
     
     if (dataGroup != DatasetGroup::Data)
     {
-        manager.RegisterPlugin(new PECPileUpReader);
         manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2016B_v1_finebin.root",
           "pileup_Run2016B_v1_finebin.root", "pileup_Run2016B_v1_finebin.root",
           "pileup_Run2016B_v1_finebin.root", "pileup_Run2016B_v1_finebin.root",
