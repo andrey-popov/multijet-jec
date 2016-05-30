@@ -33,9 +33,9 @@ enum class DatasetGroup
 int main(int argc, char **argv)
 {
     // Parse arguments
-    if (argc != 2)
+    if (argc != 2 and argc != 3)
     {
-        cerr << "Usage: multijet dataset-group\n";
+        cerr << "Usage: multijet dataset-group [jet-pt-cut]\n";
         return EXIT_FAILURE;
     }
     
@@ -51,6 +51,16 @@ int main(int argc, char **argv)
     {
         cerr << "Cannot recognize dataset group \"" << dataGroupText << "\".\n";
         return EXIT_FAILURE;
+    }
+    
+    
+    double jetPtCut = 30.;
+    string outputFileMask = "output/%";
+    
+    if (argc >= 3)
+    {
+        jetPtCut = stod(argv[2]);
+        outputFileMask = "output_"s + to_string(int(jetPtCut)) + "/%";
     }
     
     
@@ -109,18 +119,16 @@ int main(int argc, char **argv)
     RunManager manager(datasets.begin(), datasets.end());
     
     
-    // Register services
-    manager.RegisterService(new TFileService("output/%"));
-    
-    
-    // Register plugins
+    // Register services and plugins
+    manager.RegisterService(new TFileService(outputFileMask));
     manager.RegisterPlugin(new PECInputData);
     
     PECJetMETReader *jetReader = new PECJetMETReader;
     jetReader->ConfigureLeptonCleaning("");  // Disabled
     manager.RegisterPlugin(jetReader);
     
-    RecoilBuilder *recoilBuilder = new RecoilBuilder(30., {210., 290., 370., 470., 550., 610.});
+    RecoilBuilder *recoilBuilder = new RecoilBuilder(jetPtCut,
+      {210., 290., 370., 470., 550., 610.});
     recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
     // recoilBuilder->SetBetaPtFraction(0.05);
     manager.RegisterPlugin(recoilBuilder);
