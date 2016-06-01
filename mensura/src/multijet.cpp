@@ -178,22 +178,22 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(recoilBuilder);
     
     if (dataGroup == DatasetGroup::Data)
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 2.730},
-          {"PFJet200", 78.334}, {"PFJet260", 104.512}, {"PFJet320", 177.051},
-          {"PFJet400", 302.634}, {"PFJet450", 581.021}}));
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 2.667},
+          {"PFJet200", 6.823}, {"PFJet260", 35.721}, {"PFJet320", 118.180},
+          {"PFJet400", 258.870}, {"PFJet450", 581.021}}));
     else
     {
         // Apply trivial selection since trigger is not simulated
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 2.730}, {"1", 78.334},
-          {"1", 104.512}, {"1", 177.051}, {"1", 302.634}, {"1", 581.021}}));
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 2.667}, {"1", 6.823},
+          {"1", 35.721}, {"1", 118.180}, {"1", 258.870}, {"1", 581.021}}));
     }
     
     if (dataGroup != DatasetGroup::Data)
     {
-        manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2016B_PFJet140_finebin_v1.root",
-          "pileup_Run2016B_PFJet200_finebin_v1.root", "pileup_Run2016B_PFJet260_finebin_v1.root",
-          "pileup_Run2016B_PFJet320_finebin_v1.root", "pileup_Run2016B_PFJet400_finebin_v1.root",
-          "pileup_Run2016B_PFJet450_finebin_v1.root"}, "simPUProfiles_80X.root", 0.05));
+        manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2016B_PFJet140_finebin_v2.root",
+          "pileup_Run2016B_PFJet200_finebin_v2.root", "pileup_Run2016B_PFJet260_finebin_v2.root",
+          "pileup_Run2016B_PFJet320_finebin_v2.root", "pileup_Run2016B_PFJet400_finebin_v2.root",
+          "pileup_Run2016B_PFJet450_finebin_v2.root"}, "simPUProfiles_80X.root", 0.05));
     }
     
     manager.RegisterPlugin(new BalanceVars);
