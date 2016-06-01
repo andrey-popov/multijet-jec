@@ -143,7 +143,7 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV2_DATA_L2Relative_AK4PFchs.txt",
           "Spring16_25nsV2_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25nsV2_DATA_L2Residual_AK4PFchs.txt"});
+          "Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v3_AK4PFchs.txt"});
         manager.RegisterService(jetCorrFull);
         
         // Corrections applied in computation of T1-corrected MET. Needed to undo this MET
