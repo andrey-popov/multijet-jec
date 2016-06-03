@@ -12,7 +12,7 @@
 
 
 class PileUpReader;
-class RecoilBuilder;
+class TriggerBin;
 
 
 /**
@@ -20,11 +20,11 @@ class RecoilBuilder;
  * \brief Plugin that implements reweighting for additional pp interactions ("pile-up")
  * 
  * Extends PileUpWeight plugin from mensura framework [1], allowing to choose the target pile-up
- * profile independently in each event according to the trigger bin reported by a RecoilBuilder.
- * Consult [1] for documentation on details of pile-up reweighting.
+ * profile independently in each event according to the trigger bin reported by a TriggerBin
+ * plugin. Consult [1] for documentation on details of pile-up reweighting.
  * 
- * This plugin exploits a PileUpReader with a default name "PileUp" and a RecoildBuilder with a
- * default name "RecoilBuilder".
+ * This plugin exploits a PileUpReader with a default name "PileUp" and a TriggerBin plugin with a
+ * default name "TriggerBin".
  * 
  * [1] https://github.com/andrey-popov/mensura/blob/84648f604ed4e45b48376ff6bc41ec38a3a7f934/include/mensura/extensions/PileUpWeight.hpp
  */
@@ -85,16 +85,16 @@ private:
     /// Non-owning pointer to a plugin that reads information about pile-up
     PileUpReader const *puPlugin;
     
-    /// Name of a plugin that reconstructs recoil
-    std::string recoilBuilderName;
+    /// Name of a plugin that determines trigger bin
+    std::string triggerBinPluginName;
     
-    /// Non-owning pointer to a plugin that reconstruct recoil
-    RecoilBuilder const *recoilBuilder;
+    /// Non-owning pointer to a plugin that determines trigger bin
+    TriggerBin const *triggerBinPlugin;
     
     /**
      * \brief Target pile-up distributions in data
      * 
-     * Indices of this vector correspond to values returned by RecoilBuilder::GetTriggerBin(),
+     * Indices of this vector correspond to values returned by TriggerBin::GetTriggerBin(),
      * minus 1.
      */
     std::vector<std::shared_ptr<TH1>> dataPUHists;

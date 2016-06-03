@@ -1,6 +1,7 @@
 #include <BalanceVars.hpp>
 
 #include <RecoilBuilder.hpp>
+#include <TriggerBin.hpp>
 
 #include <mensura/core/JetMETReader.hpp>
 #include <mensura/core/Processor.hpp>
@@ -18,6 +19,7 @@ BalanceVars::BalanceVars(std::string const name /*= "BalanceVars"*/):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
+    triggerBinPluginName("TriggerBin"), triggerBinPlugin(nullptr),
     recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
     triggerFilterName("TriggerFilter"), triggerFilter(nullptr),
     puReweighterName("PileUpWeight"), puReweighter(nullptr)
@@ -41,6 +43,7 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
     recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
+    triggerBinPlugin = dynamic_cast<TriggerBin const *>(GetDependencyPlugin(triggerBinPluginName));
     
     if (isMC)
     {
@@ -97,7 +100,7 @@ bool BalanceVars::ProcessEvent()
     bfA = recoilBuilder->GetA();
     bfAlpha = recoilBuilder->GetAlpha();
     bfBeta = recoilBuilder->GetBeta();
-    bfTriggerBin = recoilBuilder->GetTriggerBin();
+    bfTriggerBin = triggerBinPlugin->GetTriggerBin();
     
     
     // Compute variables reflecting balance in pt. See Sec. 2 in AN-14-016 for definitions

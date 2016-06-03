@@ -2,6 +2,7 @@
 #include <DynamicPileUpWeight.hpp>
 #include <DynamicTriggerFilter.hpp>
 #include <RecoilBuilder.hpp>
+#include <TriggerBin.hpp>
 
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/FileInPath.hpp>
@@ -127,8 +128,9 @@ int main(int argc, char **argv)
     jetReader->ConfigureLeptonCleaning("");  // Disabled
     manager.RegisterPlugin(jetReader);
     
-    RecoilBuilder *recoilBuilder = new RecoilBuilder(jetPtCut,
-      {210., 290., 370., 470., 550., 610.});
+    manager.RegisterPlugin(new TriggerBin({210., 290., 370., 470., 550., 610.}));
+    
+    RecoilBuilder *recoilBuilder = new RecoilBuilder(jetPtCut);
     recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
     // recoilBuilder->SetBetaPtFraction(0.05);
     manager.RegisterPlugin(recoilBuilder);

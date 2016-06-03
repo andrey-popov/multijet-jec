@@ -1,6 +1,6 @@
 #include <DynamicTriggerFilter.hpp>
 
-#include <RecoilBuilder.hpp>
+#include <TriggerBin.hpp>
 
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/ROOTLock.hpp>
@@ -13,7 +13,7 @@
 DynamicTriggerFilter::DynamicTriggerFilter(std::string const &name,
   std::initializer_list<std::pair<std::string, double>> triggers_):
     PECTriggerFilter(name),
-    recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr)
+    triggerBinPluginName("TriggerBin"), triggerBinPlugin(nullptr)
 {
     for (auto const &t: triggers_)
         triggers.emplace_back(Trigger{t.first, t.second, false});
@@ -31,22 +31,22 @@ void DynamicTriggerFilter::BeginRun(Dataset const &dataset)
     // Set up the pointer to PECInputData and register reading of the trigger tree
     PECTriggerFilter::BeginRun(dataset);
     
-    // Save pointer to the RecoilBuilder
-    recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
+    // Save pointer to the TriggerBin plugin
+    triggerBinPlugin = dynamic_cast<TriggerBin const *>(GetDependencyPlugin(triggerBinPluginName));
     
     // Memorize the type of the dataset
     isMC = dataset.IsMC();
     
     
     // Make sure that the number of registered triggers matches the number of trigger bins defined
-    //by the RecoilBuilder. There is no trigger for the underflow bin
-    if (triggers.size() != recoilBuilder->GetNumTriggerBins() - 1)
+    //by the TriggerBin plugin. There is no trigger for the underflow bin
+    if (triggers.size() != triggerBinPlugin->GetNumTriggerBins() - 1)
     {
         std::ostringstream message;
         message << "DynamicTriggerFilter[\"" << GetName() <<
           "\"]::BeginRun: Number of registered triggers (" << triggers.size() <<
-          ") does not match number of trigger bins defined by RecoilBuilder \"" <<
-          recoilBuilderName << "\" (" << recoilBuilder->GetNumTriggerBins() - 1 <<
+          ") does not match number of trigger bins defined by TriggerBin plugin \"" <<
+          triggerBinPluginName << "\" (" << triggerBinPlugin->GetNumTriggerBins() - 1 <<
           " excluding the underflow bin).";
         throw std::runtime_error(message.str());
     }
@@ -104,6 +104,6 @@ bool DynamicTriggerFilter::ProcessEvent()
     
     
     // Check decision of the trigger that corresponds to found pt(recoil)
-    requestedTriggerIndex = recoilBuilder->GetTriggerBin() - 1;
+    requestedTriggerIndex = triggerBinPlugin->GetTriggerBin() - 1;
     return triggers.at(requestedTriggerIndex).buffer;
 }
