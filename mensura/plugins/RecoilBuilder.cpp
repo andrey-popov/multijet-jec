@@ -12,32 +12,19 @@
 #include <stdexcept>
 
 
-RecoilBuilder::RecoilBuilder(std::string const &name, double minJetPt_,
-  std::initializer_list<double> const &ptRecoilTriggerBins_):
+RecoilBuilder::RecoilBuilder(std::string const &name, double minJetPt_):
     AnalysisPlugin(name),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
-    minJetPt(minJetPt_), ptRecoilTriggerBins(ptRecoilTriggerBins_),
+    minJetPt(minJetPt_),
     maxA(std::numeric_limits<double>::infinity()),
     maxAlpha(std::numeric_limits<double>::infinity()),
     minBeta(-std::numeric_limits<double>::infinity()),
     betaPtFraction(0.)
-{
-    // Make sure the binning in pt(recoil) is not empty and sorted
-    if (ptRecoilTriggerBins.size() == 0)
-    {
-        std::ostringstream message;
-        message << "RecoilBuilder::RecoilBuilder[\"" << GetName() <<
-          "\"]: Set of bins in pt(recoil) cannot be empty.";
-        throw std::logic_error(message.str());
-    }
-    
-    std::sort(ptRecoilTriggerBins.begin(), ptRecoilTriggerBins.end());
-}
+{}
 
 
-RecoilBuilder::RecoilBuilder(double minJetPt,
-  std::initializer_list<double> const &ptRecoilTriggerBins):
-    RecoilBuilder("RecoilBuilder", minJetPt, ptRecoilTriggerBins)
+RecoilBuilder::RecoilBuilder(double minJetPt):
+    RecoilBuilder("RecoilBuilder", minJetPt)
 {}
 
 
@@ -77,12 +64,6 @@ double RecoilBuilder::GetJetPtThreshold() const
 }
 
 
-unsigned RecoilBuilder::GetNumTriggerBins() const
-{
-    return ptRecoilTriggerBins.size() + 1;
-}
-
-
 TLorentzVector const &RecoilBuilder::GetP4LeadingJet() const
 {
     return leadingJet->P4();
@@ -92,12 +73,6 @@ TLorentzVector const &RecoilBuilder::GetP4LeadingJet() const
 TLorentzVector const &RecoilBuilder::GetP4Recoil() const
 {
     return p4Recoil;
-}
-
-
-unsigned RecoilBuilder::GetTriggerBin() const
-{
-    return triggerBin;
 }
 
 
@@ -141,11 +116,6 @@ bool RecoilBuilder::ProcessEvent()
     }
     
     
-    // Reject events with a soft recoil
-    if (p4Recoil.Pt() < ptRecoilTriggerBins.front())
-        return false;
-    
-    
     // Compute remaining balance variables and apply selection on them
     A = jets.at(1).Pt() / p4Recoil.Pt();
     alpha = TMath::Pi() - std::abs(TVector2::Phi_mpi_pi(p4Recoil.Phi() - leadingJet->Phi()));
@@ -166,11 +136,6 @@ bool RecoilBuilder::ProcessEvent()
     
     if (A > maxA or alpha > maxAlpha or beta < minBeta)
         return false;
-    
-    
-    // Determine in which trigger bin the current event falls
-    triggerBin = std::distance(ptRecoilTriggerBins.begin(),
-      std::lower_bound(ptRecoilTriggerBins.begin(), ptRecoilTriggerBins.end(), p4Recoil.Pt()));
     
     
     // The event is accepted if the workflow reaches this point
