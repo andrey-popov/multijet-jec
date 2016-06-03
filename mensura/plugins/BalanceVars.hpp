@@ -10,14 +10,15 @@ class JetMETReader;
 class PECTriggerFilter;
 class RecoilBuilder;
 class TFileService;
+class TriggerBin;
 
 
 /**
  * \class BalanceVars
  * \brief Produces tuples with variables that describe multijet balancing
  * 
- * Depends on the presence of a jet reader, a recoil builder, a trigger filter, and a plugin to
- * reweight for pile-up.
+ * Depends on the presence of a jet reader, a TriggerBin plugin, a recoil builder, a trigger
+ * filter, and a plugin to reweight for pile-up.
  */
 class BalanceVars: public AnalysisPlugin
 {
@@ -60,6 +61,12 @@ private:
     
     /// Non-owning pointer to a plugin that produces jets and MET
     JetMETReader const *jetmetPlugin;
+    
+    /// Name of a plugin that determines trigger bin
+    std::string triggerBinPluginName;
+    
+    /// Non-owning pointer to a plugin that determines trigger bin
+    TriggerBin const *triggerBinPlugin;
     
     /// Name of a plugin that reconstructs recoil
     std::string recoilBuilderName;
