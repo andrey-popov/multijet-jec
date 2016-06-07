@@ -1,6 +1,6 @@
 #include <DynamicPileUpWeight.hpp>
 
-#include <RecoilBuilder.hpp>
+#include <TriggerBin.hpp>
 
 #include <mensura/core/FileInPath.hpp>
 #include <mensura/core/PileUpReader.hpp>
@@ -19,7 +19,7 @@ DynamicPileUpWeight::DynamicPileUpWeight(std::string const &name,
   double systError_):
     EventWeightPlugin(name),
     puPluginName("PileUp"), puPlugin(nullptr),
-    recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
+    triggerBinPluginName("TriggerBin"), triggerBinPlugin(nullptr),
     systError(systError_)
 {
     ROOTLock::Lock();
@@ -60,7 +60,7 @@ void DynamicPileUpWeight::BeginRun(Dataset const &dataset)
 {
     // Save pointers to required plugins
     puPlugin = dynamic_cast<PileUpReader const *>(GetDependencyPlugin(puPluginName));
-    recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
+    triggerBinPlugin = dynamic_cast<TriggerBin const *>(GetDependencyPlugin(triggerBinPluginName));
     
     
     // Update the simulated pile-up profile if needed
@@ -130,7 +130,7 @@ bool DynamicPileUpWeight::ProcessEvent()
     
     
     // Determine what target profile should be used for this event
-    auto const &dataPUHist = dataPUHists.at(recoilBuilder->GetTriggerBin() - 1);
+    auto const &dataPUHist = dataPUHists.at(triggerBinPlugin->GetTriggerBin() - 1);
     
     
     // Calculate the weights

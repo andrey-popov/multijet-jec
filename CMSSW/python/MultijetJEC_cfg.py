@@ -57,6 +57,8 @@ options.register(
 
 # Override defaults for automatically defined options
 options.setDefault('maxEvents', 100)
+options.setType('outputFile', VarParsing.varType.string)
+options.setDefault('outputFile', 'sample.root')
 
 options.parseArguments()
 
@@ -65,14 +67,16 @@ options.parseArguments()
 runOnData = options.runOnData
 
 
-# Provide a default global tag if user has not given any.  It is set as
-# recommended for JEC.
-# https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=111
+# Provide a default global tag if user has not given any.  With data use
+# the global tag for prompt reconstruction [1].  With simulation take
+# the one recommended by JERC group [2].
+# [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideFrontierConditions?rev=568#Global_Tags_for_2016_data_taking
+# [2] https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=112
 if len(options.globalTag) == 0:
     if runOnData:
-        options.globalTag = '76X_dataRun2_16Dec2015_v0'
+        options.globalTag = '80X_dataRun2_Prompt_v8'
     else:
-        options.globalTag = '76X_mcRun2_asymptotic_RunIIFall15DR76_v1'
+        options.globalTag = '80X_mcRun2_asymptotic_2016_miniAODv2'
     
     print 'WARNING: No global tag provided. Will use the default one (' + options.globalTag + ')'
 
@@ -80,36 +84,6 @@ if len(options.globalTag) == 0:
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag)
-
-
-# Set up access to JER database as it is not included in the global tag
-# yet.  The snippet is adapted from [1].  The main change is using the
-# FileInPath extention to access the database file [2].
-# [1] https://github.com/cms-met/cmssw/blob/8b17ab5d8b28236e2d2215449f074cceccc4f132/PhysicsTools/PatAlgos/test/corMETFromMiniAOD.py
-# [2] https://hypernews.cern.ch/HyperNews/CMS/get/db-aligncal/58.html
-from CondCore.DBCommon.CondDBSetup_cfi import CondDBSetup
-process.jerDB = cms.ESSource(
-    'PoolDBESSource', CondDBSetup,
-    connect = cms.string('sqlite_fip:PhysicsTools/PatUtils/data/Fall15_25nsV2_MC.db'),
-    toGet = cms.VPSet(
-        cms.PSet(
-            record = cms.string('JetResolutionRcd'),
-            tag = cms.string('JR_Fall15_25nsV2_MC_PtResolution_AK4PFchs'),
-            label = cms.untracked.string('AK4PFchs_pt')
-        ),
-        cms.PSet(
-            record = cms.string('JetResolutionRcd'),
-            tag = cms.string('JR_Fall15_25nsV2_MC_PhiResolution_AK4PFchs'),
-            label = cms.untracked.string('AK4PFchs_phi')
-        ),
-        cms.PSet(
-            record = cms.string('JetResolutionScaleFactorRcd'),
-            tag = cms.string('JR_Fall15_25nsV2_MC_SF_AK4PFchs'),
-            label = cms.untracked.string('AK4PFchs')
-        ),
-    )
-)
-process.jerDBPreference = cms.ESPrefer('PoolDBESSource', 'jerDB')
 
 
 # Define the input files
@@ -120,9 +94,9 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2015D/JetHT/MINIAOD/16Dec2015-v1/00000/301A497D-70B0-E511-9630-002590D0AFA8.root')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/JetHT/MINIAOD/PromptReco-v2/000/273/450/00000/1EAF9289-581C-E611-B23D-02163E014777.root')
     else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall15MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU25nsData2015v1_76X_mcRun2_asymptotic_v12-v1/00000/0A5595D6-95BC-E511-BBF5-001E67396DCE.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv1/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_v3-v1/00000/0AEC156E-9418-E611-AAF7-0CC47A6C17FC.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
@@ -214,9 +188,9 @@ paths.append(process.vetoPhotons)
 
 
 # Save decisions of selected triggers.  The lists are aligned with
-# menu [1] used in 25 ns MC and menus deployed online.  Event that do
-# not fire any of the listed triggers are rejected.
-# [1] /frozen/2015/25ns14e33/v4.4/HLT/V2
+# menu [1] used in some of 80X MC.  Event that do not fire any of the
+# listed triggers, are rejected.
+# [1] /dev/CMSSW_8_0_0/GRun/V8
 if runOnData:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(
@@ -235,7 +209,7 @@ else:
             'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
             'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800'
         ),
-        filter = cms.bool(True),
+        filter = cms.bool(False),
         savePrescales = cms.bool(False),
         triggerBits = cms.InputTag('TriggerResults', processName='HLT')
     )
@@ -250,7 +224,7 @@ process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
     jetType = cms.string('AK4PFchs'),
-    jetMinPt = cms.double(10.),
+    jetMinPt = cms.double(0.),
     jetSelection = jetQualityCuts,
     contIDMaps = cms.VInputTag(pileUpIDMap),
     met = cms.InputTag('slimmedMETs', processName=process.name_()),
@@ -280,8 +254,7 @@ if not runOnData:
 if not runOnData and options.saveGenJets:
     process.pecGenJetMET = cms.EDAnalyzer('PECGenJetMET',
         jets = cms.InputTag('slimmedGenJets'),
-        cut = cms.string('pt > 8.'),
-        # ^The pt cut above is the same as in JME-13-005
+        cut = cms.string(''),
         saveFlavourCounters = cms.bool(True),
         met = cms.InputTag('slimmedMETs', processName=process.name_())
     )
