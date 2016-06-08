@@ -76,6 +76,12 @@ TLorentzVector const &RecoilBuilder::GetP4Recoil() const
 }
 
 
+std::vector<std::reference_wrapper<Jet const>> const &RecoilBuilder::GetRecoilJets() const
+{
+    return recoilJets;
+}
+
+
 void RecoilBuilder::SetBalanceSelection(double maxA_, double maxAlpha_, double minBeta_)
 {
     maxA = maxA_;
@@ -104,6 +110,7 @@ bool RecoilBuilder::ProcessEvent()
     // Reconstruct the recoil. It is built from all jets that pass the kinematic selection,
     //excluding the leading one. At the same time compute the beta separation
     p4Recoil.SetPxPyPzE(0., 0., 0., 0.);
+    recoilJets.clear();
     
     for (unsigned i = 1; i < jets.size(); ++i)
     {
@@ -113,6 +120,7 @@ bool RecoilBuilder::ProcessEvent()
             break;
         
         p4Recoil += j.P4();
+        recoilJets.emplace_back(j);
     }
     
     
