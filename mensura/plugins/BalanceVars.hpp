@@ -106,6 +106,8 @@ private:
     // Output buffers
     Float_t bfPtRecoil;
     Float_t bfPtJ1, bfEtaJ1;
+    UShort_t bfMultRecoil;
+    Float_t bfMeanRecoilJetPt;
     Float_t bfA, bfAlpha, bfBeta;
     UShort_t bfTriggerBin;
     Float_t bfMJB, bfMPF;

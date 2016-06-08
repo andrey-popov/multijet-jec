@@ -64,6 +64,10 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     tree->Branch("PtRecoil", &bfPtRecoil);
     tree->Branch("PtJ1", &bfPtJ1);
     tree->Branch("EtaJ1", &bfEtaJ1);
+    
+    tree->Branch("MultRecoil", &bfMultRecoil);
+    tree->Branch("MeanRecoilJetPt", &bfMeanRecoilJetPt);
+    
     tree->Branch("A", &bfA);
     tree->Branch("Alpha", &bfAlpha);
     tree->Branch("Beta", &bfBeta);
@@ -120,6 +124,19 @@ bool BalanceVars::ProcessEvent()
     }
     
     bfCRecoil = std::exp(sum);
+    
+    
+    // Compute more properties of jets in the recoil
+    bfMultRecoil = 0;
+    double sumPt = 0.;
+    
+    for (Jet const &j: recoilJets)
+    {
+        ++bfMultRecoil;
+        sumPt += j.Pt();
+    }
+    
+    bfMeanRecoilJetPt = sumPt / bfMultRecoil;
     
     
     // Compute event weight
