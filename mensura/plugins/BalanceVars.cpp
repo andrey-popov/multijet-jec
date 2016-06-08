@@ -90,6 +90,7 @@ bool BalanceVars::ProcessEvent()
 {
     auto const &recoil = recoilBuilder->GetP4Recoil();
     auto const &j1 = recoilBuilder->GetP4LeadingJet();
+    auto const &jets = jetmetPlugin->GetJets();
     auto const &met = jetmetPlugin->GetMET().P4();
     
     
@@ -112,8 +113,10 @@ bool BalanceVars::ProcessEvent()
     //[1] https://github.com/pequegnot/multijetAnalysis/blob/ff65f3db37189383f4b61d27b1e8f20c4c89d26f/weightPlots/multijet_weight_common.cpp#L1293-L1303
     double sum = 0.;
     
-    for (auto const &j: jetmetPlugin->GetJets())
+    for (unsigned i = 1; i < jets.size(); ++i)
     {
+        auto const &j = jets[i];
+        
         if (j.Pt() < recoilBuilder->GetJetPtThreshold())
             break;
         
