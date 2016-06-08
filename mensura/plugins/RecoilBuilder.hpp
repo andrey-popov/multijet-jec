@@ -6,6 +6,7 @@
 #include <TLorentzVector.h>
 
 #include <initializer_list>
+#include <functional>
 #include <vector>
 
 
@@ -74,6 +75,9 @@ public:
     /// Returns four-momentum of the reconstructed recoil
     TLorentzVector const &GetP4Recoil() const;
     
+    /// Returns collection of jets included in the recoil
+    std::vector<std::reference_wrapper<Jet const>> const &GetRecoilJets() const;
+    
     /// Sets selection on balancing variables
     void SetBalanceSelection(double maxA, double maxAlpha, double minBeta);
     
@@ -111,6 +115,9 @@ private:
     /// Pointer to the leading jet in the current event
     Jet const *leadingJet;
     
+    /// Jets included in the recoil
+    std::vector<std::reference_wrapper<Jet const>> recoilJets;
+    
     /**
      * \brief Balance variables in the current event
      * 
@@ -122,7 +129,9 @@ private:
     double maxA, maxAlpha, minBeta;
     
     /**
+     * \brief Relative threshold to choose what jets are considered to evaluate beta cut
      * 
+     * Consult documentation for method SetBetaPtFraction for details.
      */
     double betaPtFraction;
 };
