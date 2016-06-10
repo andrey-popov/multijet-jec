@@ -41,6 +41,16 @@ public:
      */
     virtual Plugin *Clone() const override;
     
+    /// Specifies name of the recoil builder
+    void SetRecoilBuilderName(std::string const &name);
+    
+    /**
+     * \brief Specifies name for the output tree
+     * 
+     * By default the name of the plugin is used.
+     */
+    void SetTreeName(std::string const &name);
+    
 private:
     /**
      * \brief Computes variables and fills the output tree
@@ -93,6 +103,9 @@ private:
      * Used only in simulation.
      */
     EventWeightPlugin const *puReweighter;
+    
+    /// Name of the output tree
+    std::string treeName;
     
     /// Flag indicating whether current dataset is data or simulation
     bool isMC;

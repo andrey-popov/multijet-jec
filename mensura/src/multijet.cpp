@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <list>
+#include <sstream>
 
 
 using namespace std;
@@ -36,7 +37,7 @@ int main(int argc, char **argv)
     // Parse arguments
     if (argc != 2 and argc != 3)
     {
-        cerr << "Usage: multijet dataset-group [jet-pt-cut]\n";
+        cerr << "Usage: multijet dataset-group [jet-pt-cuts]\n";
         return EXIT_FAILURE;
     }
     
@@ -55,15 +56,20 @@ int main(int argc, char **argv)
     }
     
     
-    double jetPtCut = 30.;
-    string outputFileMask = "output/%";
+    // Parse list of jet pt cuts used to construct the recoil. Their values are assumed to be
+    //integer.
+    list<unsigned> jetPtCuts;
     
     if (argc >= 3)
     {
-        jetPtCut = stod(argv[2]);
-        outputFileMask = "output_"s + to_string(int(jetPtCut)) + "/%";
+        istringstream cutList(argv[2]);
+        string cut;
+        
+        while (getline(cutList, cut, ','))
+            jetPtCuts.emplace_back(stod(cut));
     }
-    
+    else
+        jetPtCuts = {30};
     
     
     // Input datasets
@@ -121,7 +127,7 @@ int main(int argc, char **argv)
     
     
     // Register services and plugins
-    manager.RegisterService(new TFileService(outputFileMask));
+    manager.RegisterService(new TFileService("output/%"));
     manager.RegisterPlugin(new PECInputData);
     
     PECJetMETReader *jetReader = new PECJetMETReader;
@@ -129,11 +135,6 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(jetReader);
     
     manager.RegisterPlugin(new TriggerBin({210., 290., 370., 470., 550., 610.}));
-    
-    RecoilBuilder *recoilBuilder = new RecoilBuilder(jetPtCut);
-    recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
-    // recoilBuilder->SetBetaPtFraction(0.05);
-    manager.RegisterPlugin(recoilBuilder);
     
     manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 2.896}, {"PFJet200", 19.898},
       {"PFJet260", 202.492}, {"PFJet320", 423.595}, {"PFJet400", 938.067},
@@ -148,7 +149,20 @@ int main(int argc, char **argv)
           "pileup_Run2015CD_PFJet450_finebin.root"}, "simPUProfiles_76X.root", 0.05));
     }
     
-    manager.RegisterPlugin(new BalanceVars);
+    
+    for (auto const &jetPtCut: jetPtCuts)
+    {
+        string const ptCutText(to_string(jetPtCut));
+        
+        RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
+        recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
+        recoilBuilder->SetBetaPtFraction(0.05);
+        manager.RegisterPlugin(recoilBuilder);
+        
+        BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
+        balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
+        manager.RegisterPlugin(balanceVars);
+    }
     
     
     // Process the datasets
