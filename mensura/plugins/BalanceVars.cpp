@@ -22,7 +22,8 @@ BalanceVars::BalanceVars(std::string const name /*= "BalanceVars"*/):
     triggerBinPluginName("TriggerBin"), triggerBinPlugin(nullptr),
     recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
     triggerFilterName("TriggerFilter"), triggerFilter(nullptr),
-    puReweighterName("PileUpWeight"), puReweighter(nullptr)
+    puReweighterName("PileUpWeight"), puReweighter(nullptr),
+    treeName(name)
 {}
 
 
@@ -55,7 +56,7 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     
     
     // Create output tree
-    tree = fileService->Create<TTree>("", "Vars", "Observables for multijet balance");
+    tree = fileService->Create<TTree>("", treeName.c_str(), "Observables for multijet balance");
     
     
     // Assign branch addresses
@@ -87,6 +88,18 @@ void BalanceVars::BeginRun(Dataset const &dataset)
 Plugin *BalanceVars::Clone() const
 {
     return new BalanceVars(*this);
+}
+
+
+void BalanceVars::SetRecoilBuilderName(std::string const &name)
+{
+    recoilBuilderName = name;
+}
+
+
+void BalanceVars::SetTreeName(std::string const &name)
+{
+    treeName = name;
 }
 
 
