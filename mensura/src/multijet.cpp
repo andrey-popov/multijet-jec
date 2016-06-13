@@ -207,7 +207,9 @@ int main(int argc, char **argv)
         RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
         recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
         recoilBuilder->SetBetaPtFraction(0.05);
-        manager.RegisterPlugin(recoilBuilder);
+        manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
+        //^ It is fine to specify the trigger filter as the dependency also in case of simulation
+        //since DynamicPileUpWeight never rejects events
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
         balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
@@ -217,6 +219,9 @@ int main(int argc, char **argv)
     
     // Process the datasets
     manager.Process(6);
+    
+    std::cout << '\n';
+    manager.PrintSummary();
     
     
     return EXIT_SUCCESS;
