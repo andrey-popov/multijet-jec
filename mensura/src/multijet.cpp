@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     jetReader->ConfigureLeptonCleaning("");  // Disabled
     manager.RegisterPlugin(jetReader);
     
-    manager.RegisterPlugin(new TriggerBin({210., 290., 370., 470., 550., 610.}));
+    manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
     
     manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 2.896}, {"PFJet200", 19.898},
       {"PFJet260", 202.492}, {"PFJet320", 423.595}, {"PFJet400", 938.067},
