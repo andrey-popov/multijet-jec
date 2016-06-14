@@ -1,6 +1,7 @@
 #include <BalanceVars.hpp>
 #include <DynamicPileUpWeight.hpp>
 #include <DynamicTriggerFilter.hpp>
+#include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
 #include <TriggerBin.hpp>
 
@@ -215,6 +216,9 @@ int main(int argc, char **argv)
         balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
         manager.RegisterPlugin(balanceVars);
     }
+    
+    // Pile-up information is saved only for the first jet pt threshold
+    manager.RegisterPlugin(new PileUpVars, {"BalanceVarsPt"s + to_string(jetPtCuts.front())});
     
     
     // Process the datasets
