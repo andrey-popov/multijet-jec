@@ -66,6 +66,7 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     tree->Branch("PtJ1", &bfPtJ1);
     tree->Branch("EtaJ1", &bfEtaJ1);
     
+    tree->Branch("MET", &bfMET);
     tree->Branch("MultRecoil", &bfMultRecoil);
     tree->Branch("MeanRecoilJetPt", &bfMeanRecoilJetPt);
     
@@ -111,10 +112,14 @@ bool BalanceVars::ProcessEvent()
     auto const &met = jetmetPlugin->GetMET().P4();
     
     
-    // Save variables computed by the RecoilBuilder
-    bfPtRecoil = recoil.Pt();
+    // Save basic observables
     bfPtJ1 = j1.Pt();
     bfEtaJ1 = j1.Eta();
+    bfMET = met.Pt();    
+    
+    
+    // Save variables computed by the RecoilBuilder
+    bfPtRecoil = recoil.Pt();
     bfA = recoilBuilder->GetA();
     bfAlpha = recoilBuilder->GetAlpha();
     bfBeta = recoilBuilder->GetBeta();
