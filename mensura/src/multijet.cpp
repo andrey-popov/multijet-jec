@@ -148,12 +148,18 @@ int main(int argc, char **argv)
         
         // Corrections to be applied to jets. Same ones will be propagated to MET.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        jetCorrFull->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt",
-          "Spring16_25nsV2_DATA_L2Relative_AK4PFchs.txt",
-          "Spring16_25nsV2_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v3_AK4PFchs.txt"
+        jetCorrFull->SetJEC({"Spring16_25nsV4_DATA_L1FastJet_AK4PFchs.txt",
+          "Spring16_25nsV4_DATA_L2Relative_AK4PFchs.txt",
+          "Spring16_25nsV4_DATA_L3Absolute_AK4PFchs.txt",
+          "Spring16_25nsV4_DATA_L2Residual_AK4PFchs.txt"
           /*"Spring16_25nsV3_DATA_L2L3Residual_AK4PFchs.txt"*/});
         manager.RegisterService(jetCorrFull);
+        
+        // L1 corresctions used in T1 MET corrections
+        JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
+        jetCorrL1->SetJEC({"Spring16_25nsV4_DATA_L1FastJet_AK4PFchs.txt"});
+        manager.RegisterService(jetCorrL1);
+        
         
         // Corrections applied in computation of T1-corrected MET. Needed to undo this MET
         //correction.
@@ -164,12 +170,17 @@ int main(int argc, char **argv)
           "Spring16_25nsV2_DATA_L2L3Residual_AK4PFchs.txt"});
         manager.RegisterService(jetCorrOrig);
         
+        JetCorrectorService *jetCorrL1Orig = new JetCorrectorService("JetCorrL1Orig");
+        jetCorrL1Orig->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt"});
+        manager.RegisterService(jetCorrL1Orig);
+        
         
         // Plugin to update jets and MET. L1 JEC for MET are not specified because they do not
         //differ between the original and new JEC.
         JetMETUpdate *jetmetUpdater = new JetMETUpdate;
         jetmetUpdater->SetJetCorrection("JetCorrFull");
-        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "", "JetCorrOrig", "");
+        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1",
+          "JetCorrOrig", "JetCorrL1Orig");
         manager.RegisterPlugin(jetmetUpdater);
     }
     else
