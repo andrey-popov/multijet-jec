@@ -84,7 +84,9 @@ int main(int argc, char **argv)
     {
         datasets.emplace_back(Dataset({Dataset::Process::ppData, Dataset::Process::pp13TeV},
           Dataset::Generator::Nature, Dataset::ShowerGenerator::Nature));
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016*.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_3ac2b9b_kfm.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_ext0610_3ac2b9b_FdG.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_ext0616_3ac2b9b_OCN.root");
     }
     else
     {
@@ -194,22 +196,30 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
     
     if (dataGroup == DatasetGroup::Data)
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 3.405},
-          {"PFJet200", 14.128}, {"PFJet260", 59.908}, {"PFJet320", 196.418},
-          {"PFJet400", 470.879}, {"PFJet450", 1997.321}}));
+    {
+        // Integrated luminosities are not used when collision data are processed. Only their
+        //placeholders are given.
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 1}, {"PFJet200", 1},
+          {"PFJet260", 1}, {"PFJet320", 1}, {"PFJet400", 1}, {"PFJet450", 1}}));
+    }
     else
     {
         // Apply trivial selection since trigger is not simulated
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 3.405}, {"1", 14.128},
-          {"1", 59.908}, {"1", 196.418}, {"1", 470.879}, {"1", 1997.321}}));
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 3.731}, {"1", 16.169},
+          {"1", 70.089}, {"1", 230.217}, {"1", 559.245}, {"1", 2520.094}}));
     }
     
     if (dataGroup != DatasetGroup::Data)
     {
-        manager.RegisterPlugin(new DynamicPileUpWeight({"pileup_Run2016B_PFJet140_finebin_v4.root",
-          "pileup_Run2016B_PFJet200_finebin_v4.root", "pileup_Run2016B_PFJet260_finebin_v4.root",
-          "pileup_Run2016B_PFJet320_finebin_v4.root", "pileup_Run2016B_PFJet400_finebin_v4.root",
-          "pileup_Run2016B_PFJet450_finebin_v4.root"}, "simPUProfiles_80X.root", 0.05));
+        string const version("2p5invfb");
+        manager.RegisterPlugin(new DynamicPileUpWeight(
+          {"pileup_Run2016B_PFJet140_finebin_"s + version + ".root",
+          "pileup_Run2016B_PFJet200_finebin_"s + version + ".root",
+          "pileup_Run2016B_PFJet260_finebin_"s + version + ".root",
+          "pileup_Run2016B_PFJet320_finebin_"s + version + ".root",
+          "pileup_Run2016B_PFJet400_finebin_"s + version + ".root",
+          "pileup_Run2016B_PFJet450_finebin_"s + version + ".root"},
+          "simPUProfiles_80X.root", 0.05));
     }
     
     
