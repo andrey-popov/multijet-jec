@@ -142,13 +142,14 @@ int main(int argc, char **argv)
     
     if (dataGroup == DatasetGroup::Data)
     {
-        // Read jets with outdated corrections
-        PECJetMETReader *jetReader = new PECJetMETReader("OrigJetMET");
-        jetReader->ConfigureLeptonCleaning("");  // Disabled
-        manager.RegisterPlugin(jetReader);
+        // Read original jets and MET, which have outdated corrections
+        PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        jetmetReader->ConfigureLeptonCleaning("");  // Disabled
+        jetmetReader->ReadRawMET();
+        manager.RegisterPlugin(jetmetReader);
         
         
-        // Corrections to be applied to jets. Same ones will be propagated to MET.
+        // Corrections to be applied to jets. They will also be propagated to MET.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
         jetCorrFull->SetJEC({"Spring16_25nsV4_DATA_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV4_DATA_L2Relative_AK4PFchs.txt",
@@ -157,40 +158,52 @@ int main(int argc, char **argv)
           /*"Spring16_25nsV3_DATA_L2L3Residual_AK4PFchs.txt"*/});
         manager.RegisterService(jetCorrFull);
         
-        // L1 corresctions used in T1 MET corrections
+        // L1 corrections to be used in T1 MET corrections
         JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
-        jetCorrL1->SetJEC({"Spring16_25nsV4_DATA_L1FastJet_AK4PFchs.txt"});
+        jetCorrL1->SetJEC({"Spring16_25nsV4_DATA_L1RC_AK4PFchs.txt"});
         manager.RegisterService(jetCorrL1);
         
         
-        // Corrections applied in computation of T1-corrected MET. Needed to undo this MET
-        //correction.
-        JetCorrectorService *jetCorrOrig = new JetCorrectorService("JetCorrOrig");
-        jetCorrOrig->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt",
-          "Spring16_25nsV2_DATA_L2Relative_AK4PFchs.txt",
-          "Spring16_25nsV2_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25nsV2_DATA_L2L3Residual_AK4PFchs.txt"});
-        manager.RegisterService(jetCorrOrig);
-        
-        JetCorrectorService *jetCorrL1Orig = new JetCorrectorService("JetCorrL1Orig");
-        jetCorrL1Orig->SetJEC({"Spring16_25nsV2_DATA_L1FastJet_AK4PFchs.txt"});
-        manager.RegisterService(jetCorrL1Orig);
-        
-        
-        // Plugin to update jets and MET. L1 JEC for MET are not specified because they do not
-        //differ between the original and new JEC.
+        // Recorrect jets and apply T1 MET corrections to raw MET
         JetMETUpdate *jetmetUpdater = new JetMETUpdate;
         jetmetUpdater->SetJetCorrection("JetCorrFull");
-        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1",
-          "JetCorrOrig", "JetCorrL1Orig");
+        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
+        jetmetUpdater->UseRawMET();
         manager.RegisterPlugin(jetmetUpdater);
     }
     else
     {
-        // In simulation jets have proper corrections out of the box
-        PECJetMETReader *jetReader = new PECJetMETReader;
-        jetReader->ConfigureLeptonCleaning("");  // Disabled
-        manager.RegisterPlugin(jetReader);
+        // Read original jets and MET
+        PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        jetmetReader->ReadRawMET();
+        jetmetReader->ConfigureLeptonCleaning("");  // Disabled
+        manager.RegisterPlugin(jetmetReader);
+        
+        
+        // Corrections to be applied to jets and also to be propagated to MET. Although original
+        //jets in simulation already have up-to-date corrections, they will be reapplied in order
+        //to have a consistent impact on MET from the stochastic JER smearing. The random-number
+        //seed for the smearing is fixed for the sake of reproducibility.
+        JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
+        jetCorrFull->SetJEC({"Spring16_25nsV4_MC_L1FastJet_AK4PFchs.txt",
+          "Spring16_25nsV4_MC_L2Relative_AK4PFchs.txt",
+          "Spring16_25nsV4_MC_L3Absolute_AK4PFchs.txt"});
+        jetCorrFull->SetJER("Fall15_25nsV2_MC_SF_AK4PFchs.txt",
+          "Spring16_25nsV1_MC_PtResolution_AK4PFchs.txt", 4913);
+        manager.RegisterService(jetCorrFull);
+        
+        // L1 corrections to be used in T1 MET corrections
+        JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
+        jetCorrL1->SetJEC({"Spring16_25nsV4_MC_L1RC_AK4PFchs.txt"});
+        manager.RegisterService(jetCorrL1);
+        
+        
+        // Recorrect jets and apply T1 MET corrections to raw MET
+        JetMETUpdate *jetmetUpdater = new JetMETUpdate;
+        jetmetUpdater->SetJetCorrection("JetCorrFull");
+        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
+        jetmetUpdater->UseRawMET();
+        manager.RegisterPlugin(jetmetUpdater);
     }
     
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
