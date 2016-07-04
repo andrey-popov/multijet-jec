@@ -8,6 +8,7 @@
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/FileInPath.hpp>
 #include <mensura/core/RunManager.hpp>
+#include <mensura/core/SystService.hpp>
 
 #include <mensura/extensions/JetCorrectorService.hpp>
 #include <mensura/extensions/JetFilter.hpp>
@@ -19,10 +20,13 @@
 #include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 #include <cstdlib>
 #include <iostream>
 #include <list>
 #include <sstream>
+#include <regex>
 
 
 using namespace std;
@@ -38,9 +42,9 @@ enum class DatasetGroup
 int main(int argc, char **argv)
 {
     // Parse arguments
-    if (argc != 2 and argc != 3)
+    if ((argc < 2 and argc > 4) or (argc == 2 and string(argv[1]) == "-h"))
     {
-        cerr << "Usage: multijet dataset-group [jet-pt-cuts]\n";
+        cerr << "Usage: multijet dataset-group [jet-pt-cuts] [syst]\n";
         return EXIT_FAILURE;
     }
     
@@ -73,6 +77,40 @@ int main(int argc, char **argv)
     }
     else
         jetPtCuts = {30};
+    
+    
+    // Parse requested systematic uncertainty
+    string systType("None");
+    SystService::VarDirection systDirection = SystService::VarDirection::Undefined;
+    
+    if (argc >= 4)
+    {
+        string systArg(argv[3]);
+        boost::to_lower(systArg);
+        
+        std::regex systRegex("(jec|jer|metuncl)[-_]?(up|down)", std::regex::extended);
+        std::smatch matchResult;
+        
+        if (not std::regex_match(systArg, matchResult, systRegex))
+        {
+            cerr << "Cannot recognize systematic variation \"" << systArg << "\".\n";
+            return EXIT_FAILURE;
+        }
+        else
+        {
+            if (matchResult[1] == "jec")
+                systType = "JEC";
+            else if (matchResult[1] == "jer")
+                systType = "JER";
+            else if (matchResult[1] == "metuncl")
+                systType = "METUncl";
+            
+            if (matchResult[2] == "up")
+                systDirection = SystService::VarDirection::Up;
+            else if (matchResult[2] == "down")
+                systDirection = SystService::VarDirection::Down;
+        }
+    }
     
     
     // Input datasets
@@ -136,7 +174,17 @@ int main(int argc, char **argv)
     
     
     // Register services and plugins
-    manager.RegisterService(new TFileService("output/%"));
+    ostringstream outputNameStream;
+    outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? "data" : "sim");
+    
+    if (systType != "None")
+        outputNameStream << "_" << systType << "_" <<
+          ((systDirection == SystService::VarDirection::Up) ? "up" : "down");
+    
+    outputNameStream << "/%";
+    
+    manager.RegisterService(new TFileService(outputNameStream.str()));
+    
     manager.RegisterPlugin(new PECInputData);
     manager.RegisterPlugin(new PECPileUpReader);
     
@@ -154,8 +202,7 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({"Spring16_25nsV4_DATA_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV4_DATA_L2Relative_AK4PFchs.txt",
           "Spring16_25nsV4_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25nsV4_DATA_L2Residual_AK4PFchs.txt"
-          /*"Spring16_25nsV3_DATA_L2L3Residual_AK4PFchs.txt"*/});
+          "Spring16_25nsV4_DATA_L2Residual_AK4PFchs.txt"});
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
@@ -173,6 +220,9 @@ int main(int argc, char **argv)
     }
     else
     {
+        manager.RegisterService(new SystService(systType, systDirection));
+        
+        
         // Read original jets and MET
         PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
         jetmetReader->ReadRawMET();
@@ -190,6 +240,7 @@ int main(int argc, char **argv)
           "Spring16_25nsV4_MC_L3Absolute_AK4PFchs.txt"});
         jetCorrFull->SetJER("Fall15_25nsV2_MC_SF_AK4PFchs.txt",
           "Spring16_25nsV1_MC_PtResolution_AK4PFchs.txt", 4913);
+        jetCorrFull->SetJECUncertainty("Spring16_25nsV5_MC_Uncertainty_AK4PFchs.txt");
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
