@@ -1,6 +1,7 @@
 #include <BalanceVars.hpp>
 #include <DynamicPileUpWeight.hpp>
 #include <DynamicTriggerFilter.hpp>
+#include <FirstJetFilter.hpp>
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
 #include <TriggerBin.hpp>
@@ -258,6 +259,7 @@ int main(int argc, char **argv)
     }
     
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
+    manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
     
     if (dataGroup == DatasetGroup::Data)
     {
