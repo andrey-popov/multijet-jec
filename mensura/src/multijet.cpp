@@ -123,9 +123,9 @@ int main(int argc, char **argv)
     {
         datasets.emplace_back(Dataset({Dataset::Process::ppData, Dataset::Process::pp13TeV},
           Dataset::Generator::Nature, Dataset::ShowerGenerator::Nature));
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_3ac2b9b_kfm.root");
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_ext0610_3ac2b9b_FdG.root");
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_ext0616_3ac2b9b_OCN.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_b8aae01_xfJ_p*.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2016C_b8aae01_XbC_p*.root");
+        datasets.back().AddFile(datasetsDir + "JetHT-Run2016D_b8aae01_wNy_p*.root");
     }
     else
     {
@@ -271,13 +271,13 @@ int main(int argc, char **argv)
     else
     {
         // Apply trivial selection since trigger is not simulated
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 3.731}, {"1", 16.169},
-          {"1", 70.089}, {"1", 230.217}, {"1", 559.245}, {"1", 2520.094}}));
+        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 12.387}, {"1", 59.689},
+          {"1", 270.460}, {"1", 803.672}, {"1", 2307.991}, {"1", 12881.357}}));
     }
     
     if (dataGroup != DatasetGroup::Data)
     {
-        string const version("2p5invfb");
+        string const version("ICHEP");
         manager.RegisterPlugin(new DynamicPileUpWeight(
           {"pileup_Run2016B_PFJet140_finebin_"s + version + ".root",
           "pileup_Run2016B_PFJet200_finebin_"s + version + ".root",
