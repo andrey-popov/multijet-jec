@@ -203,7 +203,7 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({"Spring16_25nsV6_DATA_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV6_DATA_L2Relative_AK4PFchs.txt",
           "Spring16_25nsV6_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25nsV6_DATA_L2Residual_AK4PFchs.txt"});
+          "Spring16_25nsV6_DATA_L2L3Residual_AK4PFchs.txt"});
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
