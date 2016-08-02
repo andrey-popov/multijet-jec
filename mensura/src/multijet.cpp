@@ -239,8 +239,8 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({"Spring16_25nsV6_MC_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV6_MC_L2Relative_AK4PFchs.txt",
           "Spring16_25nsV6_MC_L3Absolute_AK4PFchs.txt"});
-        jetCorrFull->SetJER("Fall15_25nsV2_MC_SF_AK4PFchs.txt",
-          "Spring16_25nsV1_MC_PtResolution_AK4PFchs.txt", 4913);
+        jetCorrFull->SetJER("Spring16_25nsV6_MC_SF_AK4PFchs.txt",
+          "Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", 4913);
         jetCorrFull->SetJECUncertainty("Spring16_25nsV6_MC_Uncertainty_AK4PFchs.txt");
         manager.RegisterService(jetCorrFull);
         
