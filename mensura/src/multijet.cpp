@@ -17,6 +17,7 @@
 #include <mensura/extensions/PileUpWeight.hpp>
 #include <mensura/extensions/TFileService.hpp>
 
+#include <mensura/PECReader/PECGenJetMETReader.hpp>
 #include <mensura/PECReader/PECInputData.hpp>
 #include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
@@ -222,12 +223,14 @@ int main(int argc, char **argv)
     else
     {
         manager.RegisterService(new SystService(systType, systDirection));
+        manager.RegisterPlugin(new PECGenJetMETReader);
         
         
         // Read original jets and MET
         PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
         jetmetReader->ReadRawMET();
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
+        jetmetReader->SetGenJetReader();  // Default one
         manager.RegisterPlugin(jetmetReader);
         
         
@@ -310,7 +313,7 @@ int main(int argc, char **argv)
     
     
     // Process the datasets
-    manager.Process(6);
+    manager.Process(10);
     
     std::cout << '\n';
     manager.PrintSummary();
