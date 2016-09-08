@@ -40,15 +40,19 @@ options = VarParsing('analysis')
 
 options.register(
     'globalTag', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
-    'The relevant global tag'
+    'Global tag to be used'
 )
 options.register(
     'runOnData', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'Indicates whether it runs on the real data'
+    'Indicates whether the job processes data or simulation'
 )
 options.register(
     'isPromptReco', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'In case of data, distinguishes PromptReco and ReReco. Ignored for simulation'
+)
+options.register(
+    'triggerProcessName', 'HLT', VarParsing.multiplicity.singleton,
+    VarParsing.varType.string, 'Name of the process that evaluated trigger decisions'
 )
 options.register(
     'saveGenJets', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
@@ -63,20 +67,18 @@ options.setDefault('outputFile', 'sample.root')
 options.parseArguments()
 
 
-# Make the shortcuts to access some of the configuration options easily
+# Make shortcuts to access some of the configuration options easily
 runOnData = options.runOnData
 
 
-# Provide a default global tag if user has not given any.  With data use
-# the global tag for prompt reconstruction [1].  With simulation take
-# the one recommended by JERC group [2].
-# [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideFrontierConditions?rev=568#Global_Tags_for_2016_data_taking
-# [2] https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=112
+# Provide a default global tag if user has not given any.  Chosen
+# following recommendations of the JERC group [1].
+# [1] https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=119
 if len(options.globalTag) == 0:
     if runOnData:
-        options.globalTag = '80X_dataRun2_Prompt_v8'
+        options.globalTag = '80X_dataRun2_Prompt_ICHEP16JEC_v0'
     else:
-        options.globalTag = '80X_mcRun2_asymptotic_2016_miniAODv2'
+        options.globalTag = '80X_mcRun2_asymptotic_2016_miniAODv2_v1'
     
     print 'WARNING: No global tag provided. Will use the default one (' + options.globalTag + ')'
 
@@ -107,6 +109,20 @@ else:
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEvents))
 
 
+# Set up random-number service.  CRAB overwrites the seeds
+# automatically.
+process.RandomNumberGeneratorService = cms.Service('RandomNumberGeneratorService',
+    analysisPatJets = cms.PSet(
+        initialSeed = cms.untracked.uint32(372),
+        engineName = cms.untracked.string('TRandom3')
+    ),
+    countGoodJets = cms.PSet(
+        initialSeed = cms.untracked.uint32(3631),
+        engineName = cms.untracked.string('TRandom3')
+    )
+)
+
+
 # Create the processing path.  It is wrapped in a manager that
 # simplifies working with multiple paths (and also provides the
 # interface expected by python tools in the PEC-tuples package).
@@ -126,6 +142,16 @@ process.p = cms.Path()
 paths = PathManager(process.p)
 
 
+# Include an event counter before any selection is applied.  It is only
+# needed for simulation.
+if not runOnData:
+    process.eventCounter = cms.EDAnalyzer('EventCounter',
+        generator = cms.InputTag('generator'),
+        saveAltLHEWeights = cms.bool(False)
+    )
+    paths.append(process.eventCounter)
+
+
 # Filter on properties of the first vertex
 process.goodOfflinePrimaryVertices = cms.EDFilter('FirstVertexFilter',
     src = cms.InputTag('offlineSlimmedPrimaryVertices'),
@@ -139,11 +165,12 @@ paths.append(process.goodOfflinePrimaryVertices)
 from Analysis.PECTuples.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
 
 (phoQualityCuts, phoCutBasedIDMaps) = define_photons(process)
-(recorrectedJetsLabel, jetQualityCuts, pileUpIDMap) = \
+(recorrectedJetsLabel, jetQualityCuts) = \
     define_jets(process, reapplyJEC=True, runOnData=runOnData)
 define_METs(process, runOnData=runOnData)
 
-process.analysisPatJets.cut = ''
+process.analysisPatJets.minPt = 0
+process.analysisPatJets.preselection = ''
 
 
 # Apply event filters recommended for analyses involving MET
@@ -187,31 +214,29 @@ process.vetoPhotons = cms.EDFilter('CandMapCountFilter',
 paths.append(process.vetoPhotons)
 
 
-# Save decisions of selected triggers.  The lists are aligned with
-# menu [1] used in some of 80X MC.  Event that do not fire any of the
-# listed triggers, are rejected.
-# [1] /dev/CMSSW_8_0_0/GRun/V8
+# Save decisions of selected triggers.  The lists are based on menu [1],
+# which was used in the re-HLT campaign with RunIISpring16MiniAODv2.
+# [1] /frozen/2016/25ns10e33/v2.1/HLT/V3
+triggerNames = [
+    'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
+    'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800', 'PFHT900'
+]
+
 if runOnData:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
-        triggers = cms.vstring(
-            'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
-            'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800'
-        ),
+        triggers = cms.vstring(triggerNames),
         filter = cms.bool(True),
         savePrescales = cms.bool(True),
-        triggerBits = cms.InputTag('TriggerResults', processName='HLT'),
+        triggerBits = cms.InputTag('TriggerResults', processName=options.triggerProcessName),
         hltPrescales = cms.InputTag('patTrigger'),
         l1tPrescales = cms.InputTag('patTrigger', 'l1min')
     )
 else:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
-        triggers = cms.vstring(
-            'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
-            'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800'
-        ),
+        triggers = cms.vstring(triggerNames),
         filter = cms.bool(False),
         savePrescales = cms.bool(False),
-        triggerBits = cms.InputTag('TriggerResults', processName='HLT')
+        triggerBits = cms.InputTag('TriggerResults', processName=options.triggerProcessName)
     )
 
 paths.append(process.pecTrigger)
@@ -223,12 +248,8 @@ process.pecEventID = cms.EDAnalyzer('PECEventID')
 process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
-    jetType = cms.string('AK4PFchs'),
-    jetMinPt = cms.double(0.),
     jetSelection = jetQualityCuts,
-    contIDMaps = cms.VInputTag(pileUpIDMap),
-    met = cms.InputTag('slimmedMETs', processName=process.name_()),
-    rho = cms.InputTag('fixedGridRhoFastjetAll')
+    met = cms.InputTag('slimmedMETs', processName=process.name_())
 )
 
 process.pecPileUp = cms.EDAnalyzer('PECPileUp',
@@ -245,7 +266,8 @@ paths.append(process.pecEventID, process.pecJetMET, process.pecPileUp)
 if not runOnData:
     process.pecGenerator = cms.EDAnalyzer('PECGenerator',
         generator = cms.InputTag('generator'),
-        saveLHEWeightVars = cms.bool(False)
+        saveAltLHEWeights = cms.bool(False),
+        lheEventProduct = cms.InputTag('')
     )
     paths.append(process.pecGenerator)
 
