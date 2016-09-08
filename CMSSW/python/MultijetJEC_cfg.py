@@ -96,9 +96,9 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/JetHT/MINIAOD/PromptReco-v2/000/273/450/00000/1EAF9289-581C-E611-B23D-02163E014777.root')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016D/JetHT/MINIAOD/PromptReco-v2/000/276/315/00000/208AB2DD-0145-E611-910F-02163E0144AD.root')
     else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv1/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_v3-v1/00000/0AEC156E-9418-E611-AAF7-0CC47A6C17FC.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/00000/001FED44-BA3E-E611-8DAF-0025905C5474.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
@@ -172,6 +172,8 @@ define_METs(process, runOnData=runOnData)
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
 
+process.analysisPatPhotons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
+
 
 # Apply event filters recommended for analyses involving MET
 from Analysis.PECTuples.EventFilters_cff import apply_event_filters
@@ -184,14 +186,18 @@ apply_event_filters(
 # Apply lepton veto
 process.looseMuons = cms.EDFilter('PATMuonSelector',
     src = cms.InputTag('slimmedMuons'),
-    cut = cms.string('pt() > 10. & isLooseMuon() & (pfIsolationR04().sumChargedHadronPt + ' + \
-        'max(0., pfIsolationR04().sumNeutralHadronEt + pfIsolationR04().sumPhotonEt - ' + \
-        '0.5 * pfIsolationR04().sumPUPt)) / pt() < 0.25')
+    cut = cms.string(
+        'pt > 10. & abs(eta) < 2.4 & isLooseMuon & (pfIsolationR04.sumChargedHadronPt + ' \
+        'max(0., pfIsolationR04.sumNeutralHadronEt + pfIsolationR04.sumPhotonEt - ' \
+        '0.5 * pfIsolationR04.sumPUPt)) / pt < 0.25'
+    )
 )
 process.looseElectrons = cms.EDFilter('PATElectronSelector',
     src = cms.InputTag('slimmedElectrons'),
-    cut = cms.string('pt() > 20. & ' + \
-        'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")')
+    cut = cms.string(
+        'pt > 20. & abs(superCluster.eta) < 2.5 & ' \
+        'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")'
+    )
 )
 
 process.vetoMuons = cms.EDFilter('PATCandViewCountFilter',
