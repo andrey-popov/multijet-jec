@@ -161,8 +161,8 @@ process.goodOfflinePrimaryVertices = cms.EDFilter('FirstVertexFilter',
 paths.append(process.goodOfflinePrimaryVertices)
 
 
-# Define  and customize basic reconstructed objects
-from Analysis.PECTuples.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
+# Define and customize basic reconstructed objects
+from Analysis.Multijet.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
 
 (phoQualityCuts, phoCutBasedIDMaps) = define_photons(process)
 (recorrectedJetsLabel, jetQualityCuts) = \
