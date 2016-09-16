@@ -28,7 +28,7 @@ LDFLAGS := $(shell root-config --libs) -lTreePlayer -lHistPainter \
 
 
 # Programs to be built
-PROGS := multijet
+PROGS := multijet addWeights
 
 
 # Location of various files of the project

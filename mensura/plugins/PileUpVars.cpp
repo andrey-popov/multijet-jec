@@ -27,7 +27,7 @@ void PileUpVars::BeginRun(Dataset const &dataset)
     
     
     // Create output tree
-    tree = fileService->Create<TTree>("", "PileUpVars", "Observables describing pile-up");
+    tree = fileService->Create<TTree>("", GetName().c_str(), "Observables describing pile-up");
     
     
     // Assign branch addresses

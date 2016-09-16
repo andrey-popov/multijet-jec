@@ -6,10 +6,7 @@
 #include <mensura/core/Processor.hpp>
 #include <mensura/core/ROOTLock.hpp>
 
-#include <mensura/extensions/EventWeightPlugin.hpp>
 #include <mensura/extensions/TFileService.hpp>
-
-#include <mensura/PECReader/PECTriggerFilter.hpp>
 
 #include <cmath>
 
@@ -17,9 +14,7 @@
 BasicJetVars::BasicJetVars(std::string const name /*= "BasicJetVars"*/):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
-    jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
-    triggerFilterName("TriggerFilter"), triggerFilter(nullptr),
-    puReweighterName("PileUpWeight"), puReweighter(nullptr)
+    jetmetPluginName("JetMET"), jetmetPlugin(nullptr)
 {}
 
 
@@ -27,26 +22,17 @@ void BasicJetVars::BeginRun(Dataset const &dataset)
 {
     // Save dataset type and its common weight
     isMC = dataset.IsMC();
-    weightDataset = 1.;
     
     if (isMC)
     {
         auto const &firstFile = dataset.GetFiles().front();
-        weightDataset = firstFile.xSec / firstFile.nEvents;
+        bfWeightDataset = firstFile.GetWeight();
     }
     
     
     // Save pointers to required services and plugins
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
-    
-    if (isMC)
-    {
-        triggerFilter =
-          dynamic_cast<PECTriggerFilter const *>(GetDependencyPlugin(triggerFilterName));
-        puReweighter =
-          dynamic_cast<EventWeightPlugin const *>(GetDependencyPlugin(puReweighterName));
-    }
     
     
     // Create output tree
@@ -63,7 +49,7 @@ void BasicJetVars::BeginRun(Dataset const &dataset)
     tree->Branch("Ht", &bfHt);
     
     if (isMC)
-        tree->Branch("Weight", &bfWeight);
+        tree->Branch("WeightDataset", &bfWeightDataset);
     
     ROOTLock::Unlock();
 }
@@ -99,11 +85,6 @@ bool BasicJetVars::ProcessEvent()
     
     for (auto const &j: jets)
         bfHt += j.Pt();
-    
-    
-    // Compute event weight
-    if (isMC)
-        bfWeight = weightDataset * triggerFilter->GetWeight() * puReweighter->GetWeight();
     
     
     tree->Fill();

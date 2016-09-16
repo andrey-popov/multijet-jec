@@ -1,5 +1,4 @@
 #include <BalanceVars.hpp>
-#include <DynamicPileUpWeight.hpp>
 #include <DynamicTriggerFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <PileUpVars.hpp>
@@ -242,25 +241,6 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 1}, {"PFJet200", 1},
           {"PFJet260", 1}, {"PFJet320", 1}, {"PFJet400", 1}, {"PFJet450", 1}}));
     }
-    else
-    {
-        // Apply trivial selection since trigger is not simulated
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"1", 12.387}, {"1", 59.689},
-          {"1", 270.460}, {"1", 803.672}, {"1", 2307.991}, {"1", 12881.357}}));
-    }
-    
-    if (dataGroup != DatasetGroup::Data)
-    {
-        string const version("ICHEP");
-        manager.RegisterPlugin(new DynamicPileUpWeight(
-          {"pileup_Run2016B_PFJet140_finebin_"s + version + ".root",
-          "pileup_Run2016B_PFJet200_finebin_"s + version + ".root",
-          "pileup_Run2016B_PFJet260_finebin_"s + version + ".root",
-          "pileup_Run2016B_PFJet320_finebin_"s + version + ".root",
-          "pileup_Run2016B_PFJet400_finebin_"s + version + ".root",
-          "pileup_Run2016B_PFJet450_finebin_"s + version + ".root"},
-          "simPUProfiles_80X.root", 0.05));
-    }
     
     
     for (auto const &jetPtCut: jetPtCuts)
@@ -270,17 +250,18 @@ int main(int argc, char **argv)
         RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
         recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
         recoilBuilder->SetBetaPtFraction(0.05);
-        manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
-        //^ It is fine to specify the trigger filter as the dependency also in case of simulation
-        //since DynamicPileUpWeight never rejects events
+        
+        if (dataGroup == DatasetGroup::Data)
+            manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
+        else
+            manager.RegisterPlugin(recoilBuilder, {"FirstJetFilter"});
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
         balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
         manager.RegisterPlugin(balanceVars);
+        
+        manager.RegisterPlugin(new PileUpVars("PileUpVarsPt"s + ptCutText));
     }
-    
-    // Pile-up information is saved only for the first jet pt threshold
-    manager.RegisterPlugin(new PileUpVars, {"BalanceVarsPt"s + to_string(jetPtCuts.front())});
     
     
     // Process the datasets

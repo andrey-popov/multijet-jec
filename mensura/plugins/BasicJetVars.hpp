@@ -5,9 +5,7 @@
 #include <TTree.h>
 
 
-class EventWeightPlugin;
 class JetMETReader;
-class PECTriggerFilter;
 class TFileService;
 
 
@@ -15,7 +13,7 @@ class TFileService;
  * \class BasicJetVars
  * \brief Produces tuples with basic variables describing jets
  * 
- * Depends on the presence of a jet reader, a trigger filter, and a plugin to reweight for pile-up.
+ * Depends on the presence of a jet reader.
  */
 class BasicJetVars: public AnalysisPlugin
 {
@@ -59,31 +57,8 @@ private:
     /// Non-owning pointer to a plugin that produces jets and MET
     JetMETReader const *jetmetPlugin;
     
-    /// Name of a trigger filter
-    std::string triggerFilterName;
-    
-    /**
-     * \brief Non-owning pointer to a trigger filter
-     * 
-     * Used only in simulation.
-     */
-    PECTriggerFilter const *triggerFilter;
-    
-    /// Name of a plugin that performs reweighting for pile-up
-    std::string puReweighterName;
-    
-    /**
-     * \brief Non-owning pointer to a plugin that performs reweighting for pile-up
-     * 
-     * Used only in simulation.
-     */
-    EventWeightPlugin const *puReweighter;
-    
     /// Flag indicating whether current dataset is data or simulation
     bool isMC;
-    
-    /// Common event weight in the current dataset
-    double weightDataset;
     
     /// Non-owning pointer to output tree
     TTree *tree;
@@ -92,5 +67,5 @@ private:
     Float_t bfPtJ1, bfPtJ2;
     Float_t bfEtaJ1, bfEtaJ2;
     Float_t bfHt;
-    Float_t bfWeight;
+    Float_t bfWeightDataset;
 };

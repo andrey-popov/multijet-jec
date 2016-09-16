@@ -7,10 +7,7 @@
 #include <mensura/core/Processor.hpp>
 #include <mensura/core/ROOTLock.hpp>
 
-#include <mensura/extensions/EventWeightPlugin.hpp>
 #include <mensura/extensions/TFileService.hpp>
-
-#include <mensura/PECReader/PECTriggerFilter.hpp>
 
 #include <cmath>
 
@@ -21,8 +18,6 @@ BalanceVars::BalanceVars(std::string const name /*= "BalanceVars"*/):
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
     triggerBinPluginName("TriggerBin"), triggerBinPlugin(nullptr),
     recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
-    triggerFilterName("TriggerFilter"), triggerFilter(nullptr),
-    puReweighterName("PileUpWeight"), puReweighter(nullptr),
     treeName(name)
 {}
 
@@ -31,12 +26,11 @@ void BalanceVars::BeginRun(Dataset const &dataset)
 {
     // Save dataset type and its common weight
     isMC = dataset.IsMC();
-    weightDataset = 1.;
     
     if (isMC)
     {
         auto const &firstFile = dataset.GetFiles().front();
-        weightDataset = firstFile.xSec / firstFile.nEvents;
+        bfWeightDataset = firstFile.GetWeight();
     }
     
     
@@ -45,14 +39,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
     recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
     triggerBinPlugin = dynamic_cast<TriggerBin const *>(GetDependencyPlugin(triggerBinPluginName));
-    
-    if (isMC)
-    {
-        triggerFilter =
-          dynamic_cast<PECTriggerFilter const *>(GetDependencyPlugin(triggerFilterName));
-        puReweighter =
-          dynamic_cast<EventWeightPlugin const *>(GetDependencyPlugin(puReweighterName));
-    }
     
     
     // Create output tree
@@ -80,7 +66,7 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     tree->Branch("CRecoil", &bfCRecoil);
     
     if (isMC)
-        tree->Branch("Weight", bfWeight, "Weight[3]/F");
+        tree->Branch("WeightDataset", &bfWeightDataset);
     
     ROOTLock::Unlock();
 }
@@ -155,16 +141,6 @@ bool BalanceVars::ProcessEvent()
     }
     
     bfMeanRecoilJetPt = sumPt / bfMultRecoil;
-    
-    
-    // Compute event weight
-    if (isMC)
-    {
-        double const w = weightDataset * triggerFilter->GetWeight();
-        bfWeight[0] = w * puReweighter->GetWeight();
-        bfWeight[1] = w * puReweighter->GetWeightUp(0);
-        bfWeight[2] = w * puReweighter->GetWeightDown(0);
-    }
     
     
     tree->Fill();
