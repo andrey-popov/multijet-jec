@@ -11,6 +11,7 @@
 #include <mensura/core/RunManager.hpp>
 #include <mensura/core/SystService.hpp>
 
+#include <mensura/extensions/DatasetBuilder.hpp>
 #include <mensura/extensions/JetCorrectorService.hpp>
 #include <mensura/extensions/JetFilter.hpp>
 #include <mensura/extensions/JetMETUpdate.hpp>
@@ -117,46 +118,16 @@ int main(int argc, char **argv)
     
     // Input datasets
     list<Dataset> datasets;
-    string const datasetsDir("/gridgroup/cms/popov/Analyses/JetMET/2016.05.21_Grid-campaign-80X/"
-      "Results/");
+    DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
+      "2016.09.10_Grid-campaign-80X/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
-    {
-        datasets.emplace_back(Dataset({Dataset::Process::ppData, Dataset::Process::pp13TeV},
-          Dataset::Generator::Nature, Dataset::ShowerGenerator::Nature));
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016B_b8aae01_xfJ_p*.root");
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016C_b8aae01_XbC_p*.root");
-        datasets.back().AddFile(datasetsDir + "JetHT-Run2016D_b8aae01_wNy_p*.root");
-    }
+        datasets = datasetBuilder({"JetHT-Run2016B_SRE", "JetHT-Run2016C_wta",
+          "JetHT-Run2016D_xZC", "JetHT-Run2016E_QOo", "JetHT-Run2016F_QDF", "JetHT-Run2016G_oYl"});
     else
-    {
-        datasets.emplace_back(Dataset(Dataset::Process::QCD, Dataset::Generator::MadGraph,
-          Dataset::ShowerGenerator::Pythia));
-        // datasets.back().AddFile(datasetsDir + "QCD-Ht-100-200-mg_3.1.1_Kah.root",
-        //   27540000, 82095800);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-200-300-mg_3ac2b9b_ilj_p*.root",
-          1717000, 38816448);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-mg_3ac2b9b_AXa_p*.root",
-          351300, 16828258 + 37875602);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-300-500-ext1-mg_3ac2b9b_fMW_p*.root",
-          351300, 16828258 + 37875602);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-mg_3ac2b9b_ENN_p*.root",
-          31630, 18785349 + 44034159);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-500-700-ext1-mg_3ac2b9b_Nns_p*.root",
-          31630, 18785349 + 44034159);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-mg_3ac2b9b_ROK_p*.root",
-          6802, 15621634 + 29832311);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-700-1000-ext1-mg_3ac2b9b_aTr_p*.root",
-          6802, 15621634 + 29832311);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-mg_3ac2b9b_IAf.root",
-          1206, 4889688 + 10327758);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-1000-1500-ext1-mg_3ac2b9b_CiT_p*.root",
-          1206, 4889688 + 10327758);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-1500-2000-mg_3ac2b9b_vmO.root",
-          120.4, 3928444);
-        datasets.back().AddFile(datasetsDir + "QCD-Ht-2000-inf-mg_3ac2b9b_hwT.root",
-          25.25, 1992472);
-    }
+        datasets = datasetBuilder({"QCD-Ht-100-200-mg_dvx", "QCD-Ht-200-300-mg_rrz",
+          "QCD-Ht-300-500-mg_Mia", "QCD-Ht-500-700-mg_Zth", "QCD-Ht-700-1000-mg_aYC",
+          "QCD-Ht-1000-1500-mg_sDu", "QCD-Ht-1500-2000-mg_szQ", "QCD-Ht-2000-inf-mg_LTF"});
     
     
     // Add an additional location to seach for data files
