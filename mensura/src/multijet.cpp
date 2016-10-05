@@ -1,4 +1,5 @@
 #include <BalanceVars.hpp>
+#include <DumpEventID.hpp>
 #include <DynamicTriggerFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <PileUpVars.hpp>
@@ -23,6 +24,7 @@
 #include <mensura/PECReader/PECPileUpReader.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/program_options.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -32,6 +34,7 @@
 
 
 using namespace std;
+namespace po = boost::program_options;
 
 
 enum class DatasetGroup
@@ -44,19 +47,46 @@ enum class DatasetGroup
 int main(int argc, char **argv)
 {
     // Parse arguments
-    if ((argc < 2 and argc > 4) or (argc == 2 and string(argv[1]) == "-h"))
+    po::options_description options("Allowed options");
+    options.add_options()
+      ("help,h", "Prints help message")
+      ("datasetGroup", po::value<string>(), "Dataset group (required)")
+      ("pt-cuts,c", po::value<string>(), "Jet pt cuts")
+      ("syst,s", po::value<string>(), "Systematic shift");
+    //^ This is some severe abuse of C++ syntax...
+    
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("datasetGroup", 1);
+    
+    po::variables_map optionsMap;
+    
+    po::store(
+      po::command_line_parser(argc, argv).options(options).positional(positionalOptions).run(),
+      optionsMap);
+    po::notify(optionsMap);
+    
+    if (optionsMap.count("help"))
     {
-        cerr << "Usage: multijet dataset-group [jet-pt-cuts] [syst]\n";
+        cerr << "Produces tuples with observables for the multijet method.\n";
+        cerr << "Usage: multijet datasetGroup [options]\n";
+        cerr << options << endl;
         return EXIT_FAILURE;
     }
     
     
-    string dataGroupText(argv[1]);
+    if (not optionsMap.count("datasetGroup"))
+    {
+        cerr << "Required argument datasetGroup is missing.\n";
+        return EXIT_FAILURE;
+    }
+    
+    
+    string dataGroupText(optionsMap["datasetGroup"].as<string>());
     DatasetGroup dataGroup;
     
     if (dataGroupText == "data")
         dataGroup = DatasetGroup::Data;
-    else if (dataGroupText == "mc")
+    else if (dataGroupText == "mc" or dataGroupText == "sim")
         dataGroup = DatasetGroup::MC;
     else
     {
@@ -69,9 +99,9 @@ int main(int argc, char **argv)
     //integer.
     list<unsigned> jetPtCuts;
     
-    if (argc >= 3)
+    if (optionsMap.count("pt-cuts"))
     {
-        istringstream cutList(argv[2]);
+        istringstream cutList(optionsMap["pt-cuts"].as<string>());
         string cut;
         
         while (getline(cutList, cut, ','))
@@ -85,9 +115,9 @@ int main(int argc, char **argv)
     string systType("None");
     SystService::VarDirection systDirection = SystService::VarDirection::Undefined;
     
-    if (argc >= 4)
+    if (optionsMap.count("syst"))
     {
-        string systArg(argv[3]);
+        string systArg(optionsMap["syst"].as<string>());
         boost::to_lower(systArg);
         
         std::regex systRegex("(jec|jer|metuncl)[-_]?(up|down)", std::regex::extended);
@@ -115,21 +145,24 @@ int main(int argc, char **argv)
     }
     
     
+    
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
       "2016.09.10_Grid-campaign-80X/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
-        datasets = datasetBuilder({"JetHT-Run2016B_SRE", "JetHT-Run2016C_wta",
-          "JetHT-Run2016D_xZC", "JetHT-Run2016E_QOo", "JetHT-Run2016F_QDF", "JetHT-Run2016G_oYl"});
+        datasets = datasetBuilder({
+          /*"JetHT-Run2016B_SRE", "JetHT-Run2016C_wta", "JetHT-Run2016D_xZC",*/
+          /*"JetHT-Run2016E_QOo", "JetHT-Run2016F_QDF",*/
+          "JetHT-Run2016G_oYl"});
     else
         datasets = datasetBuilder({"QCD-Ht-100-200-mg_dvx", "QCD-Ht-200-300-mg_rrz",
           "QCD-Ht-300-500-mg_Mia", "QCD-Ht-500-700-mg_Zth", "QCD-Ht-700-1000-mg_aYC",
           "QCD-Ht-1000-1500-mg_sDu", "QCD-Ht-1500-2000-mg_szQ", "QCD-Ht-2000-inf-mg_LTF"});
     
     
-    // Add an additional location to seach for data files
+    // Add an additional locations to seach for data files
     char const *installPath = getenv("MULTIJET_JEC_INSTALL");
     
     if (not installPath)
@@ -139,6 +172,7 @@ int main(int argc, char **argv)
     }
     
     FileInPath::AddLocation(string(installPath) + "/data/");
+    FileInPath::AddLocation("/gridgroup/cms/popov/Analyses/JetMET/2016.09.17_MJB-24invfb/Tuples/");
     
     
     // Construct the run manager
@@ -174,7 +208,9 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({"Spring16_25nsV6_DATA_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV6_DATA_L2Relative_AK4PFchs.txt",
           "Spring16_25nsV6_DATA_L3Absolute_AK4PFchs.txt",
-          "Spring16_25nsV6_DATA_L2L3Residual_AK4PFchs.txt"});
+          // "Run2016BCD_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt"});
+          // "Run2016EF_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt"});
+          "Run2016G_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt"});
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
@@ -255,6 +291,8 @@ int main(int argc, char **argv)
             manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
         else
             manager.RegisterPlugin(recoilBuilder, {"FirstJetFilter"});
+        
+        manager.RegisterPlugin(new DumpEventID);
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
         balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
