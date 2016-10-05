@@ -99,6 +99,6 @@ private:
     Float_t bfA, bfAlpha, bfBeta;
     UShort_t bfTriggerBin;
     Float_t bfMJB, bfMPF;
-    Float_t bfCRecoil;
+    Float_t bfFLinear, bfFLogLinear;
     Float_t bfWeightDataset;
 };
