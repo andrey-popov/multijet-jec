@@ -44,6 +44,15 @@ enum class DatasetGroup
 };
 
 
+enum class Era
+{
+    All,
+    Run2016BCD,
+    Run2016EF,
+    Run2016G
+};
+
+
 int main(int argc, char **argv)
 {
     // Parse arguments
@@ -52,7 +61,8 @@ int main(int argc, char **argv)
       ("help,h", "Prints help message")
       ("datasetGroup", po::value<string>(), "Dataset group (required)")
       ("pt-cuts,c", po::value<string>(), "Jet pt cuts")
-      ("syst,s", po::value<string>(), "Systematic shift");
+      ("syst,s", po::value<string>(), "Systematic shift")
+      ("era,e", po::value<string>(), "Data-taking era");
     //^ This is some severe abuse of C++ syntax...
     
     po::positional_options_description positionalOptions;
@@ -145,6 +155,34 @@ int main(int argc, char **argv)
     }
     
     
+    // Parse data-taking era
+    Era dataEra = Era::All;
+    
+    if (optionsMap.count("era"))
+    {
+        string const eraText(optionsMap["era"].as<string>());
+        
+        if (eraText == "Run2016BCD")
+            dataEra = Era::Run2016BCD;
+        else if (eraText == "Run2016EF")
+            dataEra = Era::Run2016EF;
+        else if (eraText == "Run2016G")
+            dataEra = Era::Run2016G;
+        else
+        {
+            cerr << "Cannot recognize data-taking era \"" << eraText << "\".\n";
+            return EXIT_FAILURE;
+        }
+    }
+    
+    if (dataEra == Era::All)
+    {
+        cerr << "WARNING: Requested to run over full data-taking period, but no residual JEC are "
+          "available for it.\n";
+        return EXIT_FAILURE;
+    }
+    
+    
     
     // Input datasets
     list<Dataset> datasets;
@@ -152,10 +190,26 @@ int main(int argc, char **argv)
       "2016.09.10_Grid-campaign-80X/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
-        datasets = datasetBuilder({
-          /*"JetHT-Run2016B_SRE", "JetHT-Run2016C_wta", "JetHT-Run2016D_xZC",*/
-          /*"JetHT-Run2016E_QOo", "JetHT-Run2016F_QDF",*/
-          "JetHT-Run2016G_oYl"});
+    {
+        switch (dataEra)
+        {
+            case Era::Run2016BCD:
+                datasets = datasetBuilder({"JetHT-Run2016B_SRE", "JetHT-Run2016C_wta",
+                  "JetHT-Run2016D_xZC"});
+                break;
+            
+            case Era::Run2016EF:
+                datasets = datasetBuilder({"JetHT-Run2016E_QOo", "JetHT-Run2016F_QDF"});
+                break;
+            
+            case Era::Run2016G:
+                datasets = datasetBuilder({"JetHT-Run2016G_oYl"});
+                break;
+            
+            default:
+                break;
+        }
+    }
     else
         datasets = datasetBuilder({"QCD-Ht-100-200-mg_dvx", "QCD-Ht-200-300-mg_rrz",
           "QCD-Ht-300-500-mg_Mia", "QCD-Ht-500-700-mg_Zth", "QCD-Ht-700-1000-mg_aYC",
@@ -172,7 +226,6 @@ int main(int argc, char **argv)
     }
     
     FileInPath::AddLocation(string(installPath) + "/data/");
-    FileInPath::AddLocation("/gridgroup/cms/popov/Analyses/JetMET/2016.09.17_MJB-24invfb/Tuples/");
     
     
     // Construct the run manager
@@ -204,13 +257,34 @@ int main(int argc, char **argv)
         
         
         // Corrections to be applied to jets. They will also be propagated to MET.
+        string jecL2ResidualFile;
+        
+        switch (dataEra)
+        {
+            case Era::Run2016BCD:
+                jecL2ResidualFile =
+                  "Run2016BCD_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt";
+                break;
+            
+            case Era::Run2016EF:
+                jecL2ResidualFile =
+                  "Run2016EF_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt";
+                break;
+            
+            case Era::Run2016G:
+                jecL2ResidualFile =
+                  "Run2016G_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt";
+                break;
+            
+            default:
+                break;
+        }
+        
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
         jetCorrFull->SetJEC({"Spring16_25nsV6_DATA_L1FastJet_AK4PFchs.txt",
           "Spring16_25nsV6_DATA_L2Relative_AK4PFchs.txt",
           "Spring16_25nsV6_DATA_L3Absolute_AK4PFchs.txt",
-          // "Run2016BCD_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt"});
-          // "Run2016EF_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt"});
-          "Run2016G_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt"});
+          jecL2ResidualFile});
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
