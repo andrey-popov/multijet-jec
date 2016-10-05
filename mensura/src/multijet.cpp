@@ -175,9 +175,9 @@ int main(int argc, char **argv)
         }
     }
     
-    if (dataEra == Era::All)
+    if (dataGroup == DatasetGroup::Data and dataEra == Era::All)
     {
-        cerr << "WARNING: Requested to run over full data-taking period, but no residual JEC are "
+        cerr << "Requested to run over full data-taking period, but no residual JEC are "
           "available for it.\n";
         return EXIT_FAILURE;
     }
