@@ -113,7 +113,8 @@ bool BalanceVars::ProcessEvent()
     
     
     // Compute variables reflecting balance in pt. See Sec. 2 in AN-14-016 for definitions
-    bfMJB = j1.Pt() * std::cos(bfAlpha) / recoil.Pt();
+    // bfMJB = j1.Pt() * std::cos(bfAlpha) / recoil.Pt();
+    bfMJB = j1.Pt() / recoil.Pt();
     bfMPF = 1. + (met.Px() * recoil.Px() + met.Py() * recoil.Py()) / std::pow(recoil.Pt(), 2);
     
     
