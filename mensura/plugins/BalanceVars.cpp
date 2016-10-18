@@ -63,7 +63,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     
     tree->Branch("MJB", &bfMJB);
     tree->Branch("MPF", &bfMPF);
-    tree->Branch("F_Linear", &bfFLinear);
     tree->Branch("F_LogLinear", &bfFLogLinear);
     
     if (isMC)
@@ -121,7 +120,6 @@ bool BalanceVars::ProcessEvent()
     // Compute F a.k.a. C_recoil. For log-linear JEC it is defined according to Eqs. (21), (23) in
     //JME-13-004. See also [1].
     //[1] https://github.com/pequegnot/multijetAnalysis/blob/ff65f3db37189383f4b61d27b1e8f20c4c89d26f/weightPlots/multijet_weight_common.cpp#L1293-L1303
-    bfFLinear = 0.;
     double sumLogLinear = 0.;
     
     for (Jet const &j: recoilJets)
@@ -129,7 +127,6 @@ bool BalanceVars::ProcessEvent()
         double const f = j.Pt() / recoil.Pt();
         double const cosDPhi = std::cos(j.Phi() - recoil.Phi());
         
-        bfFLinear += f * f * cosDPhi;
         sumLogLinear += f * std::log(f) * cosDPhi;
     }
     
