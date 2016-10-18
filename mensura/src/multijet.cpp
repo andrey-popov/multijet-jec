@@ -336,7 +336,10 @@ int main(int argc, char **argv)
           jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
         jetCorrFull->SetJER("Spring16_25nsV6_MC_SF_AK4PFchs.txt",
           "Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", 4913);
-        jetCorrFull->SetJECUncertainty("Spring16_25nsV6_MC_Uncertainty_AK4PFchs.txt");
+        
+        if (systType == "JEC")
+            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");
+        
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
@@ -379,7 +382,7 @@ int main(int argc, char **argv)
             manager.RegisterPlugin(recoilBuilder, {"FirstJetFilter"});
         
         if (dataGroup == DatasetGroup::Data)
-            manager.RegisterPlugin(new DumpEventID);
+            manager.RegisterPlugin(new DumpEventID("EventID"s + ptCutText));
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
         balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
