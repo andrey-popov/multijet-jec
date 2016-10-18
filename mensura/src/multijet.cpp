@@ -158,22 +158,23 @@ int main(int argc, char **argv)
     
     // Parse data-taking era
     Era dataEra = Era::All;
+    string dataEraText;
     
     if (optionsMap.count("era"))
     {
-        string const eraText(optionsMap["era"].as<string>());
+        dataEraText = optionsMap["era"].as<string>();
         
-        if (eraText == "Run2016BCD")
+        if (dataEraText == "Run2016BCD")
             dataEra = Era::Run2016BCD;
-        else if (eraText == "Run2016E")
+        else if (dataEraText == "Run2016E")
             dataEra = Era::Run2016E;
-        else if (eraText == "Run2016F")
+        else if (dataEraText == "Run2016F")
             dataEra = Era::Run2016F;
-        else if (eraText == "Run2016G")
+        else if (dataEraText == "Run2016G")
             dataEra = Era::Run2016G;
         else
         {
-            cerr << "Cannot recognize data-taking era \"" << eraText << "\".\n";
+            cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
             return EXIT_FAILURE;
         }
     }
@@ -241,7 +242,8 @@ int main(int argc, char **argv)
     
     // Register services and plugins
     ostringstream outputNameStream;
-    outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? "data" : "sim");
+    outputNameStream << "output/" << dataEraText << "/" <<
+      ((dataGroup == DatasetGroup::Data) ? "data" : "sim");
     
     if (systType != "None")
         outputNameStream << "_" << systType << "_" <<
