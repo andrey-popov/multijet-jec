@@ -48,7 +48,8 @@ enum class Era
 {
     All,
     Run2016BCD,
-    Run2016EF,
+    Run2016E,
+    Run2016F,
     Run2016G
 };
 
@@ -164,8 +165,10 @@ int main(int argc, char **argv)
         
         if (eraText == "Run2016BCD")
             dataEra = Era::Run2016BCD;
-        else if (eraText == "Run2016EF")
-            dataEra = Era::Run2016EF;
+        else if (eraText == "Run2016E")
+            dataEra = Era::Run2016E;
+        else if (eraText == "Run2016F")
+            dataEra = Era::Run2016F;
         else if (eraText == "Run2016G")
             dataEra = Era::Run2016G;
         else
@@ -198,12 +201,16 @@ int main(int argc, char **argv)
                   "JetHT-Run2016D_xZC"});
                 break;
             
-            case Era::Run2016EF:
-                datasets = datasetBuilder({"JetHT-Run2016E_QOo", "JetHT-Run2016F_QDF"});
+            case Era::Run2016E:
+                datasets = datasetBuilder({"JetHT-Run2016E_QOo"});
+                break;
+            
+            case Era::Run2016F:
+                datasets = datasetBuilder({"JetHT-Run2016F_QDF"});
                 break;
             
             case Era::Run2016G:
-                datasets = datasetBuilder({"JetHT-Run2016G_oYl"});
+                datasets = datasetBuilder({"JetHT-Run2016G_oYl", "JetHT-Run2016G_ext0930_oNl"});
                 break;
             
             default:
@@ -247,6 +254,32 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(new PECInputData);
     manager.RegisterPlugin(new PECPileUpReader);
     
+    
+    // Jet corrections
+    string jecVersion("Spring16_25nsV7");
+    
+    switch (dataEra)
+    {
+        case Era::Run2016BCD:
+            jecVersion += "BCD";
+            break;
+        
+        case Era::Run2016E:
+            jecVersion += "E";
+            break;
+        
+        case Era::Run2016F:
+            jecVersion += "F";
+            break;
+        
+        case Era::Run2016G:
+            jecVersion += "G";
+            break;
+        
+        default:
+            break;
+    }
+    
     if (dataGroup == DatasetGroup::Data)
     {
         // Read original jets and MET, which have outdated corrections
@@ -257,39 +290,16 @@ int main(int argc, char **argv)
         
         
         // Corrections to be applied to jets. They will also be propagated to MET.
-        string jecL2ResidualFile;
-        
-        switch (dataEra)
-        {
-            case Era::Run2016BCD:
-                jecL2ResidualFile =
-                  "Run2016BCD_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt";
-                break;
-            
-            case Era::Run2016EF:
-                jecL2ResidualFile =
-                  "Run2016EF_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt";
-                break;
-            
-            case Era::Run2016G:
-                jecL2ResidualFile =
-                  "Run2016G_Spring16_25ns_MPF_LOGLIN_L2Residual_pythia8_v7_AK4PFchs.txt";
-                break;
-            
-            default:
-                break;
-        }
-        
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        jetCorrFull->SetJEC({"Spring16_25nsV6_DATA_L1FastJet_AK4PFchs.txt",
-          "Spring16_25nsV6_DATA_L2Relative_AK4PFchs.txt",
-          "Spring16_25nsV6_DATA_L3Absolute_AK4PFchs.txt",
-          jecL2ResidualFile});
+        jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
+          jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
+          jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
+          jecVersion + "_DATA_L2Residual_AK4PFchs.txt"});
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
         JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
-        jetCorrL1->SetJEC({"Spring16_25nsV6_DATA_L1RC_AK4PFchs.txt"});
+        jetCorrL1->SetJEC({jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
         manager.RegisterService(jetCorrL1);
         
         
@@ -319,9 +329,9 @@ int main(int argc, char **argv)
         //to have a consistent impact on MET from the stochastic JER smearing. The random-number
         //seed for the smearing is fixed for the sake of reproducibility.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        jetCorrFull->SetJEC({"Spring16_25nsV6_MC_L1FastJet_AK4PFchs.txt",
-          "Spring16_25nsV6_MC_L2Relative_AK4PFchs.txt",
-          "Spring16_25nsV6_MC_L3Absolute_AK4PFchs.txt"});
+        jetCorrFull->SetJEC({jecVersion + "_MC_L1FastJet_AK4PFchs.txt",
+          jecVersion + "_MC_L2Relative_AK4PFchs.txt",
+          jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
         jetCorrFull->SetJER("Spring16_25nsV6_MC_SF_AK4PFchs.txt",
           "Spring16_25nsV6_MC_PtResolution_AK4PFchs.txt", 4913);
         jetCorrFull->SetJECUncertainty("Spring16_25nsV6_MC_Uncertainty_AK4PFchs.txt");
@@ -329,7 +339,7 @@ int main(int argc, char **argv)
         
         // L1 corrections to be used in T1 MET corrections
         JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
-        jetCorrL1->SetJEC({"Spring16_25nsV6_MC_L1RC_AK4PFchs.txt"});
+        jetCorrL1->SetJEC({jecVersion + "_MC_L1RC_AK4PFchs.txt"});
         manager.RegisterService(jetCorrL1);
         
         
