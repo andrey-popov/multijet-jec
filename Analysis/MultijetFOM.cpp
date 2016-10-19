@@ -155,7 +155,7 @@ double MultijetFOM::operator()(double const *pars) const
                     
                     // Apply current JEC to MJB in this bin and add it to the accumulators
                     double const correctedMJB = MJB *
-                      jecPtLeadProj / corrector(F * MJB / ptLeadProj, pars);
+                      jecPtLeadProj / corrector(F * ptLeadProj / MJB, pars);
                     
                     unsigned long const n = histData3D->GetBinContent(binPtLeadProj, binMJB, binF);
                     nEvents += n;

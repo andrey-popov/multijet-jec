@@ -48,7 +48,7 @@ def correct_data_balance(histData3D, histSim, corr=lambda x: 1.):
                 for binF in range(1, histData3D.GetNbinsZ() + 1):
                     
                     F = histData3D.GetZaxis().GetBinCenter(binF)
-                    mjb = uncorrMJB * corr(ptLeadProj) / corr(F * uncorrMJB / ptLeadProj)
+                    mjb = uncorrMJB * corr(ptLeadProj) / corr(F * ptLeadProj / uncorrMJB)
                     n = int(histData3D.GetBinContent(binPtLeadProj, binMJB, binF))
                     
                     numEvents += n

@@ -68,10 +68,8 @@ int main()
     // Run the scans
     Scan("multijet_linear.root", L3Corr::Type::Linear, -5e-3, 5e-3, 200, "scanChi2_linear");
     Scan("multijet_linear.root", L3Corr::Type::Linear, -1e-4, 1e-4, 200, "scanChi2_linear_zoom");
-    // Scan("multijet_linear.root", L3Corr::Type::Linear, 0.99999e-3, 1.00001e-3, 500, "scanChi2_linear");
     Scan("multijet_loglinear.root", L3Corr::Type::LogLinear, -0.1, 0.1, 200, "scanChi2_loglinear");
-    Scan("multijet_loglinear.root", L3Corr::Type::LogLinear, -1e-3, 1e-3, 200, "scanChi2_loglinear_zoom");
-    // Scan("multijet_loglinear.root", L3Corr::Type::LogLinear, 0.070, 0.072, 500, "scanChi2_loglinear");
+    Scan("multijet_loglinear.root", L3Corr::Type::LogLinear, 0., 1e-2, 200, "scanChi2_loglinear_zoom");
     
     return EXIT_SUCCESS;
 }
