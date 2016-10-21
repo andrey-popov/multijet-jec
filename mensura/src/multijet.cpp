@@ -382,7 +382,7 @@ int main(int argc, char **argv)
             manager.RegisterPlugin(recoilBuilder, {"FirstJetFilter"});
         
         if (dataGroup == DatasetGroup::Data)
-            manager.RegisterPlugin(new DumpEventID("EventID"s + ptCutText));
+            manager.RegisterPlugin(new DumpEventID("EventIDPt"s + ptCutText));
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
         balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
