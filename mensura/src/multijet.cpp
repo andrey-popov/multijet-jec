@@ -4,6 +4,7 @@
 #include <FirstJetFilter.hpp>
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
+#include <RunFilter.hpp>
 #include <TriggerBin.hpp>
 
 #include <mensura/core/Dataset.hpp>
@@ -49,8 +50,9 @@ enum class Era
     All,
     Run2016BCD,
     Run2016E,
-    Run2016F,
-    Run2016G
+    Run2016Fearly,
+    Run2016FlateG,
+    Run2016H
 };
 
 
@@ -63,7 +65,8 @@ int main(int argc, char **argv)
       ("datasetGroup", po::value<string>(), "Dataset group (required)")
       ("pt-cuts,c", po::value<string>(), "Jet pt cuts")
       ("syst,s", po::value<string>(), "Systematic shift")
-      ("era,e", po::value<string>(), "Data-taking era");
+      ("era,e", po::value<string>(), "Data-taking era")
+      ("l3-res", "Enables L3 residual corrections");
     //^ This is some severe abuse of C++ syntax...
     
     po::positional_options_description positionalOptions;
@@ -168,10 +171,12 @@ int main(int argc, char **argv)
             dataEra = Era::Run2016BCD;
         else if (dataEraText == "Run2016E")
             dataEra = Era::Run2016E;
-        else if (dataEraText == "Run2016F")
-            dataEra = Era::Run2016F;
-        else if (dataEraText == "Run2016G")
-            dataEra = Era::Run2016G;
+        else if (dataEraText == "Run2016Fearly")
+            dataEra = Era::Run2016Fearly;
+        else if (dataEraText == "Run2016FlateG")
+            dataEra = Era::Run2016FlateG;
+        else if (dataEraText == "Run2016H")
+            dataEra = Era::Run2016H;
         else
         {
             cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
@@ -206,12 +211,17 @@ int main(int argc, char **argv)
                 datasets = datasetBuilder({"JetHT-Run2016E_QOo"});
                 break;
             
-            case Era::Run2016F:
+            case Era::Run2016Fearly:
                 datasets = datasetBuilder({"JetHT-Run2016F_QDF"});
                 break;
             
-            case Era::Run2016G:
-                datasets = datasetBuilder({"JetHT-Run2016G_oYl", "JetHT-Run2016G_ext0930_oNl"});
+            case Era::Run2016FlateG:
+                datasets = datasetBuilder({"JetHT-Run2016F_QDF", "JetHT-Run2016G_oYl",
+                  "JetHT-Run2016G_ext0930_oNl"});
+                break;
+            
+            case Era::Run2016H:
+                datasets = datasetBuilder({"JetHT-Run2016H-v2_aCZ"});
                 break;
             
             default:
@@ -258,7 +268,7 @@ int main(int argc, char **argv)
     
     
     // Jet corrections
-    string jecVersion("Spring16_25nsV7");
+    string jecVersion("Spring16_25nsV8");
     
     switch (dataEra)
     {
@@ -270,15 +280,12 @@ int main(int argc, char **argv)
             jecVersion += "E";
             break;
         
-        case Era::Run2016F:
+        case Era::Run2016Fearly:
             jecVersion += "F";
             break;
         
-        case Era::Run2016G:
-            jecVersion += "G";
-            break;
-        
         default:
+            jecVersion += "p2";
             break;
     }
     
@@ -292,11 +299,13 @@ int main(int argc, char **argv)
         
         
         // Corrections to be applied to jets. They will also be propagated to MET.
+        string residualsType = (optionsMap.count("l3-res")) ? "L2L3Residual" : "L2Residual";
+        
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
         jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
           jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
           jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
-          jecVersion + "_DATA_L2Residual_AK4PFchs.txt"});
+          jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"});
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
@@ -354,6 +363,14 @@ int main(int argc, char **argv)
         jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
         jetmetUpdater->UseRawMET();
         manager.RegisterPlugin(jetmetUpdater);
+    }
+    
+    if (dataGroup == DatasetGroup::Data)
+    {
+        if (dataEra == Era::Run2016Fearly)
+            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
+        else if (dataEra == Era::Run2016FlateG)
+            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
     }
     
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
