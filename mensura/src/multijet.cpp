@@ -221,7 +221,8 @@ int main(int argc, char **argv)
                 break;
             
             case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H-v2_aCZ"});
+                datasets = datasetBuilder({"JetHT-Run2016H-v2_aCZ",
+                  "JetHT-Run2016H-v2_ext1104_QFD", "JetHT-Run2016H-v3_IjR"});
                 break;
             
             default:
