@@ -196,33 +196,31 @@ int main(int argc, char **argv)
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
-      "2016.09.10_Grid-campaign-80X/Results/samples_v1.json");
+      "2016.09.10_Grid-campaign-80X/Results/samples_v2.json");
     
     if (dataGroup == DatasetGroup::Data)
     {
         switch (dataEra)
         {
             case Era::Run2016BCD:
-                datasets = datasetBuilder({"JetHT-Run2016B_SRE", "JetHT-Run2016C_wta",
-                  "JetHT-Run2016D_xZC"});
+                datasets = datasetBuilder({"JetHT-Run2016B_egk", "JetHT-Run2016C_knn",
+                  "JetHT-Run2016D_rwz"});
                 break;
             
             case Era::Run2016E:
-                datasets = datasetBuilder({"JetHT-Run2016E_QOo"});
+                datasets = datasetBuilder({"JetHT-Run2016E_wjP"});
                 break;
             
             case Era::Run2016Fearly:
-                datasets = datasetBuilder({"JetHT-Run2016F_QDF"});
+                datasets = datasetBuilder({"JetHT-Run2016F_Ggy"});
                 break;
             
             case Era::Run2016FlateG:
-                datasets = datasetBuilder({"JetHT-Run2016F_QDF", "JetHT-Run2016G_oYl",
-                  "JetHT-Run2016G_ext0930_oNl"});
+                datasets = datasetBuilder({"JetHT-Run2016F_Ggy", "JetHT-Run2016G_nwE"});
                 break;
             
             case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H-v2_aCZ",
-                  "JetHT-Run2016H-v2_ext1104_QFD", "JetHT-Run2016H-v3_IjR"});
+                datasets = datasetBuilder({"JetHT-Run2016H-v2_tLm", "JetHT-Run2016H-v3_CfT"});
                 break;
             
             default:
@@ -266,6 +264,14 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new PECInputData);
     manager.RegisterPlugin(new PECPileUpReader);
+    
+    if (dataGroup == DatasetGroup::Data)
+    {
+        if (dataEra == Era::Run2016Fearly)
+            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
+        else if (dataEra == Era::Run2016FlateG)
+            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
+    }
     
     
     // Jet corrections
@@ -364,14 +370,6 @@ int main(int argc, char **argv)
         jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
         jetmetUpdater->UseRawMET();
         manager.RegisterPlugin(jetmetUpdater);
-    }
-    
-    if (dataGroup == DatasetGroup::Data)
-    {
-        if (dataEra == Era::Run2016Fearly)
-            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
-        else if (dataEra == Era::Run2016FlateG)
-            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
     }
     
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
