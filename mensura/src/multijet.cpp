@@ -52,7 +52,8 @@ enum class Era
     Run2016E,
     Run2016Fearly,
     Run2016FlateG,
-    Run2016H
+    Run2016H,
+    Run2016FlateGH
 };
 
 
@@ -177,6 +178,8 @@ int main(int argc, char **argv)
             dataEra = Era::Run2016FlateG;
         else if (dataEraText == "Run2016H")
             dataEra = Era::Run2016H;
+        else if (dataEraText == "Run2016FlateGH")
+            dataEra = Era::Run2016FlateGH;
         else
         {
             cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
@@ -221,6 +224,11 @@ int main(int argc, char **argv)
             
             case Era::Run2016H:
                 datasets = datasetBuilder({"JetHT-Run2016H-v2_tLm", "JetHT-Run2016H-v3_CfT"});
+                break;
+            
+            case Era::Run2016FlateGH:
+                datasets = datasetBuilder({"JetHT-Run2016F_Ggy", "JetHT-Run2016G_nwE",
+                  "JetHT-Run2016H-v2_tLm", "JetHT-Run2016H-v3_CfT"});
                 break;
             
             default:
@@ -275,7 +283,7 @@ int main(int argc, char **argv)
     
     
     // Jet corrections
-    string jecVersion("Spring16_25nsV8");
+    string jecVersion("Spring16_23Sep2016");
     
     switch (dataEra)
     {
@@ -292,9 +300,11 @@ int main(int argc, char **argv)
             break;
         
         default:
-            jecVersion += "p2";
+            jecVersion += "GH";
             break;
     }
+    
+    jecVersion += "V0";
     
     if (dataGroup == DatasetGroup::Data)
     {
