@@ -67,6 +67,7 @@ int main(int argc, char **argv)
       ("pt-cuts,c", po::value<string>(), "Jet pt cuts")
       ("syst,s", po::value<string>(), "Systematic shift")
       ("era,e", po::value<string>(), "Data-taking era")
+      ("jec-version", po::value<string>(), "Optional explicit JEC version")
       ("l3-res", "Enables L3 residual corrections");
     //^ This is some severe abuse of C++ syntax...
     
@@ -259,8 +260,7 @@ int main(int argc, char **argv)
     
     // Register services and plugins
     ostringstream outputNameStream;
-    outputNameStream << "output/" << dataEraText << "/" <<
-      ((dataGroup == DatasetGroup::Data) ? "data" : "sim");
+    outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? dataEraText : "sim");
     
     if (systType != "None")
         outputNameStream << "_" << systType << "_" <<
@@ -282,30 +282,47 @@ int main(int argc, char **argv)
     }
     
     
-    // Jet corrections
-    string jecVersion("Spring16_23Sep2016");
+    // Determine JEC version
+    string jecVersion;
     
-    switch (dataEra)
+    if (optionsMap.count("jec-version"))
     {
-        case Era::Run2016BCD:
-            jecVersion += "BCD";
-            break;
-        
-        case Era::Run2016E:
-            jecVersion += "E";
-            break;
-        
-        case Era::Run2016Fearly:
-            jecVersion += "F";
-            break;
-        
-        default:
-            jecVersion += "GH";
-            break;
+        // If a JEC version is given explicitly, use it regardless of the data era
+        jecVersion = optionsMap["jec-version"].as<string>();
+    }
+    else
+    {
+        if (dataGroup == DatasetGroup::Data)
+        {
+            jecVersion = "Spring16_23Sep2016";
+            
+            switch (dataEra)
+            {
+                case Era::Run2016BCD:
+                    jecVersion += "BCD";
+                    break;
+                
+                case Era::Run2016E:
+                    jecVersion += "E";
+                    break;
+                
+                case Era::Run2016Fearly:
+                    jecVersion += "F";
+                    break;
+                
+                default:
+                    jecVersion += "GH";
+                    break;
+            }
+            
+            jecVersion += "V1";
+        }
+        else
+            jecVersion = "Spring16_23Sep2016V1";
     }
     
-    jecVersion += "V0";
     
+    // Jet corrections
     if (dataGroup == DatasetGroup::Data)
     {
         // Read original jets and MET, which have outdated corrections
