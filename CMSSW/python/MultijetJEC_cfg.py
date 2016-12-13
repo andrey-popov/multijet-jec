@@ -96,9 +96,9 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016D/JetHT/MINIAOD/PromptReco-v2/000/276/315/00000/208AB2DD-0145-E611-910F-02163E0144AD.root')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/23Sep2016-v1/100000/002429F8-A586-E611-ACF3-6C3BE5B5C0C0.root')
     else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/00000/001FED44-BA3E-E611-8DAF-0025905C5474.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/70000/02B9B3B4-8ABE-E611-8B8F-0CC47A4D76C8.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
@@ -246,6 +246,18 @@ else:
     )
 
 paths.append(process.pecTrigger)
+
+
+# Save trigger objects that pass last filters in the single-jet triggers
+process.pecTriggerObjects = cms.EDAnalyzer('PECTriggerObjects',
+    triggerObjects = cms.InputTag('selectedPatTrigger'),
+    filters = cms.vstring(
+        'hltSinglePFJet140', 'hltSinglePFJet200', 'hltSinglePFJet260', 'hltSinglePFJet320',
+        'hltSinglePFJet400', 'hltSinglePFJet450', 'hltSinglePFJet500'
+    )
+)
+
+paths.append(process.pecTriggerObjects)
 
 
 # Save event ID and relevant objects
