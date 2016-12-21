@@ -49,11 +49,9 @@ enum class Era
 {
     All,
     Run2016BCD,
-    Run2016E,
-    Run2016Fearly,
+    Run2016EFearly,
     Run2016FlateG,
-    Run2016H,
-    Run2016FlateGH
+    Run2016H
 };
 
 
@@ -171,16 +169,12 @@ int main(int argc, char **argv)
         
         if (dataEraText == "Run2016BCD")
             dataEra = Era::Run2016BCD;
-        else if (dataEraText == "Run2016E")
-            dataEra = Era::Run2016E;
-        else if (dataEraText == "Run2016Fearly")
-            dataEra = Era::Run2016Fearly;
+        else if (dataEraText == "Run2016EFearly")
+            dataEra = Era::Run2016EFearly;
         else if (dataEraText == "Run2016FlateG")
             dataEra = Era::Run2016FlateG;
         else if (dataEraText == "Run2016H")
             dataEra = Era::Run2016H;
-        else if (dataEraText == "Run2016FlateGH")
-            dataEra = Era::Run2016FlateGH;
         else
         {
             cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
@@ -200,36 +194,27 @@ int main(int argc, char **argv)
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
-      "2016.09.10_Grid-campaign-80X/Results/samples_v2.json");
+      "2016.12.13_Grid-campaign-Summer16/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
     {
         switch (dataEra)
         {
             case Era::Run2016BCD:
-                datasets = datasetBuilder({"JetHT-Run2016B_egk", "JetHT-Run2016C_knn",
-                  "JetHT-Run2016D_rwz"});
+                datasets = datasetBuilder({"JetHT-Run2016B_JFq", "JetHT-Run2016C_AWD",
+                  "JetHT-Run2016D_Tmr"});
                 break;
             
-            case Era::Run2016E:
-                datasets = datasetBuilder({"JetHT-Run2016E_wjP"});
-                break;
-            
-            case Era::Run2016Fearly:
-                datasets = datasetBuilder({"JetHT-Run2016F_Ggy"});
+            case Era::Run2016EFearly:
+                datasets = datasetBuilder({"JetHT-Run2016E_WNi", "JetHT-Run2016F_MUl"});
                 break;
             
             case Era::Run2016FlateG:
-                datasets = datasetBuilder({"JetHT-Run2016F_Ggy", "JetHT-Run2016G_nwE"});
+                datasets = datasetBuilder({"JetHT-Run2016F_MUl", "JetHT-Run2016G_pUr"});
                 break;
             
             case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H-v2_tLm", "JetHT-Run2016H-v3_CfT"});
-                break;
-            
-            case Era::Run2016FlateGH:
-                datasets = datasetBuilder({"JetHT-Run2016F_Ggy", "JetHT-Run2016G_nwE",
-                  "JetHT-Run2016H-v2_tLm", "JetHT-Run2016H-v3_CfT"});
+                datasets = datasetBuilder({"JetHT-Run2016H-v2_DCj", "JetHT-Run2016H-v3_oXR"});
                 break;
             
             default:
@@ -237,9 +222,9 @@ int main(int argc, char **argv)
         }
     }
     else
-        datasets = datasetBuilder({"QCD-Ht-100-200-mg_dvx", "QCD-Ht-200-300-mg_rrz",
-          "QCD-Ht-300-500-mg_Mia", "QCD-Ht-500-700-mg_Zth", "QCD-Ht-700-1000-mg_aYC",
-          "QCD-Ht-1000-1500-mg_sDu", "QCD-Ht-1500-2000-mg_szQ", "QCD-Ht-2000-inf-mg_LTF"});
+        datasets = datasetBuilder({"QCD-Ht-100-200-mg_sBY", "QCD-Ht-200-300-mg_all",
+          "QCD-Ht-300-500-mg_all", "QCD-Ht-500-700-mg_all", "QCD-Ht-700-1000-mg_all",
+          "QCD-Ht-1000-1500-mg_all", "QCD-Ht-1500-2000-mg_all", "QCD-Ht-2000-inf-mg_all"});
     
     
     // Add an additional locations to seach for data files
@@ -275,7 +260,7 @@ int main(int argc, char **argv)
     
     if (dataGroup == DatasetGroup::Data)
     {
-        if (dataEra == Era::Run2016Fearly)
+        if (dataEra == Era::Run2016EFearly)
             manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
         else if (dataEra == Era::Run2016FlateG)
             manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
@@ -294,7 +279,7 @@ int main(int argc, char **argv)
     {
         if (dataGroup == DatasetGroup::Data)
         {
-            jecVersion = "Spring16_23Sep2016";
+            jecVersion = "Summer16_23Sep2016";
             
             switch (dataEra)
             {
@@ -302,23 +287,23 @@ int main(int argc, char **argv)
                     jecVersion += "BCD";
                     break;
                 
-                case Era::Run2016E:
-                    jecVersion += "E";
+                case Era::Run2016EFearly:
+                    jecVersion += "EF";
                     break;
                 
-                case Era::Run2016Fearly:
-                    jecVersion += "F";
+                case Era::Run2016FlateG:
+                    jecVersion += "G";
                     break;
                 
-                default:
-                    jecVersion += "GH";
+                case Era::Run2016H:
+                    jecVersion += "H";
                     break;
             }
             
             jecVersion += "V1";
         }
         else
-            jecVersion = "Spring16_23Sep2016V1";
+            jecVersion = "Summer16_23Sep2016V1";
     }
     
     
@@ -402,13 +387,10 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
     manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
     
-    if (dataGroup == DatasetGroup::Data)
-    {
-        // Integrated luminosities are not used when collision data are processed. Only their
-        //placeholders are given.
-        manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 1}, {"PFJet200", 1},
-          {"PFJet260", 1}, {"PFJet320", 1}, {"PFJet400", 1}, {"PFJet450", 1}}));
-    }
+    // Integrated luminosities are ignored at this point, and corresponding weights will be added
+    //with a standalone program
+    manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 1}, {"PFJet200", 1},
+      {"PFJet260", 1}, {"PFJet320", 1}, {"PFJet400", 1}, {"PFJet450", 1}}));
     
     
     for (auto const &jetPtCut: jetPtCuts)
