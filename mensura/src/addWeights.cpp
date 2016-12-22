@@ -377,7 +377,8 @@ int main(int argc, char **argv)
     
     
     // Read simulated pileup profile
-    string const simPUProfileFileName(FileInPath::Resolve("PileUp/", "simPUProfiles_80X.root"));
+    string const simPUProfileFileName(
+      FileInPath::Resolve("PileUp/", "simPUProfiles_Moriond17.root"));
     TFile simPUProfileFile(simPUProfileFileName.c_str());
     shared_ptr<TH1> simPUProfile(dynamic_cast<TH1 *>(simPUProfileFile.Get("nominal")));
     
