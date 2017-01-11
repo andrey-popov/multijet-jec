@@ -194,7 +194,7 @@ int main(int argc, char **argv)
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
-      "2016.12.13_Grid-campaign-Summer16/Results/samples_v1.json");
+      "2016.12.13_Grid-campaign-Summer16/Results/samples_v2.json");
     
     if (dataGroup == DatasetGroup::Data)
     {
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
                 break;
             
             case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H-v2_DCj", "JetHT-Run2016H-v3_oXR"});
+                datasets = datasetBuilder({"JetHT-Run2016H_all"});
                 break;
             
             default:
