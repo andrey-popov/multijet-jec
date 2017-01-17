@@ -29,6 +29,7 @@ void DumpEventID::BeginRun(Dataset const &)
     tree->Branch("Run", &bfRun);
     tree->Branch("LumiBlock", &bfLumiBlock);
     tree->Branch("Event", &bfEvent);
+    tree->Branch("BunchCrossing", &bfBunchCrossing);
     
     ROOTLock::Unlock();
 }
@@ -48,6 +49,7 @@ bool DumpEventID::ProcessEvent()
     bfRun = id.Run();
     bfLumiBlock = id.LumiBlock();
     bfEvent = id.Event();
+    bfBunchCrossing = id.BunchCrossing();
     
     tree->Fill();
     

@@ -65,5 +65,5 @@ private:
     TTree *tree;
     
     // Output buffers
-    ULong64_t bfRun, bfLumiBlock, bfEvent;
+    ULong64_t bfRun, bfLumiBlock, bfEvent, bfBunchCrossing;
 };
