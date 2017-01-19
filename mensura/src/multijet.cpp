@@ -66,7 +66,8 @@ int main(int argc, char **argv)
       ("syst,s", po::value<string>(), "Systematic shift")
       ("era,e", po::value<string>(), "Data-taking era")
       ("jec-version", po::value<string>(), "Optional explicit JEC version")
-      ("l3-res", "Enables L3 residual corrections");
+      ("l3-res", "Enables L3 residual corrections")
+      ("wide", "Loosen selection to |eta(j1)| < 2.4");
     //^ This is some severe abuse of C++ syntax...
     
     po::positional_options_description positionalOptions;
@@ -385,7 +386,11 @@ int main(int argc, char **argv)
     }
     
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
-    manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
+    
+    if (optionsMap.count("l3-res"))
+        manager.RegisterPlugin(new FirstJetFilter(0., 2.4));
+    else
+        manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
     
     // Integrated luminosities are ignored at this point, and corresponding weights will be added
     //with a standalone program
