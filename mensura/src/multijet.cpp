@@ -387,7 +387,7 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
     
-    if (optionsMap.count("l3-res"))
+    if (optionsMap.count("wide"))
         manager.RegisterPlugin(new FirstJetFilter(0., 2.4));
     else
         manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
