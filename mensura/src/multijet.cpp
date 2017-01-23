@@ -301,10 +301,10 @@ int main(int argc, char **argv)
                     break;
             }
             
-            jecVersion += "V2";
+            jecVersion += "V3";
         }
         else
-            jecVersion = "Summer16_23Sep2016V2";
+            jecVersion = "Summer16_23Sep2016V3";
     }
     
     
