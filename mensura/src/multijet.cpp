@@ -1,7 +1,7 @@
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
-#include <DynamicTriggerFilter.hpp>
 #include <FirstJetFilter.hpp>
+#include <LeadJetTriggerFilter.hpp>
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
 #include <RunFilter.hpp>
@@ -23,6 +23,7 @@
 #include <mensura/PECReader/PECInputData.hpp>
 #include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
+#include <mensura/PECReader/PECTriggerObjectReader.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -385,17 +386,22 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetUpdater);
     }
     
-    manager.RegisterPlugin(new TriggerBin({200., 250., 300., 370., 450., 510.}));
+    manager.RegisterPlugin(new TriggerBin({180., 250., 320., 390., 485., 550.}));
     
     if (optionsMap.count("wide"))
         manager.RegisterPlugin(new FirstJetFilter(0., 2.4));
     else
         manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
     
-    // Integrated luminosities are ignored at this point, and corresponding weights will be added
-    //with a standalone program
-    manager.RegisterPlugin(new DynamicTriggerFilter({{"PFJet140", 1}, {"PFJet200", 1},
-      {"PFJet260", 1}, {"PFJet320", 1}, {"PFJet400", 1}, {"PFJet450", 1}}));
+    
+    manager.RegisterPlugin(new PECTriggerObjectReader);
+    LeadJetTriggerFilter *triggerFilter = new LeadJetTriggerFilter;
+    
+    for (auto const &trigger:
+      {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450"})
+        triggerFilter->AddTriggerFilter("hltSingle"s + trigger);
+    
+    manager.RegisterPlugin(triggerFilter);
     
     
     for (auto const &jetPtCut: jetPtCuts)
