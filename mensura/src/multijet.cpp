@@ -405,11 +405,7 @@ int main(int argc, char **argv)
         RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
         recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
         recoilBuilder->SetBetaPtFraction(0.05);
-        
-        if (dataGroup == DatasetGroup::Data)
-            manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
-        else
-            manager.RegisterPlugin(recoilBuilder, {"FirstJetFilter"});
+        manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
         
         if (dataGroup == DatasetGroup::Data)
             manager.RegisterPlugin(new DumpEventID("EventIDPt"s + ptCutText));
