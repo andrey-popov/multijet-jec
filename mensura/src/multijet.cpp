@@ -409,8 +409,7 @@ int main(int argc, char **argv)
         string const ptCutText(to_string(jetPtCut));
         
         RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
-        recoilBuilder->SetBalanceSelection(0.6, 0.3, 1.);
-        recoilBuilder->SetBetaPtFraction(0.05);
+        recoilBuilder->SetBalanceSelection(0.6, 0.3);
         manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
         
         if (dataGroup == DatasetGroup::Data)

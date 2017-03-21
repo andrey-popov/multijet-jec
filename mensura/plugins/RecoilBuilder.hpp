@@ -62,7 +62,8 @@ public:
     /**
      * \brief Returns the beta separation
      * 
-     * Defined as minimal dPhi(j1, j) where j runs over all jets included in the recoil.
+     * Defined as minimal dPhi(j1, j) where j runs over all jets included in the recoil that
+     * satisfy the selection on pt set by SetBetaPtFraction.
      */
     double GetBeta() const;
     
@@ -78,16 +79,20 @@ public:
     /// Returns collection of jets included in the recoil
     std::vector<std::reference_wrapper<Jet const>> const &GetRecoilJets() const;
     
-    /// Sets selection on balancing variables
-    void SetBalanceSelection(double maxA, double maxAlpha, double minBeta);
+    /**
+     * \brief Sets selection on balancing variables
+     * 
+     * If minBeta <= 0, the selection on this observable is disabled.
+     */
+    void SetBalanceSelection(double maxA, double maxAlpha, double minBeta = 0.);
     
     /**
      * \brief Sets definition of dynamic pt cuts for jets considered for the beta cut
      * 
      * In computation of the beta separation only those jets are used whose pt is larger than pt of
-     * the recoil multiplied by the given fraction. They also must satisfy the standard pt cut for
-     * jets included in definition of the recoil. By default this fraction is set to zero, which
-     * means that all jets included in the recoil are considered for computation of beta.
+     * the leading jet multiplied by the given fraction. They also must satisfy the standard pt cut
+     * for jets included in definition of the recoil. By default, this fraction is set to zero,
+     * which means that all jets included in the recoil are considered for computation of beta.
      */
     void SetBetaPtFraction(double betaPtFraction);
 

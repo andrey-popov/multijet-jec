@@ -82,7 +82,7 @@ std::vector<std::reference_wrapper<Jet const>> const &RecoilBuilder::GetRecoilJe
 }
 
 
-void RecoilBuilder::SetBalanceSelection(double maxA_, double maxAlpha_, double minBeta_)
+void RecoilBuilder::SetBalanceSelection(double maxA_, double maxAlpha_, double minBeta_ /*= 0.*/)
 {
     maxA = maxA_;
     maxAlpha = maxAlpha_;
@@ -129,17 +129,20 @@ bool RecoilBuilder::ProcessEvent()
     alpha = TMath::Pi() - std::abs(TVector2::Phi_mpi_pi(p4Recoil.Phi() - leadingJet->Phi()));
     beta = std::numeric_limits<double>::infinity();
     
-    for (unsigned i = 1; i < jets.size(); ++i)
+    if (minBeta > 0.)
     {
-        auto const &j = jets.at(i);
-        
-        if (j.Pt() < minJetPt or j.Pt() < betaPtFraction * p4Recoil.Pt())
-            break;
-        
-        double const betaCurrent = std::abs(TVector2::Phi_mpi_pi(j.Phi() - leadingJet->Phi()));
-        
-        if (betaCurrent < beta)
-            beta = betaCurrent;
+        for (unsigned i = 1; i < jets.size(); ++i)
+        {
+            auto const &j = jets.at(i);
+            
+            if (j.Pt() < minJetPt or j.Pt() < betaPtFraction * leadingJet->Pt())
+                break;
+            
+            double const betaCurrent = std::abs(TVector2::Phi_mpi_pi(j.Phi() - leadingJet->Phi()));
+            
+            if (betaCurrent < beta)
+                beta = betaCurrent;
+        }
     }
     
     if (A > maxA or alpha > maxAlpha or beta < minBeta)
