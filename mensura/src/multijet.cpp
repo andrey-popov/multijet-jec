@@ -1,6 +1,7 @@
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
 #include <FirstJetFilter.hpp>
+#include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
@@ -316,6 +317,7 @@ int main(int argc, char **argv)
         PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->ReadRawMET();
+        jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
         
         
@@ -353,6 +355,7 @@ int main(int argc, char **argv)
         jetmetReader->ReadRawMET();
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->SetGenJetReader();  // Default one
+        jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
         
         
@@ -411,6 +414,8 @@ int main(int argc, char **argv)
         RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
         recoilBuilder->SetBalanceSelection(0.6, 0.3);
         manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
+        
+        manager.RegisterPlugin(new JetIDFilter("JetIDFilterPt"s + ptCutText, jetPtCut));
         
         if (dataGroup == DatasetGroup::Data)
             manager.RegisterPlugin(new DumpEventID("EventIDPt"s + ptCutText));
