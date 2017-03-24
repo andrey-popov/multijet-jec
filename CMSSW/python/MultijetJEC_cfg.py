@@ -230,8 +230,7 @@ paths.append(process.vetoPhotons)
 # which was used in the re-HLT campaign with RunIISpring16MiniAODv2.
 # [1] /frozen/2016/25ns10e33/v2.1/HLT/V3
 triggerNames = [
-    'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500',
-    'PFHT350', 'PFHT400', 'PFHT475', 'PFHT600', 'PFHT650', 'PFHT800', 'PFHT900'
+    'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500'
 ]
 
 if runOnData:
@@ -246,7 +245,7 @@ if runOnData:
 else:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(triggerNames),
-        filter = cms.bool(False),
+        filter = cms.bool(True),
         savePrescales = cms.bool(False),
         triggerBits = cms.InputTag('TriggerResults', processName=options.triggerProcessName)
     )
