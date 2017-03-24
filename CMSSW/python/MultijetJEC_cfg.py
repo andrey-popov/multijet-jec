@@ -293,6 +293,11 @@ if not runOnData:
         lheEventProduct = cms.InputTag('')
     )
     paths.append(process.pecGenerator)
+    
+    process.pecGenParticles = cms.EDAnalyzer('PECGenParticles',
+        genParticles = cms.InputTag('prunedGenParticles')
+    )
+    paths.append(process.pecGenParticles)
 
 
 # Save information on generator-level jets and MET
