@@ -23,7 +23,7 @@ process = cms.Process('Analysis')
 
 # Enable MessageLogger and reduce its verbosity
 process.load('FWCore.MessageLogger.MessageLogger_cfi')
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 
 # Ask to print a summary in the log
@@ -96,9 +96,9 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/23Sep2016-v1/100000/002429F8-A586-E611-ACF3-6C3BE5B5C0C0.root')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/03Feb2017-v1/100000/006E7AF2-AEEC-E611-A88D-7845C4FC3B00.root')
     else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/70000/02B9B3B4-8ABE-E611-8B8F-0CC47A4D76C8.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/70000/000316AF-9FBE-E611-9761-0CC47A7C35F8.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
@@ -121,6 +121,12 @@ process.RandomNumberGeneratorService = cms.Service('RandomNumberGeneratorService
         engineName = cms.untracked.string('TRandom3')
     )
 )
+
+
+# Information about geometry and magnetic field is needed to run DeepCSV
+# b-tagging.  Geometry is also needed to evaluate electron ID.
+process.load('Configuration.Geometry.GeometryRecoDB_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
 
 
 # Create the processing path.  It is wrapped in a manager that
@@ -164,10 +170,10 @@ paths.append(process.goodOfflinePrimaryVertices)
 # Define and customize basic reconstructed objects
 from Analysis.Multijet.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
 
-(phoQualityCuts, phoCutBasedIDMaps) = define_photons(process)
-(recorrectedJetsLabel, jetQualityCuts) = \
+phoQualityCuts, phoCutBasedIDMaps = define_photons(process)
+recorrectedJetsLabel, jetQualityCuts = \
     define_jets(process, reapplyJEC=True, runOnData=runOnData)
-define_METs(process, runOnData=runOnData)
+metTag = define_METs(process, runOnData=runOnData)
 
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
@@ -267,7 +273,7 @@ process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
     jetSelection = jetQualityCuts,
-    met = cms.InputTag('slimmedMETs', processName=process.name_())
+    met = metTag
 )
 
 process.pecPileUp = cms.EDAnalyzer('PECPileUp',
@@ -296,7 +302,7 @@ if not runOnData and options.saveGenJets:
         jets = cms.InputTag('slimmedGenJets'),
         cut = cms.string(''),
         saveFlavourCounters = cms.bool(True),
-        met = cms.InputTag('slimmedMETs', processName=process.name_())
+        met = metTag
     )
     paths.append(process.pecGenJetMET)
 
