@@ -96,8 +96,9 @@ def define_METs(process, runOnData=False):
         metTag = cms.InputTag('slimmedMETsMuEGClean', processName=process.name_())
     
     else:
-        # Apply corrections for bad muons [1]
+        # Apply corrections for bad muons [1-2]
         # [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/ReMiniAOD03Feb2017Notes?rev=19#MET_Recipes
+        # [2] https://hypernews.cern.ch/HyperNews/CMS/get/met/525.html
         process.load('RecoMET.METFilters.badGlobalMuonTaggersMiniAOD_cff')
         process.badGlobalMuonTaggerMAOD.taggingMode = cms.bool(True)
         process.cloneGlobalMuonTaggerMAOD.taggingMode = cms.bool(True)
@@ -110,7 +111,7 @@ def define_METs(process, runOnData=False):
             selection='',
             muonCollection='',
             cleanCollName='cleanMuonsPFCandidates',
-            cleaningScheme='computeAllApplyClone',
+            cleaningScheme='all',
             postfix=''
         )
         
