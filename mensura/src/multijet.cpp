@@ -429,7 +429,7 @@ int main(int argc, char **argv)
     
     
     // Process the datasets
-    manager.Process(10);
+    manager.Process(16);
     
     std::cout << '\n';
     manager.PrintSummary();
