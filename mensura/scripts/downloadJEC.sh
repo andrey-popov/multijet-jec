@@ -11,7 +11,7 @@ blocks=("Summer16_23Sep2016BCDV6_DATA" "Summer16_23Sep2016EFV6_DATA" "Summer16_2
     "Summer16_23Sep2016HV6_DATA" "Summer16_23Sep2016V6_MC")
 
 # Temporary directory to store intermediate files
-dirTemp=`mktemp -d -t jec`
+dirTemp=`mktemp -d`
 cd $dirTemp
 echo $dirTemp
 
@@ -38,6 +38,7 @@ cd $dirUnpacked
 find . -not -name "*AK4PFchs*" -delete
 find . -name "*_DATA_Uncertainty*" -delete
 find . -name "*DataMcSF*" -delete
+find . -name "*_UncertaintySources_*" -delete
 
 chmod 644 *.txt
 
