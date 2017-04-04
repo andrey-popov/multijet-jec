@@ -1,6 +1,7 @@
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
 #include <FirstJetFilter.hpp>
+#include <GenMatchFilter.hpp>
 #include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
 #include <PileUpVars.hpp>
@@ -395,6 +396,9 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new FirstJetFilter(0., 2.4));
     else
         manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
+    
+    if (dataGroup == DatasetGroup::MC)
+        manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
     
     
     manager.RegisterPlugin(new PECTriggerObjectReader);
