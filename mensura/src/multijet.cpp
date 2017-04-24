@@ -198,27 +198,27 @@ int main(int argc, char **argv)
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
-      "2017.03.24_Grid-campaign-03Feb2017/Results/samples_v1.json");
+      "2017.04.21_Grid-campaign-03Feb2017-fix/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
     {
         switch (dataEra)
         {
             case Era::Run2016BCD:
-                datasets = datasetBuilder({"JetHT-Run2016B_Wqj", "JetHT-Run2016C_Vfh",
-                  "JetHT-Run2016D_qRB"});
+                datasets = datasetBuilder({"JetHT-Run2016B_qbi", "JetHT-Run2016C_XDB",
+                  "JetHT-Run2016D_soy"});
                 break;
             
             case Era::Run2016EFearly:
-                datasets = datasetBuilder({"JetHT-Run2016E_ArO", "JetHT-Run2016F_rsb"});
+                datasets = datasetBuilder({"JetHT-Run2016E_jJE", "JetHT-Run2016F_OdK"});
                 break;
             
             case Era::Run2016FlateG:
-                datasets = datasetBuilder({"JetHT-Run2016F_rsb", "JetHT-Run2016G_zLM"});
+                datasets = datasetBuilder({"JetHT-Run2016F_OdK", "JetHT-Run2016G_psd"});
                 break;
             
             case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H-v2_LkM", "JetHT-Run2016H-v3_eWA"});
+                datasets = datasetBuilder({"JetHT-Run2016H-v2_GnN", "JetHT-Run2016H-v3_tMS"});
                 break;
             
             default:
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
         }
     }
     else
-        datasets = datasetBuilder({"QCD-Ht-100-200-mg_YPz", "QCD-Ht-200-300-mg_all",
+        datasets = datasetBuilder({"QCD-Ht-100-200-mg_fRs", "QCD-Ht-200-300-mg_all",
           "QCD-Ht-300-500-mg_all", "QCD-Ht-500-700-mg_all", "QCD-Ht-700-1000-mg_all",
           "QCD-Ht-1000-1500-mg_all", "QCD-Ht-1500-2000-mg_all", "QCD-Ht-2000-inf-mg_all"});
     
