@@ -7,8 +7,9 @@ set -e
 
 
 dirSource=`pwd`
-blocks=("Summer16_23Sep2016BCDV6_DATA" "Summer16_23Sep2016EFV6_DATA" "Summer16_23Sep2016GV6_DATA" \
-    "Summer16_23Sep2016HV6_DATA" "Summer16_23Sep2016V6_MC")
+# blocks=("Summer16_03Feb2017BCD_V1_DATA" "Summer16_03Feb2017EF_V1_DATA" "Summer16_03Feb2017G_V1_DATA" \
+#     "Summer16_03Feb2017H_V1_DATA" "Summer16_03Feb2017_V1_MC")
+blocks=("Summer16_03Feb2017H_V1_DATA" "Summer16_03Feb2017_V1_MC")
 
 # Temporary directory to store intermediate files
 dirTemp=`mktemp -d`
