@@ -316,6 +316,7 @@ int main(int argc, char **argv)
     {
         // Read original jets and MET, which have outdated corrections
         PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        jetmetReader->SetSelection(0., 5.);
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->ReadRawMET();
         jetmetReader->SetApplyJetID(false);
@@ -353,6 +354,7 @@ int main(int argc, char **argv)
         
         // Read original jets and MET
         PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        jetmetReader->SetSelection(0., 5.);
         jetmetReader->ReadRawMET();
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->SetGenJetReader();  // Default one
