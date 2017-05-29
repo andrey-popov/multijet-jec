@@ -309,9 +309,9 @@ int main(int argc, char **argv)
             BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
             balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
             manager.RegisterPlugin(balanceVars);
+            
+            manager.RegisterPlugin(new PileUpVars("PileUpVarsPt"s + ptCutText));
         }
-        
-        manager.RegisterPlugin(new PileUpVars("PileUpVarsPt"s + ptCutText));
     }
     
     
