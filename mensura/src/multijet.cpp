@@ -1,3 +1,4 @@
+#include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
 #include <DatasetScaler.hpp>
 #include <FirstJetFilter.hpp>
@@ -280,6 +281,12 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
     
     
+    std::vector<double> ptLeadBinning;
+    
+    for (double pt = 180.; pt < 2000. + 1.; pt += 5.)
+        ptLeadBinning.emplace_back(pt);
+    
+    
     for (auto const &jetPtCut: jetPtCuts)
     {
         string const ptCutText(to_string(jetPtCut));
@@ -290,9 +297,19 @@ int main(int argc, char **argv)
         
         manager.RegisterPlugin(new JetIDFilter("JetIDFilterPt"s + ptCutText, jetPtCut));
         
-        BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
-        balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
-        manager.RegisterPlugin(balanceVars);
+        if (dataGroup == DatasetGroup::Data)
+        {
+            BalanceHists *balanceHists = new BalanceHists("BalanceHistsPt"s + ptCutText);
+            balanceHists->SetRecoilBuilderName(recoilBuilder->GetName());
+            balanceHists->SetBinningPtLead(ptLeadBinning);
+            manager.RegisterPlugin(balanceHists);
+        }
+        else
+        {
+            BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
+            balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
+            manager.RegisterPlugin(balanceVars);
+        }
         
         manager.RegisterPlugin(new PileUpVars("PileUpVarsPt"s + ptCutText));
     }
