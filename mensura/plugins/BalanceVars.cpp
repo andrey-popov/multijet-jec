@@ -112,9 +112,8 @@ bool BalanceVars::ProcessEvent()
     bfTriggerBin = triggerBinPlugin->GetTriggerBin();
     
     
-    // Compute variables reflecting balance in pt. See Sec. 2 in AN-14-016 for definitions
-    // bfMJB = j1.Pt() * std::cos(bfAlpha) / recoil.Pt();
-    bfMJB = recoil.Pt() / j1.Pt();
+    // Compute variables reflecting balance in pt
+    bfMJB = recoil.Pt() * std::cos(bfAlpha) / j1.Pt();
     bfMPF = 1. + (met.Px() * j1.Px() + met.Py() * j1.Py()) / std::pow(j1.Pt(), 2);
     
     
