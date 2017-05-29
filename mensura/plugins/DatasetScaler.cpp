@@ -44,5 +44,5 @@ Plugin *DatasetScaler::Clone() const
 
 bool DatasetScaler::ProcessEvent()
 {
-    return (rGen.Rndm() > acceptFraction);
+    return (rGen.Rndm() < acceptFraction);
 }
