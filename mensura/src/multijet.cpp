@@ -1,3 +1,4 @@
+#include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
 #include <FirstJetFilter.hpp>
@@ -412,6 +413,10 @@ int main(int argc, char **argv)
             DumpEventID *eventID = new DumpEventID("EventID"s + trigger);
             eventID->SetTreeName(trigger + "/EventID");
             manager.RegisterPlugin(eventID);
+            
+            BalanceHists *balanceHists = new BalanceHists("BalanceHists"s + trigger, 15.);
+            balanceHists->SetDirectoryName(trigger);
+            manager.RegisterPlugin(balanceHists);
         }
     }
     
