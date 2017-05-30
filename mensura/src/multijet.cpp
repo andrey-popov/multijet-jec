@@ -248,9 +248,6 @@ int main(int argc, char **argv)
           jecVersion + "_MC_L2Relative_AK4PFchs.txt",
           jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
 
-    jetCorrFull->SetJER("Spring16_25nsV10_MC_SF_AK4PFchs.txt",
-      "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt", 4913);
-    
     if (systType == "JEC")
         jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");
     
