@@ -102,6 +102,11 @@ private:
     /// Profiles of ptlead, MJB, and MPF versus ptlead
     TProfile *profPtLead, *profMJB, *profMPF;
     
-    /// 2D histograms of ptlead and pt of jets in the recoil, one is weighted with cos(gamma)
-    TH2D *histJetPtProj, *histJetPt;
+    /**
+     * \brief 2D histograms of ptlead and pt of jets in the recoil
+     * 
+     * They are filled with no weights, weighted with cos(gamma) and pt(j) * cos(gamma)
+     * respectively.
+     */
+    TH2D *histJetPt, *histJetPtProj, *histJetPtSumPtProj;
 };

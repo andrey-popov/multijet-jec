@@ -50,12 +50,16 @@ void BalanceHists::BeginRun(Dataset const &)
     profMPF = fileService->Create<TProfile>(outDirectoryName, "MPFProfile",
       ";p_{T}^{lead} [GeV];MPF", ptLeadBinning.size() - 1, ptLeadBinning.data());
     
+    histJetPt = fileService->Create<TH2D>(outDirectoryName, "JetPt",
+      ";p_{T}^{lead} [GeV];Jet p_{T} [GeV]",
+      ptLeadBinning.size() - 1, ptLeadBinning.data(),
+      ptJetBinning.size() - 1, ptJetBinning.data());
     histJetPtProj = fileService->Create<TH2D>(outDirectoryName, "JetPtProj",
       ";p_{T}^{lead} [GeV];Proj. of jet p_{T} [GeV]",
       ptLeadBinning.size() - 1, ptLeadBinning.data(),
       ptJetBinning.size() - 1, ptJetBinning.data());
-    histJetPt = fileService->Create<TH2D>(outDirectoryName, "JetPt",
-      ";p_{T}^{lead} [GeV];Jet p_{T} [GeV]",
+    histJetPtSumPtProj = fileService->Create<TH2D>(outDirectoryName, "JetPtSumPtProj",
+      ";p_{T}^{lead} [GeV];",
       ptLeadBinning.size() - 1, ptLeadBinning.data(),
       ptJetBinning.size() - 1, ptJetBinning.data());
 }
@@ -109,8 +113,9 @@ bool BalanceHists::ProcessEvent()
     
     for (Jet const &j: recoilJets)
     {
-        histJetPtProj->Fill(j1.Pt(), j.Pt(), std::cos(j.Phi() - j1.Phi()));
         histJetPt->Fill(j1.Pt(), j.Pt());
+        histJetPtProj->Fill(j1.Pt(), j.Pt(), std::cos(j.Phi() - j1.Phi()));
+        histJetPtSumPtProj->Fill(j1.Pt(), j.Pt(), j.Pt() * std::cos(j.Phi() - j1.Phi()));
     }
     
     
