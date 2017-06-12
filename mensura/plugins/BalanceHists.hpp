@@ -109,4 +109,12 @@ private:
      * respectively.
      */
     TH2D *histJetPt, *histJetPtProj, *histJetPtSumPtProj;
+    
+    /**
+     * \brief Profile of effective pt in the recoil
+     * 
+     * Computed for a correction of the from 1 + a * ln(pt / ptmin) + a * (ptmin / pt - 1) with
+     * ptmin = 15 GeV.
+     */
+    TProfile *profPtEff;
 };

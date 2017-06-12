@@ -7,6 +7,8 @@
 
 #include <mensura/extensions/TFileService.hpp>
 
+#include <gsl/gsl_sf_lambert.h>
+
 #include <cmath>
 
 
@@ -62,6 +64,9 @@ void BalanceHists::BeginRun(Dataset const &)
       ";p_{T}^{lead} [GeV];",
       ptLeadBinning.size() - 1, ptLeadBinning.data(),
       ptJetBinning.size() - 1, ptJetBinning.data());
+    
+    profPtEff = fileService->Create<TProfile>(outDirectoryName, "PtEffProfile",
+      ";p_{T}^{lead} [GeV];p_{T}^{eff}", ptLeadBinning.size() - 1, ptLeadBinning.data());
 }
 
 
@@ -118,6 +123,23 @@ bool BalanceHists::ProcessEvent()
         histJetPtSumPtProj->Fill(j1.Pt(), j.Pt(), j.Pt() * std::cos(j.Phi() - j1.Phi()));
     }
     
+    
+    double projRecoil = 0.;
+    double A = 0.;
+    double const ptmin = 15.;
+    
+    for (Jet const &j: recoilJets)
+    {
+        double const pt = j.Pt();
+        double const cosAngle = std::cos(j.Phi() - j1.Phi());
+        
+        projRecoil += pt * cosAngle;
+        A += (std::log(pt / ptmin) + ptmin / pt - 1) * pt * cosAngle;
+    }
+    
+    A /= projRecoil;
+    double const ptEff = -ptmin / gsl_sf_lambert_W0(-std::exp(-A - 1.));
+    profPtEff->Fill(j1.Pt(), ptEff);
     
     return true;
 }
