@@ -7,7 +7,6 @@
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
 #include <RunFilter.hpp>
-#include <TriggerBin.hpp>
 
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/FileInPath.hpp>
@@ -65,7 +64,6 @@ int main(int argc, char **argv)
     options.add_options()
       ("help,h", "Prints help message")
       ("datasetGroup", po::value<string>(), "Dataset group (required)")
-      ("pt-cuts,c", po::value<string>(), "Jet pt cuts")
       ("syst,s", po::value<string>(), "Systematic shift")
       ("era,e", po::value<string>(), "Data-taking era")
       ("jec-version", po::value<string>(), "Optional explicit JEC version")
@@ -111,22 +109,6 @@ int main(int argc, char **argv)
         cerr << "Cannot recognize dataset group \"" << dataGroupText << "\".\n";
         return EXIT_FAILURE;
     }
-    
-    
-    // Parse list of jet pt cuts used to construct the recoil. Their values are assumed to be
-    //integer.
-    list<unsigned> jetPtCuts;
-    
-    if (optionsMap.count("pt-cuts"))
-    {
-        istringstream cutList(optionsMap["pt-cuts"].as<string>());
-        string cut;
-        
-        while (getline(cutList, cut, ','))
-            jetPtCuts.emplace_back(stod(cut));
-    }
-    else
-        jetPtCuts = {30};
     
     
     // Parse requested systematic uncertainty
@@ -241,6 +223,7 @@ int main(int argc, char **argv)
     }
     
     FileInPath::AddLocation(string(installPath) + "/data/");
+    FileInPath::AddLocation(string(installPath) + "/config/");
     
     
     // Construct the run manager
@@ -371,7 +354,7 @@ int main(int argc, char **argv)
           jecVersion + "_MC_L2Relative_AK4PFchs.txt",
           jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
         jetCorrFull->SetJER("Spring16_25nsV10_MC_SF_AK4PFchs.txt",
-          "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt", 4913);
+          "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt");
         
         if (systType == "JEC")
             jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");
@@ -392,45 +375,36 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetUpdater);
     }
     
-    manager.RegisterPlugin(new TriggerBin({180., 250., 320., 390., 485., 550.}));
     
     if (optionsMap.count("wide"))
-        manager.RegisterPlugin(new FirstJetFilter(0., 2.4));
+        manager.RegisterPlugin(new FirstJetFilter(150., 2.4));
     else
-        manager.RegisterPlugin(new FirstJetFilter(0., 1.3));
+        manager.RegisterPlugin(new FirstJetFilter(150., 1.3));
+    
+    manager.RegisterPlugin(new JetIDFilter("JetIDFilter", 15.));
     
     if (dataGroup == DatasetGroup::MC)
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
     
+    RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilder", 30.);
+    recoilBuilder->SetBalanceSelection(0.6, 0.3);
+    manager.RegisterPlugin(recoilBuilder);
+    
     
     manager.RegisterPlugin(new PECTriggerObjectReader);
-    LeadJetTriggerFilter *triggerFilter = new LeadJetTriggerFilter;
     
     for (auto const &trigger:
       {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450"})
-        triggerFilter->AddTriggerFilter("hltSingle"s + trigger);
-    
-    manager.RegisterPlugin(triggerFilter);
-    
-    
-    for (auto const &jetPtCut: jetPtCuts)
     {
-        string const ptCutText(to_string(jetPtCut));
+        manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
+          "triggerCuts.json", (dataGroup == DatasetGroup::Data)), {"RecoilBuilder"});
         
-        RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilderPt"s + ptCutText, jetPtCut);
-        recoilBuilder->SetBalanceSelection(0.6, 0.3);
-        manager.RegisterPlugin(recoilBuilder, {"TriggerFilter"});
-        
-        manager.RegisterPlugin(new JetIDFilter("JetIDFilterPt"s + ptCutText, jetPtCut));
+        manager.RegisterPlugin(new BalanceVars("BalanceVars"s + trigger),
+          {"TriggerFilter"s + trigger});
+        manager.RegisterPlugin(new PileUpVars("PileUpVars"s + trigger));
         
         if (dataGroup == DatasetGroup::Data)
-            manager.RegisterPlugin(new DumpEventID("EventIDPt"s + ptCutText));
-        
-        BalanceVars *balanceVars = new BalanceVars("BalanceVarsPt"s + ptCutText);
-        balanceVars->SetRecoilBuilderName(recoilBuilder->GetName());
-        manager.RegisterPlugin(balanceVars);
-        
-        manager.RegisterPlugin(new PileUpVars("PileUpVarsPt"s + ptCutText));
+            manager.RegisterPlugin(new DumpEventID("EventID"s + trigger));
     }
     
     

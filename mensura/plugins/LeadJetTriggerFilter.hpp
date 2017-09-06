@@ -2,24 +2,29 @@
 
 #include <mensura/core/AnalysisPlugin.hpp>
 
-#include <TTree.h>
-
-#include <initializer_list>
 #include <string>
-#include <vector>
 
 
 class JetMETReader;
 class PECTriggerObjectReader;
-class TriggerBin;
 
 
 /**
  * \class LeadJetTriggerFilter
- * \brief Selects events in which the leading jet is matched to a trigger object
+ * \brief Selects events in which the leading jet is matched to a trigger object and its pt lies in
+ * an allowed range
  * 
- * The collection of trigger objects used in matching is chosen based on the trigger bin reported
- * by a TriggerBin plugin. If an event does not contain jets, it is rejected.
+ * The plugin is configured using a JSON file with the following example structure:
+ *   {
+ *     "PFJet200": {
+ *       "filter": "hltSinglePFJet200",
+ *       "corrPtRange": [250.0, 320.0],
+ *       "uncorrPtRange": [220.0, 360.0]
+ *     },
+ *     ...
+ *   }
+ * For each trigger the corresponding trigger name is provided along with two pt ranges. The ranges
+ * are supposed to be chosen based on whether jets are fully corrected.
  */
 class LeadJetTriggerFilter: public AnalysisPlugin
 {
@@ -27,24 +32,23 @@ public:
     /**
      * \brief Constructor
      * 
-     * Creates a plugin with the given name that matches jets to trigger objects corresponding to
-     * trigger filters with provided names. The names of the filters must be given in an order that
-     * correspond to trigger bins.
+     * Creates a plugin with the given name that applies selection specified for the given trigger.
+     * The selection is described in a JSON configuration file, whose structure is explained in the
+     * documentation for this class. The boolean flag uncorrPt determines which of the two pt
+     * ranges are to be used in the event selection.
      */
-    LeadJetTriggerFilter(std::string const &name,
-      std::initializer_list<std::string> const &triggerFilters = {});
+    LeadJetTriggerFilter(std::string const &name, std::string const &triggerName,
+      std::string const &configFileName, bool uncorrPt = true);
     
     /**
      * \brief Constructor
      * 
-     * A short-cut for the above version with default name "TriggerFilter".
+     * A shortcut for the above version with default name "TriggerFilter".
      */
-    LeadJetTriggerFilter(std::initializer_list<std::string> const &triggerFilters = {});
+    LeadJetTriggerFilter(std::string const &triggerName, std::string const &configFileName,
+      bool uncorrPt = true);
     
 public:
-    /// Adds new trigger filter to used in matching
-    void AddTriggerFilter(std::string const &filterName);
-    
     /**
      * \brief Saves pointers to required plugins and services and sets up output tree
      * 
@@ -68,12 +72,6 @@ private:
     virtual bool ProcessEvent() override;
     
 private:
-    /// Name of a plugin that determines trigger bin
-    std::string triggerBinPluginName;
-    
-    /// Non-owning pointer to the plugin that determines trigger bin
-    TriggerBin const *triggerBinPlugin;
-    
     /// Name of a plugin that produces jets and MET
     std::string jetmetPluginName;
     
@@ -86,15 +84,14 @@ private:
     /// Non-owning pointer to the plugin that reads trigger objects
     PECTriggerObjectReader const *triggerObjectsPlugin;
     
-    /// Names of trigger filters
-    std::vector<std::string> triggerFilters;
+    /// Name of trigger filter
+    std::string triggerFilter;
     
-    /**
-     * \brief Indices of trigger filters in PECTriggerObjectReader
-     * 
-     * Indices of this vector are trigger bin indices minus one.
-     */
-    std::vector<unsigned> triggerFilterIndices;
+    /// Cached index of trigger filter in PECTriggerObjectReader
+    unsigned triggerFilterIndex;
+    
+    /// Allowed range of pt for the leading jet
+    double minLeadPt, maxLeadPt;
     
     /// Maximal dR distance (squared) for matching
     double maxDR2;

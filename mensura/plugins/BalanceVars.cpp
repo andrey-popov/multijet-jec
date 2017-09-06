@@ -1,7 +1,6 @@
 #include <BalanceVars.hpp>
 
 #include <RecoilBuilder.hpp>
-#include <TriggerBin.hpp>
 
 #include <mensura/core/JetMETReader.hpp>
 #include <mensura/core/Processor.hpp>
@@ -16,7 +15,6 @@ BalanceVars::BalanceVars(std::string const name /*= "BalanceVars"*/):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
-    triggerBinPluginName("TriggerBin"), triggerBinPlugin(nullptr),
     recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
     treeName(name)
 {}
@@ -38,7 +36,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
     recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
-    triggerBinPlugin = dynamic_cast<TriggerBin const *>(GetDependencyPlugin(triggerBinPluginName));
     
     
     // Create output tree
@@ -59,7 +56,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     tree->Branch("A", &bfA);
     tree->Branch("Alpha", &bfAlpha);
     tree->Branch("Beta", &bfBeta);
-    tree->Branch("TriggerBin", &bfTriggerBin);
     
     tree->Branch("MJB", &bfMJB);
     tree->Branch("MPF", &bfMPF);
@@ -109,7 +105,6 @@ bool BalanceVars::ProcessEvent()
     bfA = recoilBuilder->GetA();
     bfAlpha = recoilBuilder->GetAlpha();
     bfBeta = recoilBuilder->GetBeta();
-    bfTriggerBin = triggerBinPlugin->GetTriggerBin();
     
     
     // Compute variables reflecting balance in pt. See Sec. 2 in AN-14-016 for definitions

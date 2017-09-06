@@ -1,0 +1,32 @@
+{
+  "PFJet140": {
+    "filter": "hltSinglePFJet140",
+    "corrPtRange": [180.0, 250.0],
+    "uncorrPtRange": [160.0, 280.0]
+  },
+  "PFJet200": {
+    "filter": "hltSinglePFJet200",
+    "corrPtRange": [250.0, 320.0],
+    "uncorrPtRange": [220.0, 360.0]
+  },
+  "PFJet260": {
+    "filter": "hltSinglePFJet260",
+    "corrPtRange": [320.0, 390.0],
+    "uncorrPtRange": [280.0, 430.0]
+  },
+  "PFJet320": {
+    "filter": "hltSinglePFJet320",
+    "corrPtRange": [390.0, 485.0],
+    "uncorrPtRange": [350.0, 540.0]
+  },
+  "PFJet400": {
+    "filter": "hltSinglePFJet400",
+    "corrPtRange": [485.0, 550.0],
+    "uncorrPtRange": [430.0, 610.0]
+  },
+  "PFJet450": {
+    "filter": "hltSinglePFJet450",
+    "corrPtRange": [550.0, 1e100],
+    "uncorrPtRange": [500.0, 1e100]
+  }
+}
