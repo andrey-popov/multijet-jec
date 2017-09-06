@@ -40,6 +40,13 @@ public:
      */
     virtual Plugin *Clone() const override;
     
+    /**
+     * \brief Specifies name for the output tree
+     * 
+     * Can also include name of a directory. By default the name of the plugin is used.
+     */
+    void SetTreeName(std::string const &name);
+    
 private:
     /**
      * \brief Copies ID of the current event to the output tree
@@ -60,6 +67,9 @@ private:
     
     /// Non-owning pointer to TFileService
     TFileService const *fileService;
+    
+    /// Name of the output tree and in-file directory
+    std::string treeName, directoryName;
     
     /// Non-owning pointer to the output tree
     TTree *tree;

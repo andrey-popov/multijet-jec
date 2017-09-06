@@ -393,18 +393,26 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new PECTriggerObjectReader);
     
-    for (auto const &trigger:
+    for (string const &trigger:
       {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450"})
     {
         manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
           "triggerCuts.json", (dataGroup == DatasetGroup::Data)), {"RecoilBuilder"});
         
-        manager.RegisterPlugin(new BalanceVars("BalanceVars"s + trigger),
-          {"TriggerFilter"s + trigger});
-        manager.RegisterPlugin(new PileUpVars("PileUpVars"s + trigger));
+        BalanceVars *balanceVars = new BalanceVars("BalanceVars"s + trigger);
+        balanceVars->SetTreeName(trigger + "/BalanceVars");
+        manager.RegisterPlugin(balanceVars, {"TriggerFilter"s + trigger});
+        
+        PileUpVars *puVars = new PileUpVars("PileUpVars"s + trigger);
+        puVars->SetTreeName(trigger + "/PileUpVars");
+        manager.RegisterPlugin(puVars);
         
         if (dataGroup == DatasetGroup::Data)
-            manager.RegisterPlugin(new DumpEventID("EventID"s + trigger));
+        {
+            DumpEventID *eventID = new DumpEventID("EventID"s + trigger);
+            eventID->SetTreeName(trigger + "/EventID");
+            manager.RegisterPlugin(eventID);
+        }
     }
     
     

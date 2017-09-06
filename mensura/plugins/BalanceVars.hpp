@@ -43,7 +43,7 @@ public:
     /**
      * \brief Specifies name for the output tree
      * 
-     * By default the name of the plugin is used.
+     * Can also include name of a directory. By default the name of the plugin is used.
      */
     void SetTreeName(std::string const &name);
     
@@ -74,8 +74,8 @@ private:
     /// Non-owning pointer to a plugin that reconstruct recoil
     RecoilBuilder const *recoilBuilder;
     
-    /// Name of the output tree
-    std::string treeName;
+    /// Name of the output tree and in-file directory
+    std::string treeName, directoryName;
     
     /// Flag indicating whether current dataset is data or simulation
     bool isMC;

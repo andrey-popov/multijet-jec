@@ -10,7 +10,8 @@
 DumpEventID::DumpEventID(std::string const name /*= "DumpEventID"*/):
     AnalysisPlugin(name),
     eventIDPluginName("InputData"), eventIDPlugin(nullptr),
-    fileServiceName("TFileService"), fileService(nullptr)
+    fileServiceName("TFileService"), fileService(nullptr),
+    treeName(name)
 {}
 
 
@@ -22,7 +23,8 @@ void DumpEventID::BeginRun(Dataset const &)
     
     
     // Create output tree
-    tree = fileService->Create<TTree>("", GetName().c_str(), "Event ID variables");
+    tree = fileService->Create<TTree>(directoryName.c_str(), treeName.c_str(),
+      "Event ID variables");
     
     ROOTLock::Lock();
     
@@ -38,6 +40,23 @@ void DumpEventID::BeginRun(Dataset const &)
 Plugin *DumpEventID::Clone() const
 {
     return new DumpEventID(*this);
+}
+
+
+void DumpEventID::SetTreeName(std::string const &name)
+{
+    auto const pos = name.rfind('/');
+    
+    if (pos != std::string::npos)
+    {
+        treeName = name.substr(pos + 1);
+        directoryName = name.substr(0, pos);
+    }
+    else
+    {
+        treeName = name;
+        directoryName = "";
+    }
 }
 
 

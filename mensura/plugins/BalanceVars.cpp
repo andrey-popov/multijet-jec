@@ -39,7 +39,8 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     
     
     // Create output tree
-    tree = fileService->Create<TTree>("", treeName.c_str(), "Observables for multijet balance");
+    tree = fileService->Create<TTree>(directoryName.c_str(), treeName.c_str(),
+      "Observables for multijet balance");
     
     
     // Assign branch addresses
@@ -82,7 +83,18 @@ void BalanceVars::SetRecoilBuilderName(std::string const &name)
 
 void BalanceVars::SetTreeName(std::string const &name)
 {
-    treeName = name;
+    auto const pos = name.rfind('/');
+    
+    if (pos != std::string::npos)
+    {
+        treeName = name.substr(pos + 1);
+        directoryName = name.substr(0, pos);
+    }
+    else
+    {
+        treeName = name;
+        directoryName = "";
+    }
 }
 
 

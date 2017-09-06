@@ -12,7 +12,8 @@
 PileUpVars::PileUpVars(std::string const name /*= "PileUpVars"*/):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
-    puPluginName("PileUp"), puPlugin(nullptr)
+    puPluginName("PileUp"), puPlugin(nullptr),
+    treeName(name)
 {}
 
 
@@ -27,7 +28,8 @@ void PileUpVars::BeginRun(Dataset const &dataset)
     
     
     // Create output tree
-    tree = fileService->Create<TTree>("", GetName().c_str(), "Observables describing pile-up");
+    tree = fileService->Create<TTree>(directoryName.c_str(), treeName.c_str(),
+      "Observables describing pileup");
     
     
     // Assign branch addresses
@@ -46,6 +48,23 @@ void PileUpVars::BeginRun(Dataset const &dataset)
 Plugin *PileUpVars::Clone() const
 {
     return new PileUpVars(*this);
+}
+
+
+void PileUpVars::SetTreeName(std::string const &name)
+{
+    auto const pos = name.rfind('/');
+    
+    if (pos != std::string::npos)
+    {
+        treeName = name.substr(pos + 1);
+        directoryName = name.substr(0, pos);
+    }
+    else
+    {
+        treeName = name;
+        directoryName = "";
+    }
 }
 
 

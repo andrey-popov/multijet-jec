@@ -36,6 +36,13 @@ public:
      */
     virtual Plugin *Clone() const override;
     
+    /**
+     * \brief Specifies name for the output tree
+     * 
+     * Can also include name of a directory. By default the name of the plugin is used.
+     */
+    void SetTreeName(std::string const &name);
+    
 private:
     /**
      * \brief Computes variables and fills the output tree
@@ -56,6 +63,9 @@ private:
     
     /// Non-owning pointer to a plugin that reads information about pile-up
     PileUpReader const *puPlugin;
+    
+    /// Name of the output tree and in-file directory
+    std::string treeName, directoryName;
     
     /// Flag indicating whether current dataset is data or simulation
     bool isMC;
