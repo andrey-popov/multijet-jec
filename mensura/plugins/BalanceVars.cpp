@@ -46,21 +46,16 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     // Assign branch addresses
     ROOTLock::Lock();
     
-    tree->Branch("PtRecoil", &bfPtRecoil);
     tree->Branch("PtJ1", &bfPtJ1);
     tree->Branch("EtaJ1", &bfEtaJ1);
-    
+    tree->Branch("PtRecoil", &bfPtRecoil);
     tree->Branch("MET", &bfMET);
-    tree->Branch("MultRecoil", &bfMultRecoil);
-    tree->Branch("MeanRecoilJetPt", &bfMeanRecoilJetPt);
     
     tree->Branch("A", &bfA);
     tree->Branch("Alpha", &bfAlpha);
-    tree->Branch("Beta", &bfBeta);
     
-    tree->Branch("MJB", &bfMJB);
+    tree->Branch("PtBal", &bfPtBal);
     tree->Branch("MPF", &bfMPF);
-    tree->Branch("F_LogLinear", &bfFLogLinear);
     
     if (isMC)
         tree->Branch("WeightDataset", &bfWeightDataset);
@@ -100,57 +95,21 @@ void BalanceVars::SetTreeName(std::string const &name)
 
 bool BalanceVars::ProcessEvent()
 {
-    auto const &recoil = recoilBuilder->GetP4Recoil();
     auto const &j1 = recoilBuilder->GetP4LeadingJet();
-    auto const &recoilJets = recoilBuilder->GetRecoilJets();
+    auto const &recoil = recoilBuilder->GetP4Recoil();
     auto const &met = jetmetPlugin->GetMET().P4();
     
     
-    // Save basic observables
     bfPtJ1 = j1.Pt();
     bfEtaJ1 = j1.Eta();
     bfMET = met.Pt();    
     
-    
-    // Save variables computed by the RecoilBuilder
     bfPtRecoil = recoil.Pt();
     bfA = recoilBuilder->GetA();
     bfAlpha = recoilBuilder->GetAlpha();
-    bfBeta = recoilBuilder->GetBeta();
     
-    
-    // Compute variables reflecting balance in pt
-    bfMJB = recoil.Pt() * std::cos(bfAlpha) / j1.Pt();
+    bfPtBal = recoil.Pt() * std::cos(bfAlpha) / j1.Pt();
     bfMPF = 1. + (met.Px() * j1.Px() + met.Py() * j1.Py()) / std::pow(j1.Pt(), 2);
-    
-    
-    // Compute F a.k.a. C_recoil. For log-linear JEC it is defined according to Eqs. (21), (23) in
-    //JME-13-004. See also [1].
-    //[1] https://github.com/pequegnot/multijetAnalysis/blob/ff65f3db37189383f4b61d27b1e8f20c4c89d26f/weightPlots/multijet_weight_common.cpp#L1293-L1303
-    double sumLogLinear = 0.;
-    
-    for (Jet const &j: recoilJets)
-    {
-        double const f = j.Pt() / recoil.Pt();
-        double const cosDPhi = std::cos(j.Phi() - recoil.Phi());
-        
-        sumLogLinear += f * std::log(f) * cosDPhi;
-    }
-    
-    bfFLogLinear = std::exp(sumLogLinear);
-    
-    
-    // Compute more properties of jets in the recoil
-    bfMultRecoil = 0;
-    double sumPt = 0.;
-    
-    for (Jet const &j: recoilJets)
-    {
-        ++bfMultRecoil;
-        sumPt += j.Pt();
-    }
-    
-    bfMeanRecoilJetPt = sumPt / bfMultRecoil;
     
     
     tree->Fill();

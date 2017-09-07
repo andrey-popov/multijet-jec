@@ -84,13 +84,10 @@ private:
     TTree *tree;
     
     // Output buffers
-    Float_t bfPtRecoil;
     Float_t bfPtJ1, bfEtaJ1;
+    Float_t bfPtRecoil;
     Float_t bfMET;
-    UShort_t bfMultRecoil;
-    Float_t bfMeanRecoilJetPt;
-    Float_t bfA, bfAlpha, bfBeta;
-    Float_t bfMJB, bfMPF;
-    Float_t bfFLogLinear;
+    Float_t bfA, bfAlpha;
+    Float_t bfPtBal, bfMPF;
     Float_t bfWeightDataset;
 };
