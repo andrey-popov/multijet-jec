@@ -1,25 +1,23 @@
 /**
- * This program reads simulation a simulation file created by program multijet and computes total
- * event weights that account for the integrated luminosity and pileup reweighting.
+ * This program reads a simulation file created by program multijet and computes total event
+ * weights that account for the integrated luminosity and observed pileup profile.
  * 
  * Luminosities and paths to files with target pileup profiles for reweighting are read from a JSON
  * file with the following structure:
- *   [
- *     {
- *       "index": 1,
- *       "trigger": "PFJet140",
+ *   {
+ *     "PFJet140": {
  *       "lumi": 12.387,
  *       "pileupProfile": "pileup_Run2016B_PFJet140_finebin_ICHEP.root"
  *     },
  *     // ...
- *   ]
+ *   }
  * 
- * Inputs for the computation of weights are read from trees "BalanceVars{label}" and
- * "PileUpVars{label}", where {label} is an arbitrary label. If multiple sets of trees with
- * different labels are found, weights are computed for each one. The results are stored in trees
- * "Weights{label}" in a new file, which is created in the current directory. The name of the
- * output file is formed by adding to the name of the input file a string "_weights{postfix}" with
- * an optional {postfix} given by the user.
+ * Inputs for the computation of weights are read from trees "{trigger}/BalanceVars" and
+ * "{trigger}/PileUpVars", where {trigger} is a trigger name. The trigger name is also used as the
+ * key in the JSON configuration file. The computation is performed for all triggers included in
+ * the simulation file. The results are stored in trees "{trigger}/Weights" in a new file, which is
+ * created in the current directory. The name of the output file is formed by adding to the name of
+ * the input file a string "_weights{postfix}" with an optional {postfix} given by the user.
  */
 
 #include <mensura/core/FileInPath.hpp>
@@ -194,19 +192,20 @@ const char *BadInputError::what() const noexcept
 
 
 /**
- * \brief Parses JSON file with details about trigger bins
+ * \brief Parses JSON file with details about triggers
  * 
  * Extracts luminosities and names of files with target pileup profiles and returns them in a map.
- * Map key is the trigger bin index.
+ * Map key is the trigger name.
  */
-std::map<unsigned, std::tuple<double, std::string>> ParseInfoFile(std::string const &infoFileName)
+std::map<std::string, std::tuple<double, std::string>> ParseInfoFile(
+  std::string const &infoFileName)
 {
     using namespace std;
     
     
     // Open the JSON file and perform basic validation
     ifstream infoFile(infoFileName, std::ifstream::binary);
-    Json::Value parsedInfoFile;
+    Json::Value root;
     
     if (not infoFile.is_open())
     {
@@ -217,7 +216,7 @@ std::map<unsigned, std::tuple<double, std::string>> ParseInfoFile(std::string co
     
     try
     {
-        infoFile >> parsedInfoFile;
+        infoFile >> root;
     }
     catch (Json::Exception const &)
     {
@@ -228,60 +227,43 @@ std::map<unsigned, std::tuple<double, std::string>> ParseInfoFile(std::string co
     
     infoFile.close();
     
-    if (not parsedInfoFile.isArray())
+    if (not root.isObject())
     {
         BadInputError excp;
-        excp << "File \"" << infoFileName << "\" does not contain an array at the top level.";
-        throw excp;
-    }
-    
-    if (not parsedInfoFile.size())
-    {
-        BadInputError excp;
-        excp << "Array of trigger bins in file \"" << infoFileName << "\" is empty.";
+        excp << "File \"" << infoFileName << "\" does not contain a dictionary at the top level.";
         throw excp;
     }
     
     
     // Extract details about each trigger bin
-    map<unsigned, tuple<double, string>> triggerBins;
+    map<string, tuple<double, string>> triggerInfos;
     
-    for (unsigned iBin = 0; iBin < parsedInfoFile.size(); ++iBin)
+    for (auto const &triggerName: root.getMemberNames())
     {
-        auto const &binInfo = parsedInfoFile[iBin];
+        auto const &entry = root[triggerName];
         
-        if (not binInfo.isMember("index") or not binInfo["index"].isInt())
+        if (not entry.isObject())
         {
             BadInputError excp;
-            excp << "Entry #" << iBin << " in file \"" << infoFileName <<
-              "\" does not contain required field \"index\", or its value is not an integer "
-              "number.";
+            excp << "Entry \"" << triggerName << "\" in file \"" << infoFileName <<
+              "\" is not a dictionary.";
             throw excp;
         }
         
-        if (not binInfo.isMember("lumi") or not binInfo["lumi"].isNumeric())
+        if (not entry.isMember("lumi") or not entry.isMember("pileupProfile"))
         {
             BadInputError excp;
-            excp << "Entry #" << iBin << " in file \"" << infoFileName <<
-              "\" does not contain required field \"lumi\", or its value is not a number.";
+            excp << "Entry \"" << triggerName << "\" in file \"" << infoFileName <<
+              "\" does not contain required field \"lumi\" or \"pileupProfile\".";
             throw excp;
         }
         
-        if (not binInfo.isMember("pileupProfile") or not binInfo["pileupProfile"].isString())
-        {
-            BadInputError excp;
-            excp << "Entry #" << iBin << " in file \"" << infoFileName <<
-              "\" does not contain required field \"pileupProfile\", or its value is not a "
-              "string.";
-            throw excp;
-        }
-        
-        triggerBins.emplace(piecewise_construct, forward_as_tuple(binInfo["index"].asInt()),
-          forward_as_tuple(binInfo["lumi"].asDouble(), binInfo["pileupProfile"].asString()));
+        triggerInfos.emplace(piecewise_construct, forward_as_tuple(triggerName),
+          forward_as_tuple(entry["lumi"].asDouble(), entry["pileupProfile"].asString()));
     }
     
     
-    return triggerBins;
+    return triggerInfos;
 }
 
 
@@ -305,8 +287,7 @@ int main(int argc, char **argv)
     string const outFilePostfix((argc > 3) ? argv[3] : "");
     
     
-    // Open input file and check if it contains required trees. Their names are predefined except
-    //for potential arbitrary postfix.
+    // Open input file and make sure that all trees are present
     TFile inputFile(inputFileName.c_str());
     
     if (inputFile.IsZombie())
@@ -319,31 +300,28 @@ int main(int argc, char **argv)
     string const mainTreeName("BalanceVars");
     string const pileupTreeName("PileUpVars");
     
-    list<string> versions;
+    list<string> triggers;
     TIter fileIter(inputFile.GetListOfKeys());
     TKey *key;
     
     while ((key = dynamic_cast<TKey *>(fileIter())))
     {
-        if (strcmp(key->GetClassName(), "TTree") != 0)
+        if (strcmp(key->GetClassName(), "TDirectoryFile") != 0)
             continue;
         
-        if (boost::starts_with(key->GetName(), mainTreeName))
-        {
-            string const postfix(string(key->GetName()).substr(11));
-            versions.emplace_back(postfix);
-            
-            if (not inputFile.Get((pileupTreeName + postfix).c_str()))
+        string const triggerName(key->GetName());
+        triggers.emplace_back(triggerName);
+        
+        for (auto const &treeName: {mainTreeName, pileupTreeName})
+            if (not inputFile.Get((triggerName + "/" + treeName).c_str()))
             {
-                cerr << "File \"" << inputFileName << "\" contains a tree \"" << key->GetName() <<
-                  "\", but corresponding tree with pileup information with name \"" <<
-                  pileupTreeName + postfix << "\" is not found.\n";
+                cerr << "File \"" << inputFileName << "\" does not contain required tree \"" <<
+                  triggerName << "/" << treeName << "\".\n";
                 return EXIT_FAILURE;
             }
-        }
     }
     
-    if (versions.empty())
+    if (triggers.empty())
     {
         cerr << "Failed to find required trees in file \"" << inputFileName << "\".\n";
         return EXIT_FAILURE;
@@ -351,11 +329,11 @@ int main(int argc, char **argv)
     
     
     // Parse the JSON file with luminosities and pileup profiles
-    map<unsigned, tuple<double, string>> triggerBinsInfo;
+    map<string, tuple<double, string>> triggerInfos;
     
     try
     {
-        triggerBinsInfo = ParseInfoFile(infoFileName);
+        triggerInfos = ParseInfoFile(infoFileName);
     }
     catch (BadInputError const &excp)
     {
@@ -395,33 +373,6 @@ int main(int argc, char **argv)
     simPUProfile->Scale(1. / simPUProfile->Integral(0, -1), "width");
     
     
-    // Read target pileup profiles and construct reweighting objects. The objects are put into a
-    //map whose key is the index of the trigger bin.
-    map<unsigned, ReweighterObject> reweighters;
-    
-    for (auto const &binInfo: triggerBinsInfo)
-    {
-        // Read target pileup profile
-        string const fileName(FileInPath::Resolve("PileUp/", get<1>(binInfo.second)));
-        TFile file(fileName.c_str());
-        unique_ptr<TH1> targetPUProfile(dynamic_cast<TH1 *>(file.Get("pileup")));
-        
-        if (not targetPUProfile)
-        {
-            cerr << "Failed to read target pileup profile from file \"" << fileName << "\".\n";
-            return EXIT_FAILURE;
-        }
-        
-        targetPUProfile->SetDirectory(nullptr);
-        file.Close();
-        
-        
-        // Create the reweighting object
-        reweighters.emplace(piecewise_construct, forward_as_tuple(binInfo.first),
-          forward_as_tuple(get<0>(binInfo.second), move(targetPUProfile), simPUProfile));
-    }
-    
-    
     // Create the output file. It is created in the current directory, and its name is based on the
     //name of the input file.
     auto const posNameBegin = inputFileName.find_last_of('/') + 1;
@@ -433,26 +384,61 @@ int main(int argc, char **argv)
     
     
     // Create output trees with weights one by one
-    for (auto const &version: versions)
+    for (auto const &trigger: triggers)
     {
+        auto const triggerInfoRes = triggerInfos.find(trigger);
+        
+        if (triggerInfoRes == triggerInfos.end())
+        {
+            cerr << "No information is available for trigger \"" << trigger <<
+              "\" in the configuration file.\n";
+            return EXIT_FAILURE;
+        }
+        
+        auto const &triggerInfo = triggerInfoRes->second;
+        
+        
+        // Read target pileup profile and construct the reweighting object
+        string const puProfileFileName(FileInPath::Resolve("PileUp/", get<1>(triggerInfo)));
+        TFile puProfileFile(puProfileFileName.c_str());
+        unique_ptr<TH1> targetPUProfile(dynamic_cast<TH1 *>(puProfileFile.Get("pileup")));
+        
+        if (not targetPUProfile)
+        {
+            cerr << "Failed to read target pileup profile from file \"" << puProfileFileName <<
+              "\".\n";
+            return EXIT_FAILURE;
+        }
+        
+        targetPUProfile->SetDirectory(nullptr);
+        puProfileFile.Close();
+        
+        ReweighterObject reweighter(get<0>(triggerInfo), move(targetPUProfile), simPUProfile);
+        
+        
         // Set up branches and create output tree
-        TTree *inputTree = dynamic_cast<TTree *>(inputFile.Get((mainTreeName + version).c_str()));
-        inputTree->AddFriend((pileupTreeName + version).c_str());
+        TTree *inputTree = dynamic_cast<TTree *>(
+          inputFile.Get((trigger + "/" + mainTreeName).c_str()));
+        inputTree->AddFriend((trigger + "/" + pileupTreeName).c_str());
         
         inputTree->SetBranchStatus("*", false);
         
-        for (auto const &branchName: {"TriggerBin", "WeightDataset", "LambdaPU"})
+        for (auto const &branchName: {"WeightDataset", "LambdaPU"})
             inputTree->SetBranchStatus(branchName, true);
         
-        UShort_t triggerBin;
         Float_t weightDataset, lambdaPU;
         
-        inputTree->SetBranchAddress("TriggerBin", &triggerBin);
         inputTree->SetBranchAddress("WeightDataset", &weightDataset);
         inputTree->SetBranchAddress("LambdaPU", &lambdaPU);
         
         outFile.cd();
-        TTree outTree(("Weights"s + version).c_str(), "Event weights");
+        TDirectory *outDirectory = outFile.GetDirectory(trigger.c_str());
+        
+        if (not outDirectory)
+            outDirectory = outFile.mkdir(trigger.c_str());
+        
+        outDirectory->cd();
+        TTree outTree("Weights", "Event weights");
         
         Float_t totalWeight[3];
         outTree.Branch("TotalWeight", totalWeight, "TotalWeight[3]/F");
@@ -462,7 +448,7 @@ int main(int argc, char **argv)
         for (long ev = 0; ev < inputTree->GetEntries(); ++ev)
         {
             inputTree->GetEntry(ev);
-            auto const &weights = reweighters.at(triggerBin).GetWeights(lambdaPU);
+            auto const &weights = reweighter.GetWeights(lambdaPU);
             
             for (unsigned i = 0; i < 3; ++i)
                 totalWeight[i] = weights[i] * weightDataset;
