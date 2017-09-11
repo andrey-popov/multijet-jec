@@ -57,6 +57,10 @@ struct NuisancesBase
 {};
 
 
+/// An instance of NuisancesBase to be used when no dependence on nuisances is implemented
+extern NuisancesBase const dummyNuisances;
+
+
 /**
  * \class DeviationBase
  * \brief Base class to describe a loss function for fitting of the jet correction

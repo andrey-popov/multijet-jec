@@ -65,3 +65,6 @@ double JetCorrBase::UndoCorr(double pt, double tolerance) const
     
     return ptUncorr;
 }
+
+
+NuisancesBase const dummyNuisances;

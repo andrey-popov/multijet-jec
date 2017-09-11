@@ -39,8 +39,6 @@ double JetCorr::Eval(double pt) const
 int main()
 {
     JetCorr jetCorr;
-    NuisancesBase dummyNuisances;
-    
     std::string inputFile("~/workspace/Analyses/JetMET/2017.09.07_New-method-real-setup/Analysis/multijet.root");
     
     std::cout << "Loss function for pt balancing with various jet corrections:\n";

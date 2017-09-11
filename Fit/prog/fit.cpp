@@ -51,8 +51,6 @@ int main(int argc, char **argv)
     JetCorr jetCorr;
     jetCorr.SetParams({1e-2});
     
-    NuisancesBase dummyNuisances;
-    
     Multijet lossFunc(argv[1], Multijet::Method::PtBal, 30.);
     std::cout << lossFunc.Eval(jetCorr, dummyNuisances) << std::endl;
     
