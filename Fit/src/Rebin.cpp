@@ -11,7 +11,7 @@ BinMap mapBinning(std::vector<double> const &source, std::vector<double> const &
     if (target[0] < source[0] or target[target.size() - 1] > source[source.size() - 1])
     {
         std::ostringstream message;
-        message << "Multijet::Interpolate: Range of target binning (" << target[0] << ", " <<
+        message << "mapBinning: Range of target binning (" << target[0] << ", " <<
           target[target.size() - 1] << ") is not included in the range of source binning (" <<
           source[0] << ", " << source[source.size() - 1] << ").";
         throw std::logic_error(message.str());
@@ -24,12 +24,12 @@ BinMap mapBinning(std::vector<double> const &source, std::vector<double> const &
     //numbered by the indices of their lower boundaries. The underflow bin has index -1.
     std::vector<FracBin> matchedEdges;
     matchedEdges.reserve(target.size());
-    unsigned curSrcBin = -1;
+    int curSrcBin = -1;
     
     for (auto const &x: target)
     {
         // Scroll to the bin of the source binning that contains value x
-        while (curSrcBin < source.size() - 1 and source[curSrcBin + 1] < x)
+        while (curSrcBin < int(source.size()) - 1 and source[curSrcBin + 1] < x)
             ++curSrcBin;
         
         // Find the relative position inside the source bin. The two  special cases can only occur
@@ -37,9 +37,9 @@ BinMap mapBinning(std::vector<double> const &source, std::vector<double> const &
         //positions are set under this assumption.
         double relPos;
         
-        if (curSrcBin == unsigned(-1))
+        if (curSrcBin == -1)
             relPos = 1.;
-        else if (curSrcBin == source.size() - 1)
+        else if (curSrcBin == int(source.size()) - 1)
             relPos = 0.;
         else
         {
@@ -48,7 +48,7 @@ BinMap mapBinning(std::vector<double> const &source, std::vector<double> const &
             relPos = (x - srcBinStart) / srcBinWidth;
         }
         
-        matchedEdges.emplace_back(FracBin{curSrcBin, relPos});
+        matchedEdges.emplace_back(FracBin{unsigned(curSrcBin), relPos});
     }
     
     
