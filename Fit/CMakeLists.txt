@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -O2")
 
 set(LIBRARY_SOURCES "")
 
-foreach(src FitBase.cpp Multijet.cpp)
+foreach(src FitBase.cpp Multijet.cpp Rebin.cpp)
     list(APPEND LIBRARY_SOURCES "${PROJECT_SOURCE_DIR}/src/${src}")
 endforeach(src)
 
