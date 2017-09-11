@@ -1,0 +1,9 @@
+# Compiled programs and libraries
+bin/
+lib/
+
+# Files create by CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
