@@ -39,13 +39,27 @@ double JetCorr::Eval(double pt) const
 int main()
 {
     JetCorr jetCorr;
-    jetCorr.SetParams({0.});
-    
     NuisancesBase dummyNuisances;
     
     std::string inputFile("~/workspace/Analyses/JetMET/2017.09.07_New-method-real-setup/Analysis/multijet.root");
-    Multijet lossFunc(inputFile, Multijet::Method::PtBal, 30.);
-    std::cout << lossFunc.Eval(jetCorr, dummyNuisances) << std::endl;
+    
+    std::cout << "Loss function for pt balancing with various jet corrections:\n";
+    Multijet lossFuncPtBal(inputFile, Multijet::Method::PtBal, 30.);
+    
+    for (auto const &p: {-2e-2, -1e-2, -5e-3, 0., 5e-3, 1e-2, 2e-2})
+    {
+        jetCorr.SetParams({p});
+        std::cout << "  " << lossFuncPtBal.Eval(jetCorr, dummyNuisances) << std::endl;
+    }
+    
+    std::cout << "\nLoss function for MPF with various jet corrections:\n";
+    Multijet lossFuncMPF(inputFile, Multijet::Method::MPF, 30.);
+    
+    for (auto const &p: {-2e-2, -1e-2, -5e-3, 0., 5e-3, 1e-2, 2e-2})
+    {
+        jetCorr.SetParams({p});
+        std::cout << "  " << lossFuncMPF.Eval(jetCorr, dummyNuisances) << std::endl;
+    }
     
     return EXIT_SUCCESS;
 }
