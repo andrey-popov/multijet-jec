@@ -85,7 +85,7 @@ Multijet::Multijet(std::string const &fileName, Multijet::Method method_, double
     for (auto &bin: triggerBins)
     {
         // Save binning in data in a handy format
-        bin.binning.resize(bin.ptLead->GetNbinsX() + 1);
+        bin.binning.reserve(bin.ptLead->GetNbinsX() + 1);
         
         for (int i = 1; i <= bin.ptLead->GetNbinsX() + 1; ++i)
             bin.binning.emplace_back(bin.ptLead->GetBinLowEdge(i));
