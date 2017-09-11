@@ -30,3 +30,8 @@ target_link_libraries(jecfit ${ROOT_LIBRARIES})
 # Main program
 add_executable(fit "prog/fit.cpp")
 target_link_libraries(fit jecfit ${ROOT_LIBRARIES})
+
+
+# Tests
+add_executable(test_rebin "tests/test_rebin")
+target_link_libraries(test_rebin jecfit)
