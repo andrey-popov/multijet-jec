@@ -52,7 +52,7 @@ int main()
     }
     
     std::cout << "\nLoss function for MPF with various jet corrections:\n";
-    Multijet lossFuncMPF(inputFile, Multijet::Method::MPF, 30.);
+    Multijet lossFuncMPF(inputFile, Multijet::Method::MPF, 15.);
     
     for (auto const &p: {-2e-2, -1e-2, -5e-3, 0., 5e-3, 1e-2, 2e-2})
     {
