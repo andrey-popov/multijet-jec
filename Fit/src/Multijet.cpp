@@ -80,6 +80,13 @@ Multijet::Multijet(std::string const &fileName, Multijet::Method method_, double
     
     inputFile.Close();
     
+    if (triggerBins.empty())
+    {
+        std::ostringstream message;
+        message << "Multijet::Multijet: No data read from file \"" << fileName << "\".";
+        throw std::runtime_error(message.str());
+    }
+    
     
     // Construct remaining fields in trigger bins
     for (auto &bin: triggerBins)
@@ -124,6 +131,14 @@ unsigned Multijet::GetDim() const
 double Multijet::Eval(JetCorrBase const &corrector, Nuisances const &) const
 {
     double minPtUncorr = corrector.UndoCorr(minPt);
+    
+    if (triggerBins.front().ptJetSumProj->GetYaxis()->FindFixBin(minPtUncorr) == 0)
+    {
+        std::ostringstream message;
+        message << "Multijet::Eval: With the current correction jet threshold (" << minPt <<
+          " -> " << minPtUncorr << " GeV) falls in the underflow bin.";
+        throw std::runtime_error(message.str());
+    }
     
     
     double chi2 = 0.;
