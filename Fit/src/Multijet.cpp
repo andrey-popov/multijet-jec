@@ -121,7 +121,7 @@ unsigned Multijet::GetDim() const
 }
 
 
-double Multijet::Eval(JetCorrBase const &corrector, NuisancesBase const &) const
+double Multijet::Eval(JetCorrBase const &corrector, Nuisances const &) const
 {
     double minPtUncorr = corrector.UndoCorr(minPt);
     

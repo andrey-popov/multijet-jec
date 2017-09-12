@@ -3,6 +3,9 @@
 #include <vector>
 
 
+class Nuisances;
+
+
 /**
  * \class JetCorrBase
  * \brief Base class to for a jet correction
@@ -48,20 +51,6 @@ protected:
 
 
 /**
- * \struct NuisancesBase
- * \brief (Trivial) base class for a set of nuisance parameters
- * 
- * A derived class is expected to implement nuisance parameters as publicly available data members.
- */
-struct NuisancesBase
-{};
-
-
-/// An instance of NuisancesBase to be used when no dependence on nuisances is implemented
-extern NuisancesBase const dummyNuisances;
-
-
-/**
  * \class DeviationBase
  * \brief Base class to describe a loss function for fitting of the jet correction
  * 
@@ -87,5 +76,5 @@ public:
      * 
      * To be implemented in a derived class.
      */
-    virtual double Eval(JetCorrBase const &corrector, NuisancesBase const &nuisances) const = 0;
+    virtual double Eval(JetCorrBase const &corrector, Nuisances const &nuisances) const = 0;
 };

@@ -40,7 +40,7 @@ public:
 public:
     virtual unsigned GetDim() const override;
     
-    virtual double Eval(JetCorrBase const &corrector, NuisancesBase const &) const override;
+    virtual double Eval(JetCorrBase const &corrector, Nuisances const &) const override;
     
 private:
     static double ComputeMPF(TriggerBin const &triggerBin, FracBin const &ptLeadStart,

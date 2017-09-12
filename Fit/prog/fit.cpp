@@ -4,6 +4,7 @@
 
 #include <FitBase.hpp>
 #include <Multijet.hpp>
+#include <Nuisances.hpp>
 
 #include <Minuit2/Minuit2Minimizer.h>
 #include <Math/Functor.h>
@@ -50,6 +51,8 @@ int main(int argc, char **argv)
     
     JetCorr jetCorr;
     jetCorr.SetParams({1e-2});
+    
+    Nuisances dummyNuisances;
     
     Multijet lossFunc(argv[1], Multijet::Method::PtBal, 30.);
     std::cout << lossFunc.Eval(jetCorr, dummyNuisances) << std::endl;
