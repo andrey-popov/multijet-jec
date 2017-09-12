@@ -65,7 +65,7 @@ Multijet::Multijet(std::string const &fileName, Multijet::Method method_):
         TDirectoryFile *directory = dynamic_cast<TDirectoryFile *>(key->ReadObj());
         
         for (auto const &name: std::initializer_list<std::string>{"Sim"s + methodLabel + "Profile",
-          "PtLead", "PtLeadProfile", methodLabel + "Profile", "PtJet", "PtJetSumProj"})
+          "PtLead", "PtLeadProfile", methodLabel + "Profile", "PtJetSumProj"})
         {
             if (not directory->Get(name.c_str()))
             {
