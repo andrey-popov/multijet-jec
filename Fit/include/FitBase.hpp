@@ -15,7 +15,11 @@
 class JetCorrBase
 {
 public:
+    /// Constructor from the number of parameters
     JetCorrBase(unsigned numParams);
+    
+    /// Trivial virtual destructor
+    virtual ~JetCorrBase() noexcept;
     
 public:
     /// Returns number of parameters of the correction

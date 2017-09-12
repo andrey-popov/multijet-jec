@@ -11,6 +11,10 @@ JetCorrBase::JetCorrBase(unsigned numParams):
 {}
 
 
+JetCorrBase::~JetCorrBase()
+{}
+
+
 unsigned JetCorrBase::GetNumParams() const
 {
     return parameters.size();
