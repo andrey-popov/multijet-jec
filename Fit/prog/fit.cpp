@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     auto jetCorr = make_unique<JetCorr>();
     CombLossFunction lossFunc(move(jetCorr));
     
-    Multijet measurementMultijet(argv[1], Multijet::Method::PtBal, 30.);
+    Multijet measurementMultijet(argv[1], Multijet::Method::PtBal);
     lossFunc.AddMeasurement(&measurementMultijet);
     
     

@@ -4,6 +4,7 @@
 
 #include <TFile.h>
 #include <TKey.h>
+#include <TVectorD.h>
 
 #include <cmath>
 #include <cstring>
@@ -14,8 +15,8 @@
 using namespace std::string_literals;
 
 
-Multijet::Multijet(std::string const &fileName, Multijet::Method method_, double minPt_):
-    method(method_), minPt(minPt_)
+Multijet::Multijet(std::string const &fileName, Multijet::Method method_):
+    method(method_)
 {
     std::string methodLabel;
     
@@ -35,6 +36,24 @@ Multijet::Multijet(std::string const &fileName, Multijet::Method method_, double
     }
     
     
+    // Read the jet pt threshold. It is not a free parameter and must be set to the same value as
+    //used to construct the inputs. For the pt balance method it affects the definition of the
+    //balance observable in simulation (while in data it can be recomputed for any not too low
+    //threshold). In the case of the MPF method the definition of the balance observable in both
+    //data and simulation is affected.
+    auto ptThreshold = dynamic_cast<TVectorD *>(inputFile.Get(("MinPt"s + methodLabel).c_str()));
+    
+    if (not ptThreshold or ptThreshold->GetNoElements() != 1)
+    {
+        std::ostringstream message;
+        message << "Failed to read jet pt threshold from file \"" << fileName << "\".";
+        throw std::runtime_error(message.str());
+    }
+    
+    minPt = (*ptThreshold)[0];
+    
+    
+    // Loop over directories in the input file
     TIter fileIter(inputFile.GetListOfKeys());
     TKey *key;
     

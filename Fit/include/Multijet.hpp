@@ -77,17 +77,8 @@ private:
     };
         
 public:
-    /**
-     * \brief Constructor
-     * 
-     * The jet pt threshold is not a free parameter and must be set to the same value as used to
-     * construct the inputs. For the pt balance method it affects the definition of the balance
-     * observable in simulation (while in data it can be recomputed for any not too low threshold).
-     * In the case of the MPF method the definition of the balance observable in both data and
-     * simulation is affected. Additionally, for MPF jet corrections must not allow migration of
-     * jets through the threshold as this breaks the type 1 correction of the missing pt.
-     */
-    Multijet(std::string const &fileName, Method method, double minPt);
+    /// Constructor
+    Multijet(std::string const &fileName, Method method);
     
 public:
     /**

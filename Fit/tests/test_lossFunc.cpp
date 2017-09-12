@@ -43,7 +43,7 @@ int main()
     std::string inputFile("~/workspace/Analyses/JetMET/2017.09.07_New-method-real-setup/Analysis/multijet.root");
     
     std::cout << "Loss function for pt balancing with various jet corrections:\n";
-    Multijet lossFuncPtBal(inputFile, Multijet::Method::PtBal, 30.);
+    Multijet lossFuncPtBal(inputFile, Multijet::Method::PtBal);
     
     for (auto const &p: {-2e-2, -1e-2, -5e-3, 0., 5e-3, 1e-2, 2e-2})
     {
@@ -52,7 +52,7 @@ int main()
     }
     
     std::cout << "\nLoss function for MPF with various jet corrections:\n";
-    Multijet lossFuncMPF(inputFile, Multijet::Method::MPF, 15.);
+    Multijet lossFuncMPF(inputFile, Multijet::Method::MPF);
     
     for (auto const &p: {-2e-2, -1e-2, -5e-3, 0., 5e-3, 1e-2, 2e-2})
     {
