@@ -7,7 +7,6 @@
 
 #include <FitBase.hpp>
 #include <Multijet.hpp>
-#include <Nuisances.hpp>
 
 #include <iostream>
 #include <string>

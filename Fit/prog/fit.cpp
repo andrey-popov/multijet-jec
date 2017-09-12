@@ -1,15 +1,15 @@
 /**
- * Fits JEC using multijet data.
+ * Fits jet correction using multijet data.
  */
 
 #include <FitBase.hpp>
 #include <Multijet.hpp>
-#include <Nuisances.hpp>
 
 #include <Minuit2/Minuit2Minimizer.h>
 #include <Math/Functor.h>
 
 #include <iostream>
+#include <memory>
 #include <string>
 
 
@@ -41,6 +41,7 @@ int main(int argc, char **argv)
 {
     using namespace std;
     
+    
     // Parse arguments
     if (argc != 2)
     {
@@ -49,20 +50,18 @@ int main(int argc, char **argv)
     }
     
     
-    JetCorr jetCorr;
-    jetCorr.SetParams({1e-2});
+    // Construct an object to evaluate the loss function
+    auto jetCorr = make_unique<JetCorr>();
+    CombLossFunction lossFunc(move(jetCorr));
     
-    Nuisances dummyNuisances;
-    
-    Multijet lossFunc(argv[1], Multijet::Method::PtBal, 30.);
-    std::cout << lossFunc.Eval(jetCorr, dummyNuisances) << std::endl;
-    
+    Multijet measurementMultijet(argv[1], Multijet::Method::PtBal, 30.);
+    lossFunc.AddMeasurement(&measurementMultijet);
     
     
-    #if 0
+    
     // Create minimizer
     ROOT::Minuit2::Minuit2Minimizer minimizer;
-    ROOT::Math::Functor func(&fom, &MultijetFOM::operator(), fom.GetDim());
+    ROOT::Math::Functor func(&lossFunc, &CombLossFunction::EvalRawInput, lossFunc.GetNumParams());
     minimizer.SetFunction(func);
     minimizer.SetStrategy(2);   // high quality
     minimizer.SetErrorDef(1.);  // error level for a chi2 function
@@ -70,7 +69,7 @@ int main(int argc, char **argv)
     
     
     // Initial point
-    for (unsigned i = 0; i < fom.GetDim(); ++i)
+    for (unsigned i = 0; i < lossFunc.GetNumParams(); ++i)
         minimizer.SetVariable(i, "p"s + to_string(i + 1), 0., 1e-3);
     
     
@@ -84,12 +83,11 @@ int main(int argc, char **argv)
     cout << " Status: " << minimizer.Status() << '\n';
     cout << " Parameters: " << results[0];
     
-    for (unsigned i = 1; i < fom.GetDim(); ++i)
+    for (unsigned i = 1; i < lossFunc.GetNumParams(); ++i)
         cout << ", " << results[i];
     
     cout << endl;
     
-    #endif
     
     return EXIT_SUCCESS;
 }
