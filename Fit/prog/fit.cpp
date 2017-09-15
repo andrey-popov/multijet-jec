@@ -7,7 +7,10 @@
 
 #include <Minuit2/Minuit2Minimizer.h>
 #include <Math/Functor.h>
+#include <TMath.h>
 
+#include <cmath>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -59,9 +62,11 @@ int main(int argc, char **argv)
     
     
     
+    unsigned const nPars = lossFunc.GetNumParams();
+    
     // Create minimizer
     ROOT::Minuit2::Minuit2Minimizer minimizer;
-    ROOT::Math::Functor func(&lossFunc, &CombLossFunction::EvalRawInput, lossFunc.GetNumParams());
+    ROOT::Math::Functor func(&lossFunc, &CombLossFunction::EvalRawInput, nPars);
     minimizer.SetFunction(func);
     minimizer.SetStrategy(2);   // high quality
     minimizer.SetErrorDef(1.);  // error level for a chi2 function
@@ -69,24 +74,54 @@ int main(int argc, char **argv)
     
     
     // Initial point
-    for (unsigned i = 0; i < lossFunc.GetNumParams(); ++i)
-        minimizer.SetVariable(i, "p"s + to_string(i + 1), 0., 1e-3);
+    for (unsigned i = 0; i < nPars; ++i)
+        minimizer.SetVariable(i, "p"s + to_string(i), 0., 1e-2);
     
     
     // Run minimization
     minimizer.Minimize();
-    double const *results = minimizer.X();
     
     
     // Print results
-    cout << "Fit results:\n";
-    cout << " Status: " << minimizer.Status() << '\n';
-    cout << " Parameters: " << results[0];
+    cout << "\n\n\e[1mSummary\e[0m:\n";
+    cout << "  Status: " << minimizer.Status() << '\n';
+    cout << "  Covariance matrix status: " << minimizer.CovMatrixStatus() << '\n';
+    cout << "  Minimal value: " << minimizer.MinValue() << '\n';
+    cout << "  NDF: " << lossFunc.GetNDF() << '\n';
+    cout << "  p-value: " << TMath::Prob(minimizer.MinValue(), lossFunc.GetNDF()) << '\n';
     
-    for (unsigned i = 1; i < lossFunc.GetNumParams(); ++i)
-        cout << ", " << results[i];
+    double const *results = minimizer.X();
+    double const *errors = minimizer.Errors();
+    cout << "  Parameters:\n";
     
-    cout << endl;
+    for (unsigned i = 0; i < nPars; ++i)
+        cout << "    " << minimizer.VariableName(i) << ":  " << results[i] << " +- " <<
+          errors[i] << "\n";
+    
+    
+    // Save fit results in a text file
+    string const resFileName("fit.out");
+    ofstream resFile(resFileName);
+    
+    resFile << "# Fitted parameters\n";
+    
+    for (unsigned i = 0; i < nPars; ++i)
+        resFile << results[i] << " ";
+    
+    resFile << "\n\n# Covariance matrix:\n";
+    
+    for (unsigned i = 0; i < nPars; ++i)
+    {
+        for (unsigned j = 0; j < nPars; ++j)
+            resFile << minimizer.CovMatrix(i, j) << " ";
+        
+        resFile << '\n';
+    }
+    
+    resFile.close();
+    
+    
+    cout << "\nResults saved to file \"" << resFileName << "\".\n";
     
     
     return EXIT_SUCCESS;
