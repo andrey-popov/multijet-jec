@@ -6,10 +6,13 @@
 #include <TKey.h>
 #include <TVectorD.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 
 using namespace std::string_literals;
@@ -130,6 +133,10 @@ Multijet::Multijet(std::string const &fileName, Multijet::Method method_):
               std::pow(balProfileRebinned->GetBinError(i), 2);
             bin.totalUnc2.emplace_back(unc2);
         }
+        
+        
+        // Initialize recomputed mean balance observable with dummy values
+        bin.recompBal.resize(bin.simBalProfile->GetNbinsX());
     }
     
     
@@ -147,71 +154,81 @@ unsigned Multijet::GetDim() const
 }
 
 
-double Multijet::Eval(JetCorrBase const &corrector, Nuisances const &) const
+TH1D Multijet::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances) const
 {
-    double minPtUncorr = corrector.UndoCorr(minPt);
+    // An auxiliary structure to aggregate information about a single bin. Consists of the lower
+    //bin edge, bin content, and its uncertainty.
+    using Bin = std::tuple<double, double, double>;
     
-    if (triggerBins.front().ptJetSumProj->GetYaxis()->FindFixBin(minPtUncorr) == 0)
+    
+    // Recompute mean balance observables
+    UpdateBalance(corrector, nuisances);
+    
+    
+    // Read recomputed mean balance observables for all bins
+    std::vector<Bin> bins;
+    bins.reserve(dimensionality);
+    
+    double upperBoundary = -std::numeric_limits<double>::infinity();
+    
+    for (auto const &triggerBin: triggerBins)
     {
-        std::ostringstream message;
-        message << "Multijet::Eval: With the current correction jet threshold (" << minPt <<
-          " -> " << minPtUncorr << " GeV) falls in the underflow bin.";
-        throw std::runtime_error(message.str());
+        auto const &simBalProfile = triggerBin.simBalProfile;
+        
+        for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i)
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+              triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
+        
+        
+        double const lastEdge = simBalProfile->GetBinLowEdge(simBalProfile->GetNbinsX() + 1);
+        
+        if (lastEdge > upperBoundary)
+            upperBoundary = lastEdge;
     }
     
     
+    // Different trigger bins might not have been ordered in pt. Sort the constructed list of bins.
+    std::sort(bins.begin(), bins.end(),
+      [](auto const &lhs, auto const &rhs){return (std::get<0>(lhs) < std::get<0>(rhs));});
+    
+    
+    // Construct a histogram from the collection of bins
+    std::vector<double> edges;
+    edges.reserve(bins.size() + 1);
+    
+    for (unsigned i = 0; i < bins.size(); ++i)
+        edges.emplace_back(std::get<0>(bins[i]));
+    
+    edges.emplace_back(upperBoundary);
+    
+    TH1D hist("RecompBalance", "", edges.size() - 1, edges.data());
+    hist.SetDirectory(nullptr);
+    
+    for (unsigned i = 0; i < bins.size(); ++i)
+    {
+        hist.SetBinContent(i + 1, std::get<1>(bins[i]));
+        hist.SetBinError(i + 1, std::get<2>(bins[i]));
+    }
+    
+    
+    return hist;
+}
+
+
+double Multijet::Eval(JetCorrBase const &corrector, Nuisances const &nuisances) const
+{
+    UpdateBalance(corrector, nuisances);
     double chi2 = 0.;
     
     for (auto const &triggerBin: triggerBins)
     {
-        // The binning in pt of the leading jet in the profile for simulation corresponds to
-        //corrected jets. Translate it into a binning in uncorrected pt.
-        std::vector<double> uncorrPtBinning;
-        
-        for (int i = 1; i <= triggerBin.simBalProfile->GetNbinsX() + 1; ++i)
+        for (unsigned binIndex = 1; binIndex <= triggerBin.recompBal.size(); ++binIndex)
         {
-            double const pt = triggerBin.simBalProfile->GetBinLowEdge(i);
-            uncorrPtBinning.emplace_back(corrector.UndoCorr(pt));
-        }
-        
-        
-        // Build a map from this translated binning to the fine binning in data histograms. It
-        //accounts both for the migration in pt of the leading jet due to the jet correction and
-        //the typically larger size of bins used for computation of chi2.
-        auto binMap = mapBinning(triggerBin.binning, uncorrPtBinning);
-        
-        // Under- and overflow bins in pt are included in other trigger bins and must be dropped
-        binMap.erase(0);
-        binMap.erase(triggerBin.simBalProfile->GetNbinsX() + 1);
-        
-        
-        // Find bin in pt of other jets that contains minPtUncorr, and the corresponding inclusion
-        //fraction
-        auto const *axis = triggerBin.ptJetSumProj->GetYaxis();
-        unsigned const minPtBin = axis->FindFixBin(minPtUncorr);
-        double const minPtFrac = (minPtUncorr - axis->GetBinLowEdge(minPtBin)) /
-          axis->GetBinWidth(minPtBin);
-        FracBin const ptJetStart{minPtBin, 1. - minPtFrac};
-        
-        
-        // Compute chi2 with the translated binning
-        for (auto const &binMapPair: binMap)
-        {
-            auto const &binIndex = binMapPair.first;
-            auto const &binRange = binMapPair.second;
-            
-            double meanBal;
-            
-            if (method == Method::PtBal)
-                meanBal = ComputePtBal(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
-            else
-                meanBal = ComputeMPF(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
-            
+            double const meanBal = triggerBin.recompBal[binIndex - 1];
             double const simMeanBal = triggerBin.simBalProfile->GetBinContent(binIndex);
             chi2 += std::pow(meanBal - simMeanBal, 2) / triggerBin.totalUnc2[binIndex - 1];
         }
     }
-    
     
     return chi2;
 }
@@ -320,4 +337,68 @@ double Multijet::ComputePtBal(TriggerBin const &triggerBin, FracBin const &ptLea
     }
     
     return -sumBal / sumWeight;
+}
+
+
+void Multijet::UpdateBalance(JetCorrBase const &corrector, Nuisances const &) const
+{
+    double minPtUncorr = corrector.UndoCorr(minPt);
+    
+    if (triggerBins.front().ptJetSumProj->GetYaxis()->FindFixBin(minPtUncorr) == 0)
+    {
+        std::ostringstream message;
+        message << "Multijet::UpdateBalance: With the current correction jet threshold (" <<
+          minPt << " -> " << minPtUncorr << " GeV) falls in the underflow bin.";
+        throw std::runtime_error(message.str());
+    }
+    
+    
+    for (auto const &triggerBin: triggerBins)
+    {
+        // The binning in pt of the leading jet in the profile for simulation corresponds to
+        //corrected jets. Translate it into a binning in uncorrected pt.
+        std::vector<double> uncorrPtBinning;
+        
+        for (int i = 1; i <= triggerBin.simBalProfile->GetNbinsX() + 1; ++i)
+        {
+            double const pt = triggerBin.simBalProfile->GetBinLowEdge(i);
+            uncorrPtBinning.emplace_back(corrector.UndoCorr(pt));
+        }
+        
+        
+        // Build a map from this translated binning to the fine binning in data histograms. It
+        //accounts both for the migration in pt of the leading jet due to the jet correction and
+        //the typically larger size of bins used for computation of chi2.
+        auto binMap = mapBinning(triggerBin.binning, uncorrPtBinning);
+        
+        // Under- and overflow bins in pt are included in other trigger bins and must be dropped
+        binMap.erase(0);
+        binMap.erase(triggerBin.simBalProfile->GetNbinsX() + 1);
+        
+        
+        // Find bin in pt of other jets that contains minPtUncorr, and the corresponding inclusion
+        //fraction
+        auto const *axis = triggerBin.ptJetSumProj->GetYaxis();
+        unsigned const minPtBin = axis->FindFixBin(minPtUncorr);
+        double const minPtFrac = (minPtUncorr - axis->GetBinLowEdge(minPtBin)) /
+          axis->GetBinWidth(minPtBin);
+        FracBin const ptJetStart{minPtBin, 1. - minPtFrac};
+        
+        
+        // Compute mean balance with the translated binning
+        for (auto const &binMapPair: binMap)
+        {
+            auto const &binIndex = binMapPair.first;
+            auto const &binRange = binMapPair.second;
+            
+            double meanBal;
+            
+            if (method == Method::PtBal)
+                meanBal = ComputePtBal(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
+            else
+                meanBal = ComputeMPF(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
+            
+            triggerBin.recompBal[binIndex - 1] = meanBal;
+        }
+    }
 }

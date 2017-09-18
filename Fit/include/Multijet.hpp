@@ -3,6 +3,7 @@
 #include <FitBase.hpp>
 
 #include <TH1.h>
+#include <TH1D.h>
 #include <TH2.h>
 #include <TProfile.h>
 
@@ -74,6 +75,13 @@ private:
          * Computed in the binning of simBalProfile.
          */
         std::vector<double> totalUnc2;
+        
+        /**
+         * \brief Recomputed mean balance observable in data
+         * 
+         * Computed in the binning of simBalProfile.
+         */
+        mutable std::vector<double> recompBal;
     };
         
 public:
@@ -89,11 +97,18 @@ public:
     virtual unsigned GetDim() const override;
     
     /**
+     * \brief Builds a histogram of recomputed mean balance observable in data
+     * 
+     * The binning is as used for simulation.
+     */
+    TH1D GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances) const;
+    
+    /**
      * \brief Evaluates the deviation with the given jet corrector and set of nuisances
      * 
      * Implemented from DeviationBase.
      */
-    virtual double Eval(JetCorrBase const &corrector, Nuisances const &) const override;
+    virtual double Eval(JetCorrBase const &corrector, Nuisances const &nuisances) const override;
     
 private:
     /// Recomputes MPF in data for given trigger bin, 2D pt window, and jet correction
@@ -103,7 +118,10 @@ private:
     /// Recomputes pt balance in data for given trigger bin, 2D pt window, and jet correction
     static double ComputePtBal(TriggerBin const &triggerBin, FracBin const &ptLeadStart,
       FracBin const &ptLeadEnd, FracBin const &ptJetStart, JetCorrBase const &corrector);
-        
+    
+    /// Recomputes mean balance observable in all trigger bins for the given jet correction
+    void UpdateBalance(JetCorrBase const &corrector, Nuisances const &) const;
+    
 private:
     /// Method of computation
     Method method;
