@@ -88,7 +88,9 @@ int main(int argc, char **argv)
     cout << "  Covariance matrix status: " << minimizer.CovMatrixStatus() << '\n';
     cout << "  Minimal value: " << minimizer.MinValue() << '\n';
     cout << "  NDF: " << lossFunc.GetNDF() << '\n';
-    cout << "  p-value: " << TMath::Prob(minimizer.MinValue(), lossFunc.GetNDF()) << '\n';
+    
+    double const pValue = TMath::Prob(minimizer.MinValue(), lossFunc.GetNDF());
+    cout << "  p-value: " << pValue << '\n';
     
     double const *results = minimizer.X();
     double const *errors = minimizer.Errors();
@@ -108,7 +110,7 @@ int main(int argc, char **argv)
     for (unsigned i = 0; i < nPars; ++i)
         resFile << results[i] << " ";
     
-    resFile << "\n\n# Covariance matrix:\n";
+    resFile << "\n# Covariance matrix:\n";
     
     for (unsigned i = 0; i < nPars; ++i)
     {
@@ -117,6 +119,9 @@ int main(int argc, char **argv)
         
         resFile << '\n';
     }
+    
+    resFile << "\n# Minimal chi^2, NDF, p-value:\n";
+    resFile << minimizer.MinValue() << " " << lossFunc.GetNDF() << " " << pValue << '\n';
     
     resFile.close();
     
