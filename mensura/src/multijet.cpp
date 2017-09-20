@@ -414,7 +414,7 @@ int main(int argc, char **argv)
             eventID->SetTreeName(trigger + "/EventID");
             manager.RegisterPlugin(eventID);
             
-            BalanceHists *balanceHists = new BalanceHists("BalanceHists"s + trigger, 15.);
+            BalanceHists *balanceHists = new BalanceHists("BalanceHists"s + trigger, 10.);
             balanceHists->SetDirectoryName(trigger);
             manager.RegisterPlugin(balanceHists);
         }
