@@ -51,6 +51,10 @@ options.register(
     'In case of data, distinguishes PromptReco and ReReco. Ignored for simulation'
 )
 options.register(
+    'isLegacy2016', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
+    'Flags legacy ReReco fo 2016 data. Ignored for simulation'
+)
+options.register(
     'triggerProcessName', 'HLT', VarParsing.multiplicity.singleton,
     VarParsing.varType.string, 'Name of the process that evaluated trigger decisions'
 )
@@ -96,7 +100,10 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/03Feb2017-v1/100000/006E7AF2-AEEC-E611-A88D-7845C4FC3B00.root')
+        if options.isLegacy2016:
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016H/JetHT/MINIAOD/07Aug17-v1/110000/00C26D2B-397D-E711-9D65-0CC47AD98CF0.root')
+        else:
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/03Feb2017-v1/100000/006E7AF2-AEEC-E611-A88D-7845C4FC3B00.root')
     else:
         process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/70000/000316AF-9FBE-E611-9761-0CC47A7C35F8.root')
 
@@ -173,7 +180,7 @@ from Analysis.Multijet.ObjectsDefinitions_cff import (define_photons, define_jet
 phoQualityCuts, phoCutBasedIDMaps = define_photons(process)
 recorrectedJetsLabel, jetQualityCuts = \
     define_jets(process, reapplyJEC=True, runOnData=runOnData)
-metTag = define_METs(process, runOnData=runOnData)
+metTag = define_METs(process, runOnData=runOnData, legacy2016=options.isLegacy2016)
 
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
@@ -184,8 +191,8 @@ process.analysisPatPhotons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
 # Apply event filters recommended for analyses involving MET
 from Analysis.PECTuples.EventFilters_cff import apply_event_filters
 apply_event_filters(
-    process, paths, runOnData=runOnData,
-    isPromptReco=options.isPromptReco
+    process, paths, runOnData=runOnData, isPromptReco=options.isPromptReco,
+    processName='RECO' if runOnData and options.isLegacy2016 else 'PAT'
 )
 
 
