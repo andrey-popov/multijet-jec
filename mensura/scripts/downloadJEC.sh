@@ -7,7 +7,7 @@ set -e
 
 
 dirSource=`pwd`
-version="3"
+version="7"
 blocks=("Summer16_03Feb2017BCD_V${version}_DATA" "Summer16_03Feb2017EF_V${version}_DATA" \
     "Summer16_03Feb2017G_V${version}_DATA" "Summer16_03Feb2017H_V${version}_DATA" \
     "Summer16_03Feb2017_V1_MC")
