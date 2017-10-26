@@ -364,14 +364,13 @@ int main(int argc, char **argv)
         
         // Corrections to be applied to jets and also to be propagated to MET. Although original
         //jets in simulation already have up-to-date corrections, they will be reapplied in order
-        //to have a consistent impact on MET from the stochastic JER smearing. The random-number
-        //seed for the smearing is fixed for the sake of reproducibility.
+        //to have a consistent impact on MET from the stochastic JER smearing.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
         jetCorrFull->SetJEC({jecVersion + "_MC_L1FastJet_AK4PFchs.txt",
           jecVersion + "_MC_L2Relative_AK4PFchs.txt",
           jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
         jetCorrFull->SetJER("Spring16_25nsV10_MC_SF_AK4PFchs.txt",
-          "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt", 4913);
+          "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt");
         
         if (systType == "JEC")
             jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");
