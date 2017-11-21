@@ -1,6 +1,7 @@
 #include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
+#include <EtaPhiFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <GenMatchFilter.hpp>
 #include <JetIDFilter.hpp>
@@ -383,6 +384,17 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new FirstJetFilter(150., 1.3));
     
     manager.RegisterPlugin(new JetIDFilter("JetIDFilter", 15.));
+    
+    if (dataGroup == DatasetGroup::Data and dataEra == Era::Run2016BCD)
+    {
+        EtaPhiFilter *etaPhiFilter = new EtaPhiFilter(15.);
+        
+        etaPhiFilter->AddRegion(272007, 275376, -2.172, -2.043, 2.290, 2.422);
+        etaPhiFilter->AddRegion(275657, 276283, -3.314, -3.139, 2.237, 2.475);
+        etaPhiFilter->AddRegion(276315, 276811, -3.489, -3.139, 2.237, 2.475);
+        
+        manager.RegisterPlugin(etaPhiFilter);
+    }
     
     if (dataGroup == DatasetGroup::MC)
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
