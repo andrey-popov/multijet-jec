@@ -267,7 +267,7 @@ int main(int argc, char **argv)
     {
         if (dataGroup == DatasetGroup::Data)
         {
-            jecVersion = "Summer16_03Feb2017";
+            jecVersion = "Summer16_07Aug2017";
             
             switch (dataEra)
             {
@@ -288,10 +288,10 @@ int main(int argc, char **argv)
                     break;
             }
             
-            jecVersion += "_V3";
+            jecVersion += "_V1";
         }
         else
-            jecVersion = "Summer16_03Feb2017_V1";
+            jecVersion = "Summer16_07Aug2017_V1";
     }
     
     
