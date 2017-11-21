@@ -181,27 +181,27 @@ int main(int argc, char **argv)
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
-      "2017.04.21_Grid-campaign-03Feb2017-fix/Results/samples_v1.json");
+      "2017.10.19_Grid-campaign-07Aug17/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
     {
         switch (dataEra)
         {
             case Era::Run2016BCD:
-                datasets = datasetBuilder({"JetHT-Run2016B_qbi", "JetHT-Run2016C_XDB",
-                  "JetHT-Run2016D_soy"});
+                datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
+                  "JetHT-Run2016D_cgp"});
                 break;
             
             case Era::Run2016EFearly:
-                datasets = datasetBuilder({"JetHT-Run2016E_jJE", "JetHT-Run2016F_OdK"});
+                datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
                 break;
             
             case Era::Run2016FlateG:
-                datasets = datasetBuilder({"JetHT-Run2016F_OdK", "JetHT-Run2016G_psd"});
+                datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ"});
                 break;
             
             case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H-v2_GnN", "JetHT-Run2016H-v3_tMS"});
+                datasets = datasetBuilder({"JetHT-Run2016H_xOF"});
                 break;
             
             default:
