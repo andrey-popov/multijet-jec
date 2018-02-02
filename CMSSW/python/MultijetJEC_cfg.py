@@ -15,10 +15,12 @@ if it contains a loosely defined muon, electron, or photon.
 import random
 import string
 
+import FWCore.ParameterSet.Config as cms
+
 
 # Create a process
-import FWCore.ParameterSet.Config as cms
-process = cms.Process('Analysis')
+from Configuration.StandardSequences.Eras import eras
+process = cms.Process('Analysis', eras.Run2_2017)
 
 
 # Enable MessageLogger and reduce its verbosity
@@ -28,8 +30,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 # Ask to print a summary in the log
 process.options = cms.untracked.PSet(
-    wantSummary = cms.untracked.bool(True),
-    allowUnscheduled = cms.untracked.bool(True)
+    wantSummary = cms.untracked.bool(True)
 )
 
 
@@ -47,13 +48,13 @@ options.register(
     'Indicates whether the job processes data or simulation'
 )
 options.register(
-    'isPromptReco', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'In case of data, distinguishes PromptReco and ReReco. Ignored for simulation'
+    'period', '2017', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+    'Data-taking period'
 )
-options.register(
-    'isLegacy2016', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'Flags legacy ReReco fo 2016 data. Ignored for simulation'
-)
+# options.register(
+#     'isPromptReco', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
+#     'In case of data, distinguishes PromptReco and ReReco. Ignored for simulation'
+# )
 options.register(
     'triggerProcessName', 'HLT', VarParsing.multiplicity.singleton,
     VarParsing.varType.string, 'Name of the process that evaluated trigger decisions'
@@ -71,20 +72,28 @@ options.setDefault('outputFile', 'sample.root')
 options.parseArguments()
 
 
+# Check provided data-taking period.  At the moment only '2017' is
+# supported.
+if options.period not in ['2017']:
+    raise RuntimeError('Data-taking period "{}" is not supported.'.format(options.period))
+
+
 # Make shortcuts to access some of the configuration options easily
 runOnData = options.runOnData
 
 
 # Provide a default global tag if user has not given any.  Chosen
-# following recommendations of the JERC group [1].
-# [1] https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=119
-if len(options.globalTag) == 0:
+# according to [1].  They include outdated JEC Summer16_23Sep2016V4.
+# [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideFrontierConditions#Global_Tags_for_2017_Nov_re_reco?rev=615
+if not options.globalTag:
     if runOnData:
-        options.globalTag = '80X_dataRun2_Prompt_ICHEP16JEC_v0'
+        options.globalTag = '94X_dataRun2_ReReco_EOY17_v2'
     else:
-        options.globalTag = '80X_mcRun2_asymptotic_2016_miniAODv2_v1'
+        options.globalTag = '94X_mc2017_realistic_v10'
     
-    print 'WARNING: No global tag provided. Will use the default one (' + options.globalTag + ')'
+    print 'WARNING: No global tag provided. Will use the default one: {}.'.format(
+        options.globalTag
+    )
 
 # Set the global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
@@ -100,12 +109,9 @@ if len(options.inputFiles) > 0:
 else:
     # Default input files for testing
     if runOnData:
-        if options.isLegacy2016:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016H/JetHT/MINIAOD/07Aug17-v1/110000/00C26D2B-397D-E711-9D65-0CC47AD98CF0.root')
-        else:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/03Feb2017-v1/100000/006E7AF2-AEEC-E611-A88D-7845C4FC3B00.root')
+        process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/JetHT/MINIAOD/17Nov2017-v1/50000/066DF59D-99DF-E711-9B58-02163E019C9B.root')
     else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/70000/000316AF-9FBE-E611-9761-0CC47A7C35F8.root')
+        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall17MiniAOD/QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/MINIAODSIM/94X_mc2017_realistic_v10-v1/20000/02B9CF2E-B4FD-E711-8A43-0CC47A78A3F4.root')
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
@@ -139,19 +145,9 @@ process.load('Configuration.StandardSequences.MagneticField_cff')
 # Create the processing path.  It is wrapped in a manager that
 # simplifies working with multiple paths (and also provides the
 # interface expected by python tools in the PEC-tuples package).
-class PathManager:
-    
-    def __init__(self, *paths):
-        self.paths = []
-        for p in paths:
-            self.paths.append(p)
-    
-    def append(self, *modules):
-        for p in self.paths:
-            for m in modules:
-                p += m
-
 process.p = cms.Path()
+
+from Analysis.PECTuples.Utils_cff import PathManager
 paths = PathManager(process.p)
 
 
@@ -160,7 +156,8 @@ paths = PathManager(process.p)
 if not runOnData:
     process.eventCounter = cms.EDAnalyzer('EventCounter',
         generator = cms.InputTag('generator'),
-        saveAltLHEWeights = cms.bool(False)
+        saveAltLHEWeights = cms.bool(False),
+        puInfo = cms.InputTag('slimmedAddPileupInfo')
     )
     paths.append(process.eventCounter)
 
@@ -176,11 +173,12 @@ paths.append(process.goodOfflinePrimaryVertices)
 
 # Define and customize basic reconstructed objects
 from Analysis.Multijet.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
+process.analysisTask = cms.Task()
 
-phoQualityCuts, phoCutBasedIDMaps = define_photons(process)
+phoQualityCuts, phoCutBasedIDMaps = define_photons(process, process.analysisTask)
 recorrectedJetsLabel, jetQualityCuts = \
-    define_jets(process, reapplyJEC=True, runOnData=runOnData)
-metTag = define_METs(process, runOnData=runOnData, legacy2016=options.isLegacy2016)
+    define_jets(process, process.analysisTask, reapplyJEC=True, runOnData=runOnData)
+metTag = define_METs(process, process.analysisTask, runOnData=runOnData)
 
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
@@ -191,8 +189,8 @@ process.analysisPatPhotons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
 # Apply event filters recommended for analyses involving MET
 from Analysis.PECTuples.EventFilters_cff import apply_event_filters
 apply_event_filters(
-    process, paths, runOnData=runOnData, isPromptReco=options.isPromptReco,
-    processName='RECO' if runOnData and options.isLegacy2016 else 'PAT'
+    process, paths, runOnData=runOnData,
+    processName='RECO' if runOnData else 'PAT'
 )
 
 
@@ -212,6 +210,7 @@ process.looseElectrons = cms.EDFilter('PATElectronSelector',
         'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")'
     )
 )
+process.analysisTask.add(process.looseMuons, process.looseElectrons)
 
 process.vetoMuons = cms.EDFilter('PATCandViewCountFilter',
     src = cms.InputTag('looseMuons'),
@@ -262,7 +261,8 @@ paths.append(process.pecTrigger)
 
 # Save trigger objects that pass last filters in the single-jet triggers
 process.pecTriggerObjects = cms.EDAnalyzer('PECTriggerObjects',
-    triggerObjects = cms.InputTag('selectedPatTrigger'),
+    triggerResults = cms.InputTag('TriggerResults', processName=options.triggerProcessName),
+    triggerObjects = cms.InputTag('slimmedPatTrigger'),
     filters = cms.vstring(
         'hltSinglePFJet140', 'hltSinglePFJet200', 'hltSinglePFJet260', 'hltSinglePFJet320',
         'hltSinglePFJet400', 'hltSinglePFJet450', 'hltSinglePFJet500'
@@ -279,6 +279,7 @@ process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
     jetSelection = jetQualityCuts,
+    jetIDVersion = cms.string('2017'),
     met = metTag
 )
 
@@ -317,6 +318,14 @@ if not runOnData and options.saveGenJets:
         met = metTag
     )
     paths.append(process.pecGenJetMET)
+
+
+# Associate with the paths the analysis-specific task and the task
+# filled by PAT tools automatically
+paths.associate(process.analysisTask)
+
+from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
+paths.associate(getPatAlgosToolsTask(process))
 
 
 # The output file for the analyzers

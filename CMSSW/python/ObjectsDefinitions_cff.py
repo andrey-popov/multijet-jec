@@ -12,7 +12,7 @@ from Analysis.PECTuples.ObjectsDefinitions_cff import (
 )
 
 
-def define_METs(process, runOnData=False, legacy2016=False):
+def define_METs(process, task, runOnData=False):
     """Define reconstructed MET.
     
     Configure computation of corrected CHS PF MET and its systematic
@@ -25,8 +25,7 @@ def define_METs(process, runOnData=False, legacy2016=False):
         process: The process to which relevant MET producers are added.
         runOnData: Flag to distinguish processing of data and
             simulation.
-        legacy2016: Flags legacy 2016 data for which there is no need
-            for the correction for the ECAL gain switch.
+        task: Task to which non-standard producers are attached.
     
     Return value:
         InputTag that defines MET collection to be used.
@@ -60,75 +59,20 @@ def define_METs(process, runOnData=False, legacy2016=False):
         cut = cms.string('fromPV(0) > 0')
     )
     
+    task.add(process.packedPFCandidatesCHS)
     
-    if runOnData:
-        from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import \
-            runMetCorAndUncFromMiniAOD
-        runMetCorAndUncFromMiniAOD(
-            process, isData=runOnData, pfCandColl='packedPFCandidatesCHS', recoMetFromPFCs=True
-        )
-        
-        if not legacy2016:
-            # Apply an additional correction for the ECAL gain switch
-            # issue [1].  The correction for bad muons had been already
-            # applied by filtering the collection of PF candidates
-            # stored in MiniAOD [2].
-            # [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/ReMiniAOD03Feb2017Notes?rev=19#MET_Recipes
-            # [2] https://indico.cern.ch/event/602633/contributions/2462363/
-            from PhysicsTools.PatUtils.tools.corMETFromMuonAndEG import corMETFromMuonAndEG
-            corMETFromMuonAndEG(
-                process,
-                pfCandCollection='',
-                electronCollection='slimmedElectronsBeforeGSFix',
-                photonCollection='slimmedPhotonsBeforeGSFix',
-                corElectronCollection='slimmedElectrons',
-                corPhotonCollection='slimmedPhotons',
-                allMETEGCorrected=True,
-                muCorrection=False,
-                eGCorrection=True,
-                runOnMiniAOD=True,
-                postfix='MuEGClean'
-            )
-            
-            process.slimmedMETsMuEGClean = process.slimmedMETs.clone(
-                src = cms.InputTag('patPFMetT1MuEGClean'),
-                rawVariation = cms.InputTag('patPFMetRawMuEGClean'),
-                t1Uncertainties = cms.InputTag('patPFMetT1%sMuEGClean')
-            )
-            del process.slimmedMETsMuEGClean.caloMET
-            
-            metTag = cms.InputTag('slimmedMETsMuEGClean', processName=process.name_())
-        
-        else:
-            metTag = cms.InputTag('slimmedMETs', processName=process.name_())
     
-    else:
-        # Apply corrections for bad muons [1-2]
-        # [1] https://twiki.cern.ch/twiki/bin/view/CMSPublic/ReMiniAOD03Feb2017Notes?rev=19#MET_Recipes
-        # [2] https://hypernews.cern.ch/HyperNews/CMS/get/met/525.html
-        process.load('RecoMET.METFilters.badGlobalMuonTaggersMiniAOD_cff')
-        process.badGlobalMuonTaggerMAOD.taggingMode = cms.bool(True)
-        process.cloneGlobalMuonTaggerMAOD.taggingMode = cms.bool(True)
-        
-        from PhysicsTools.PatUtils.tools.muonRecoMitigation import muonRecoMitigation
-        muonRecoMitigation(
-            process=process,
-            pfCandCollection='packedPFCandidatesCHS',
-            runOnMiniAOD=True,
-            selection='',
-            muonCollection='',
-            cleanCollName='cleanMuonsPFCandidates',
-            cleaningScheme='all',
-            postfix=''
-        )
-        
-        from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import \
-            runMetCorAndUncFromMiniAOD
-        runMetCorAndUncFromMiniAOD(
-            process, isData=runOnData, pfCandColl='cleanMuonsPFCandidates', recoMetFromPFCs=True
-        )
-        
-        metTag = cms.InputTag('slimmedMETs', processName=process.name_())
-        
+    from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import \
+        runMetCorAndUncFromMiniAOD
+    runMetCorAndUncFromMiniAOD(
+        process, isData=runOnData, pfCandColl='packedPFCandidatesCHS', recoMetFromPFCs=True
+    )
     
+    # Fix a bug in runMetCorAndUncFromMiniAOD, which does not add one of
+    # producers to the PAT task
+    from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
+    getPatAlgosToolsTask(process).add(process.pfNoPileUpJME)
+    
+    
+    metTag = cms.InputTag('slimmedMETs', processName=process.name_())
     return metTag
