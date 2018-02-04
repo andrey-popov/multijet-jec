@@ -60,7 +60,7 @@ options.register(
     VarParsing.varType.string, 'Name of the process that evaluated trigger decisions'
 )
 options.register(
-    'saveGenJets', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
+    'saveGenJets', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'Save information about generator-level jets'
 )
 
