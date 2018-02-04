@@ -172,18 +172,24 @@ paths.append(process.goodOfflinePrimaryVertices)
 
 
 # Define and customize basic reconstructed objects
-from Analysis.Multijet.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
+from Analysis.Multijet.ObjectsDefinitions_cff import (
+    define_electrons, define_photons, define_jets, define_METs
+)
 process.analysisTask = cms.Task()
 
+eleQualityCuts, eleEmbeddedCutBasedIDLabels, eleCutBasedIDMaps, eleMVAIDMaps = define_electrons(
+    process, process.analysisTask
+)
 phoQualityCuts, phoCutBasedIDMaps = define_photons(process, process.analysisTask)
 recorrectedJetsLabel, jetQualityCuts = \
     define_jets(process, process.analysisTask, reapplyJEC=True, runOnData=runOnData)
 metTag = define_METs(process, process.analysisTask, runOnData=runOnData)
 
+process.analysisPatElectrons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
+process.analysisPatPhotons.cut = process.analysisPatElectrons.cut
+
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
-
-process.analysisPatPhotons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
 
 
 # Apply event filters recommended for analyses involving MET
@@ -203,24 +209,19 @@ process.looseMuons = cms.EDFilter('PATMuonSelector',
         '0.5 * pfIsolationR04.sumPUPt)) / pt < 0.25'
     )
 )
-process.looseElectrons = cms.EDFilter('PATElectronSelector',
-    src = cms.InputTag('slimmedElectrons'),
-    cut = cms.string(
-        'pt > 20. & abs(superCluster.eta) < 2.5 & ' \
-        'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")'
-    )
-)
-process.analysisTask.add(process.looseMuons, process.looseElectrons)
-
 process.vetoMuons = cms.EDFilter('PATCandViewCountFilter',
     src = cms.InputTag('looseMuons'),
     minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
 )
-process.vetoElectrons = cms.EDFilter('PATCandViewCountFilter',
-    src = cms.InputTag('looseElectrons'),
+process.analysisTask.add(process.looseMuons)
+paths.append(process.vetoMuons)
+
+process.vetoElectrons = cms.EDFilter('CandMapCountFilter',
+    src = cms.InputTag('analysisPatElectrons'),
+    acceptMap = cms.InputTag(eleCutBasedIDMaps[0]),
     minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
 )
-paths.append(process.vetoMuons, process.vetoElectrons)
+paths.append(process.vetoElectrons)
 
 
 # Apply photon veto
