@@ -2,7 +2,8 @@
 
 This configuration exploits object definitions and modules from package
 PEC-tuples [1] to produce customized tuples intended for measurements of
-JEC with the multijet method.
+JEC with the multijet method.  Some information is stored using
+dedicated plugins defined in this package.
 
 Stored information mostly comprises reconstructed jets and MET,
 generator-level jets, and trigger decisions.  Events accepted by none of
@@ -195,22 +196,23 @@ paths.append(process.goodOfflinePrimaryVertices)
 
 
 # Define and customize basic reconstructed objects
-from Analysis.Multijet.ObjectsDefinitions_cff import (
-    setup_egamma_preconditions, define_jets, define_METs
-)
 process.analysisTask = cms.Task()
-
+from Analysis.Multijet.ObjectsDefinitions_cff import (
+    setup_egamma_preconditions, define_jets
+)
 setup_egamma_preconditions(process, process.analysisTask, options.period)
-recorrectedJetsLabel, jetQualityCuts = define_jets(
+
+# All jets will be saved.  Apply the current calibration and add some
+# user data.
+define_jets(
     process, process.analysisTask, reapplyJEC=True, runOnData=runOnData
 )
-metTag = define_METs(
-    process, process.analysisTask, runOnData=runOnData,
-    legacy2016=options.isLegacy2016
-)
-
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
+
+# Only interested in raw CHS ptmiss, which does not need to be adjusted
+# in any way.  Simply read from from MiniAOD.
+met_tag = cms.InputTag('slimmedMETs')
 
 
 # Apply event filters recommended for analyses involving MET
@@ -325,12 +327,11 @@ paths.append(process.pecTriggerObjects)
 # Save event ID and relevant objects
 process.pecEventID = cms.EDAnalyzer('PECEventID')
 
-process.pecJetMET = cms.EDAnalyzer('PECJetMET',
+process.basicJetMET = cms.EDAnalyzer('BasicJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
-    jetSelection = jetQualityCuts,
     jetIDVersion = cms.string(options.period),
-    met = metTag
+    met = met_tag
 )
 
 process.pecPileUp = cms.EDAnalyzer('PECPileUp',
@@ -341,7 +342,7 @@ process.pecPileUp = cms.EDAnalyzer('PECPileUp',
     saveMaxPtHat = cms.bool(True)
 )
 
-paths.append(process.pecEventID, process.pecJetMET, process.pecPileUp)
+paths.append(process.pecEventID, process.basicJetMET, process.pecPileUp)
 
 
 # Save global generator information
@@ -365,7 +366,7 @@ if not runOnData and options.saveGenJets:
         jets = cms.InputTag('slimmedGenJets'),
         cut = cms.string(''),
         saveFlavourCounters = cms.bool(True),
-        met = metTag
+        met = met_tag
     )
     paths.append(process.pecGenJetMET)
 
