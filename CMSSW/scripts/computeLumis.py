@@ -14,7 +14,7 @@ import subprocess
 from threading import Thread
 
 
-def worker(queue, lumis):
+def worker(queue, lumis, normtag):
     """Read next mask-trigger pair and compute luminosity for it."""
     
     while True:
@@ -26,7 +26,6 @@ def worker(queue, lumis):
         
         
         # Issue command to compute luminosity
-        normtag = '/afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_DATACERT.json'
         brilcalcCall = subprocess.Popen(
             [
                 'brilcalc', 'lumi', '--normtag', normtag, '-i', mask, '-u', '/pb',
@@ -85,14 +84,20 @@ if __name__ == '__main__':
         'masks', metavar='masks', nargs='*',
         help='Lumi masks to select data'
     )
+    argParser.add_argument(
+        '--normtag', default='normtag_BRIL.json',
+        help='Normtag for luminosity computation. Resolved w.r.t. standard location.'
+    )
     args = argParser.parse_args()
     
     if not args.masks:
         raise RuntimeError('No lumi masks provided')
     
+    normtag = '/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/' + args.normtag
+    
     
     # Define tasks to process
-    triggers = ['PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450']
+    triggers = ['PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500']
     queue = Queue.Queue()
     
     for mask in args.masks:
@@ -105,7 +110,7 @@ if __name__ == '__main__':
     threads = []
     
     for i in range(16):
-        t = Thread(target=worker, args=(queue, lumis))
+        t = Thread(target=worker, args=(queue, lumis, normtag))
         threads.append(t)
         t.start()
     
