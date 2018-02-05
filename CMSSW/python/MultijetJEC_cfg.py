@@ -2,7 +2,8 @@
 
 This configuration exploits object definitions and modules from package
 PEC-tuples [1] to produce customized tuples intended for measurements of
-JEC with the multijet method.
+JEC with the multijet method.  Some information is stored using
+dedicated plugins defined in this package.
 
 Stored information mostly comprises reconstructed jets and MET,
 generator-level jets, and trigger decisions.  Events accepted by none of
@@ -183,7 +184,7 @@ eleQualityCuts, eleEmbeddedCutBasedIDLabels, eleCutBasedIDMaps, eleMVAIDMaps = d
 phoQualityCuts, phoCutBasedIDMaps = define_photons(process, process.analysisTask)
 recorrectedJetsLabel, jetQualityCuts = \
     define_jets(process, process.analysisTask, reapplyJEC=True, runOnData=runOnData)
-metTag = define_METs(process, process.analysisTask, runOnData=runOnData)
+metTag = cms.InputTag('slimmedMETs')
 
 process.analysisPatElectrons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
 process.analysisPatPhotons.cut = process.analysisPatElectrons.cut
@@ -276,10 +277,9 @@ paths.append(process.pecTriggerObjects)
 # Save event ID and relevant objects
 process.pecEventID = cms.EDAnalyzer('PECEventID')
 
-process.pecJetMET = cms.EDAnalyzer('PECJetMET',
+process.basicJetMET = cms.EDAnalyzer('BasicJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
-    jetSelection = jetQualityCuts,
     jetIDVersion = cms.string('2017'),
     met = metTag
 )
@@ -292,7 +292,7 @@ process.pecPileUp = cms.EDAnalyzer('PECPileUp',
     saveMaxPtHat = cms.bool(True)
 )
 
-paths.append(process.pecEventID, process.pecJetMET, process.pecPileUp)
+paths.append(process.pecEventID, process.basicJetMET, process.pecPileUp)
 
 
 # Save global generator information
