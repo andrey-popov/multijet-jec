@@ -243,7 +243,7 @@ int main(int argc, char **argv)
         if (dataGroup == DatasetGroup::Data)
             jecVersion = "Fall17_17Nov" + dataEra + "_V3";
         else
-            jecVersion = "Fall17_17Nov2017_V3_MC";
+            jecVersion = "Fall17_17Nov2017_V3";
     }
     
     
