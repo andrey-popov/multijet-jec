@@ -59,6 +59,7 @@ int main(int argc, char **argv)
       ("era,e", po::value<string>(), "Data-taking era")
       ("jec-version", po::value<string>(), "Optional explicit JEC version")
       ("l3-res", "Enables L3 residual corrections")
+      ("no-res", "Disables all residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4");
     //^ This is some severe abuse of C++ syntax...
     
@@ -80,10 +81,15 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-    
     if (not optionsMap.count("datasetGroup"))
     {
         cerr << "Required argument datasetGroup is missing.\n";
+        return EXIT_FAILURE;
+    }
+    
+    if (optionsMap.count("l3-res") and optionsMap.count("no-res"))
+    {
+        cerr << "Options \"--l3-res\" and \"--no-res\" conflict with each other.\n";
         return EXIT_FAILURE;
     }
     
@@ -253,13 +259,22 @@ int main(int argc, char **argv)
         
         
         // Corrections to be applied to jets. They will also be propagated to MET.
-        string residualsType = (optionsMap.count("l3-res")) ? "L2L3Residual" : "L2Residual";
-        
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
-          jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
-          jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
-          jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"});
+        
+        if (optionsMap.count("no-res"))
+            jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
+              jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
+              jecVersion + "_DATA_L3Absolute_AK4PFchs.txt"});
+        else
+        {
+            string residualsType = (optionsMap.count("l3-res")) ? "L2L3Residual" : "L2Residual";
+            
+            jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
+              jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
+              jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
+              jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"});
+        }
+        
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
