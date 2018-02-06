@@ -26,7 +26,12 @@
   },
   "PFJet450": {
     "filter": "hltSinglePFJet450",
-    "corrPtRange": [550.0, 1e100],
-    "uncorrPtRange": [500.0, 1e100]
+    "corrPtRange": [550.0, 600.0],
+    "uncorrPtRange": [500.0, 650.0]
+  },
+  "PFJet500": {
+    "filter": "hltSinglePFJet500",
+    "corrPtRange": [600.0, 1e100],
+    "uncorrPtRange": [550.0, 1e100]
   }
 }

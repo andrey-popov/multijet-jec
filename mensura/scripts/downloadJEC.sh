@@ -7,10 +7,17 @@ set -e
 
 
 dirSource=`pwd`
-version="1"
-blocks=("Summer16_07Aug2017BCD_V${version}_DATA" "Summer16_07Aug2017EF_V${version}_DATA" \
-    "Summer16_07Aug2017G_V${version}_DATA" "Summer16_07Aug2017H_V${version}_DATA" \
-    "Summer16_07Aug2017_V1_MC")
+
+blocks=()
+version="3"
+
+for era in B C D E F
+do
+    blocks+=("Fall17_17Nov2017${era}_V${version}_DATA")
+done
+
+blocks+=("Fall17_17Nov2017_V3_MC")
+
 
 # Temporary directory to store intermediate files
 dirTemp=`mktemp -d`

@@ -1,14 +1,13 @@
 #include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
-#include <EtaPhiFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <GenMatchFilter.hpp>
+#include <JERCJetMETReader.hpp>
 #include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
-#include <RunFilter.hpp>
 
 #include <mensura/core/Dataset.hpp>
 #include <mensura/core/FileInPath.hpp>
@@ -24,7 +23,6 @@
 
 #include <mensura/PECReader/PECGenJetMETReader.hpp>
 #include <mensura/PECReader/PECInputData.hpp>
-#include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
 #include <mensura/PECReader/PECTriggerObjectReader.hpp>
 
@@ -34,8 +32,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <list>
-#include <sstream>
+#include <set>
 #include <regex>
+#include <sstream>
 
 
 using namespace std;
@@ -46,16 +45,6 @@ enum class DatasetGroup
 {
     Data,
     MC
-};
-
-
-enum class Era
-{
-    All,
-    Run2016BCD,
-    Run2016EFearly,
-    Run2016FlateG,
-    Run2016H
 };
 
 
@@ -148,71 +137,58 @@ int main(int argc, char **argv)
     
     
     // Parse data-taking era
-    Era dataEra = Era::All;
-    string dataEraText;
+    string dataEra("None");
     
     if (optionsMap.count("era"))
     {
-        dataEraText = optionsMap["era"].as<string>();
+        dataEra = optionsMap["era"].as<string>();
         
-        if (dataEraText == "Run2016BCD")
-            dataEra = Era::Run2016BCD;
-        else if (dataEraText == "Run2016EFearly")
-            dataEra = Era::Run2016EFearly;
-        else if (dataEraText == "Run2016FlateG")
-            dataEra = Era::Run2016FlateG;
-        else if (dataEraText == "Run2016H")
-            dataEra = Era::Run2016H;
-        else
+        if (boost::starts_with(dataEra, "Run"))
+            dataEra = dataEra.substr(3);
+        
+        
+        set<string> allowedEras({"2016BCD", "2016EFearly", "2016FlateG", "2016H", "2017B",
+          "2017C", "2017D", "2017E", "2017F"});
+        
+        if (allowedEras.count(dataEra) == 0)
         {
-            cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
+            cerr << "Unsupported data-taking era \"" << dataEra << "\".\n";
             return EXIT_FAILURE;
         }
-    }
-    
-    if (dataGroup == DatasetGroup::Data and dataEra == Era::All)
-    {
-        cerr << "Requested to run over full data-taking period, but no residual JEC are "
-          "available for it.\n";
-        return EXIT_FAILURE;
-    }
-    
+    }    
     
     
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
-      "2017.10.19_Grid-campaign-07Aug17/Results/samples_v1.json");
+      "2018.02.05_Grid-campaign-94X/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
     {
-        switch (dataEra)
-        {
-            case Era::Run2016BCD:
-                datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
-                  "JetHT-Run2016D_cgp"});
-                break;
-            
-            case Era::Run2016EFearly:
-                datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
-                break;
-            
-            case Era::Run2016FlateG:
-                datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ"});
-                break;
-            
-            case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H_xOF"});
-                break;
-            
-            default:
-                break;
-        }
+        if (dataEra == "2016BCD")
+            datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
+              "JetHT-Run2016D_cgp"});
+        else if (dataEra == "2016EFearly")
+            datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
+        else if (dataEra == "2016FlateG")
+            datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ"});
+        else if (dataEra == "Run2016H")
+            datasets = datasetBuilder({"JetHT-Run2016H_xOF"});
+        else if (dataEra == "2017B")
+            datasets = datasetBuilder({"JetHT-Run2017B_RJp"});
+        else if (dataEra == "2017C")
+            datasets = datasetBuilder({"JetHT-Run2017C_yPY"});
+        else if (dataEra == "2017D")
+            datasets = datasetBuilder({"JetHT-Run2017D_lFY"});
+        else if (dataEra == "2017E")
+            datasets = datasetBuilder({"JetHT-Run2017E_wbU"});
+        else if (dataEra == "2017F")
+            datasets = datasetBuilder({"JetHT-Run2017F_toh"});
     }
     else
-        datasets = datasetBuilder({"QCD-Ht-100-200-mg_fRs", "QCD-Ht-200-300-mg_all",
-          "QCD-Ht-300-500-mg_all", "QCD-Ht-500-700-mg_all", "QCD-Ht-700-1000-mg_all",
-          "QCD-Ht-1000-1500-mg_all", "QCD-Ht-1500-2000-mg_all", "QCD-Ht-2000-inf-mg_all"});
+        datasets = datasetBuilder({"QCD-Ht-100-200-mg_mtD", "QCD-Ht-200-300-mg_Trm",
+          "QCD-Ht-300-500-mg_nlt", "QCD-Ht-500-700-mg_lXD", "QCD-Ht-700-1000-mg_pOy",
+          "QCD-Ht-1000-1500-mg_peK", "QCD-Ht-1500-2000-mg_sOQ", "QCD-Ht-2000-inf-mg_Xel"});
     
     
     // Add an additional locations to seach for data files
@@ -234,7 +210,7 @@ int main(int argc, char **argv)
     
     // Register services and plugins
     ostringstream outputNameStream;
-    outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? dataEraText : "sim");
+    outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? dataEra : "sim");
     
     if (systType != "None")
         outputNameStream << "_" << systType << "_" <<
@@ -246,14 +222,6 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new PECInputData);
     manager.RegisterPlugin(new PECPileUpReader);
-    
-    if (dataGroup == DatasetGroup::Data)
-    {
-        if (dataEra == Era::Run2016EFearly)
-            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
-        else if (dataEra == Era::Run2016FlateG)
-            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
-    }
     
     
     // Determine JEC version
@@ -267,32 +235,9 @@ int main(int argc, char **argv)
     else
     {
         if (dataGroup == DatasetGroup::Data)
-        {
-            jecVersion = "Summer16_07Aug2017";
-            
-            switch (dataEra)
-            {
-                case Era::Run2016BCD:
-                    jecVersion += "BCD";
-                    break;
-                
-                case Era::Run2016EFearly:
-                    jecVersion += "EF";
-                    break;
-                
-                case Era::Run2016FlateG:
-                    jecVersion += "G";
-                    break;
-                
-                case Era::Run2016H:
-                    jecVersion += "H";
-                    break;
-            }
-            
-            jecVersion += "_V1";
-        }
+            jecVersion = "Fall17_17Nov" + dataEra + "_V3";
         else
-            jecVersion = "Summer16_07Aug2017_V1";
+            jecVersion = "Fall17_17Nov2017_V3_MC";
     }
     
     
@@ -300,10 +245,9 @@ int main(int argc, char **argv)
     if (dataGroup == DatasetGroup::Data)
     {
         // Read original jets and MET, which have outdated corrections
-        PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
         jetmetReader->SetSelection(0., 5.);
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
-        jetmetReader->ReadRawMET();
         jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
         
@@ -338,9 +282,8 @@ int main(int argc, char **argv)
         
         
         // Read original jets and MET
-        PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
         jetmetReader->SetSelection(0., 5.);
-        jetmetReader->ReadRawMET();
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->SetGenJetReader();  // Default one
         jetmetReader->SetApplyJetID(false);
@@ -385,17 +328,6 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new JetIDFilter("JetIDFilter", 15.));
     
-    if (dataGroup == DatasetGroup::Data and dataEra == Era::Run2016BCD)
-    {
-        EtaPhiFilter *etaPhiFilter = new EtaPhiFilter(15.);
-        
-        etaPhiFilter->AddRegion(272007, 275376, -2.172, -2.043, 2.290, 2.422);
-        etaPhiFilter->AddRegion(275657, 276283, -3.314, -3.139, 2.237, 2.475);
-        etaPhiFilter->AddRegion(276315, 276811, -3.489, -3.139, 2.237, 2.475);
-        
-        manager.RegisterPlugin(etaPhiFilter);
-    }
-    
     if (dataGroup == DatasetGroup::MC)
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
     
@@ -407,7 +339,7 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(new PECTriggerObjectReader);
     
     for (string const &trigger:
-      {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450"})
+      {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450", "PFJet500"})
     {
         manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
           "triggerBins.json", (dataGroup == DatasetGroup::Data)), {"RecoilBuilder"});
