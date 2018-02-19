@@ -85,7 +85,7 @@ if __name__ == '__main__':
     
     
     # Define tasks to process
-    triggers = ['PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450']
+    triggers = ['PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500']
     queue = Queue.Queue()
     
     for mask in args.masks:
