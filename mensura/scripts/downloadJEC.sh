@@ -9,14 +9,14 @@ set -e
 dirSource=`pwd`
 
 blocks=()
-version="3"
+version="4"
 
 for era in B C D E F
 do
     blocks+=("Fall17_17Nov2017${era}_V${version}_DATA")
 done
 
-blocks+=("Fall17_17Nov2017_V3_MC")
+blocks+=("Fall17_17Nov2017_V4_MC")
 
 
 # Temporary directory to store intermediate files
@@ -36,8 +36,10 @@ do
     
     if [ -d textFiles/${block} ]; then
         mv textFiles/${block}/* $dirUnpacked/
-    else
+    elif [ -d ${block} ]; then
         mv ${block}/* $dirUnpacked/
+    else
+        mv ${block}* $dirUnpacked/
     fi
 done
 
