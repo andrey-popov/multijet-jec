@@ -57,7 +57,7 @@ int main(int argc, char **argv)
       ("datasetGroup", po::value<string>(), "Dataset group (required)")
       ("syst,s", po::value<string>(), "Systematic shift")
       ("era,e", po::value<string>(), "Data-taking era")
-      ("jec-version", po::value<string>(), "Optional explicit JEC version")
+      // ("jec-version", po::value<string>(), "Optional explicit JEC version")
       ("l3-res", "Enables L3 residual corrections")
       ("no-res", "Disables all residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4");
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
         
         
         set<string> allowedEras({"2016BCD", "2016EFearly", "2016FlateG", "2016H", "2017B",
-          "2017C", "2017D", "2017E", "2017F"});
+          "2017C", "2017D", "2017E", "2017F", "2017All"});
         
         if (allowedEras.count(dataEra) == 0)
         {
@@ -190,6 +190,9 @@ int main(int argc, char **argv)
             datasets = datasetBuilder({"JetHT-Run2017E_wbU"});
         else if (dataEra == "2017F")
             datasets = datasetBuilder({"JetHT-Run2017F_toh"});
+        else if (dataEra == "2017All")
+            datasets = datasetBuilder({"JetHT-Run2017B_RJp", "JetHT-Run2017C_yPY",
+              "JetHT-Run2017D_lFY", "JetHT-Run2017E_wbU", "JetHT-Run2017F_toh"});
     }
     else
         datasets = datasetBuilder({"QCD-Ht-100-200-mg_mtD", "QCD-Ht-200-300-mg_Trm",
@@ -230,23 +233,6 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(new PECPileUpReader);
     
     
-    // Determine JEC version
-    string jecVersion;
-    
-    if (optionsMap.count("jec-version"))
-    {
-        // If a JEC version is given explicitly, use it regardless of the data era
-        jecVersion = optionsMap["jec-version"].as<string>();
-    }
-    else
-    {
-        if (dataGroup == DatasetGroup::Data)
-            jecVersion = "Fall17_17Nov" + dataEra + "_V4";
-        else
-            jecVersion = "Fall17_17Nov2017_V4";
-    }
-    
-    
     // Jet corrections
     if (dataGroup == DatasetGroup::Data)
     {
@@ -258,28 +244,41 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetReader);
         
         
-        // Corrections to be applied to jets. They will also be propagated to MET.
+        // Corrections to be applied to jets. The full correction will also be propagated into
+        //missing pt.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
+        JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
         
-        if (optionsMap.count("no-res"))
-            jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
-              jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
-              jecVersion + "_DATA_L3Absolute_AK4PFchs.txt"});
-        else
+        for (auto jetCorr: {jetCorrFull, jetCorrL1})
         {
-            string residualsType = (optionsMap.count("l3-res")) ? "L2L3Residual" : "L2Residual";
+            jetCorr->RegisterIOV("2017B", 297020, 299329);
+            jetCorr->RegisterIOV("2017C", 299337, 302029);
+            jetCorr->RegisterIOV("2017D", 302030, 303434);
+            jetCorr->RegisterIOV("2017E", 303435, 304826);
+            jetCorr->RegisterIOV("2017F", 304911, 306462);
+        }
+        
+        for (string const &era: {"2017B", "2017C", "2017D", "2017E", "2017F"})
+        {
+            string const jecVersion = "Fall17_17Nov" + era + "_V4";
             
-            jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
+            vector<string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
               jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
-              jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
-              jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"});
+              jecVersion + "_DATA_L3Absolute_AK4PFchs.txt"};
+            
+            if (not optionsMap.count("no-res"))
+            {
+                if (optionsMap.count("l3-res"))
+                    jecLevels.emplace_back(jecVersion + "_DATA_L2L3Residual_AK4PFchs.txt");
+                else
+                    jecLevels.emplace_back(jecVersion + "_DATA_L2Residual_AK4PFchs.txt");
+            }
+            
+            jetCorrFull->SetJEC(era, jecLevels);
+            jetCorrL1->SetJEC(era, {jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
         }
         
         manager.RegisterService(jetCorrFull);
-        
-        // L1 corrections to be used in T1 MET corrections
-        JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
-        jetCorrL1->SetJEC({jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
         manager.RegisterService(jetCorrL1);
         
         
@@ -304,6 +303,8 @@ int main(int argc, char **argv)
         jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
         
+        
+        string const jecVersion("Fall17_17Nov2017_V4");
         
         // Corrections to be applied to jets and also to be propagated to MET. Although original
         //jets in simulation already have up-to-date corrections, they will be reapplied in order
