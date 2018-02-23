@@ -162,7 +162,8 @@ def plot_distribution(histData, histSim, xLabel='', yLabel='Events', eraLabel=''
 
 def plot_balance(
     profPtData, profPtSim, profBalData, profBalSim,
-    xLabel=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', yLabel='', eraLabel='', heightRatio=2.
+    xLabel=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', yLabel='', eraLabel='', heightRatio=2.,
+    balRange=(0.9, 1.)
 ):
     """Plot mean balance in data and simulation.
     
@@ -257,7 +258,7 @@ def plot_balance(
     
     axesUpper.set_xlim(simErrBandX[0], simErrBandX[-1])
     axesLower.set_xlim(simErrBandX[0], simErrBandX[-1])
-    axesUpper.set_ylim(0.9, 1.)
+    axesUpper.set_ylim(balRange[0], balRange[1])
     axesLower.set_ylim(-0.02, 0.028)
     axesLower.grid(axis='y', color='black', ls='dotted')
     
@@ -313,6 +314,10 @@ if __name__ == '__main__':
         '-o', '--fig-dir',
         help='Directory to store figures', default='fig', dest='figDir'
     )
+    argParser.add_argument(
+        '--bal-range', default='0.92,1.00', dest='balRange',
+        help='Range for y axis in plots of mean balance'
+    )
     args = argParser.parse_args()
     
     if not os.path.exists(args.figDir):
@@ -321,6 +326,11 @@ if __name__ == '__main__':
     if args.era is None:
         # Try to figure the era label from the name of the data file
         args.era = os.path.splitext(os.path.basename(args.dataFile))[0]
+    
+    balRange = [float(token) for token in args.balRange.split(',')]
+    
+    if len(balRange) != 2:
+        raise RuntimeError('Failed to parse range "{}" given for y axis.'.format(args.balRange))
     
     
     # Customization
@@ -448,7 +458,7 @@ if __name__ == '__main__':
     fig, axesUpper, axesLower = plot_balance(
         profPtLead['data'], profPtLead['sim'],
         profPtBal['data'], profPtBal['sim'],
-        yLabel=r'Mean $p_\mathrm{T}$ balance', eraLabel=eraLabel
+        yLabel=r'Mean $p_\mathrm{T}$ balance', eraLabel=eraLabel, balRange=balRange
     )
     fig.savefig(os.path.join(args.figDir, 'PtBal.pdf'))
     plt.close(fig)
@@ -456,7 +466,7 @@ if __name__ == '__main__':
     fig, axesUpper, axesLower = plot_balance(
         profPtLead['data'], profPtLead['sim'],
         profMPF['data'], profMPF['sim'],
-        yLabel=r'Mean MPF', eraLabel=eraLabel
+        yLabel=r'Mean MPF', eraLabel=eraLabel, balRange=balRange
     )
     fig.savefig(os.path.join(args.figDir, 'MPF.pdf'))
     plt.close(fig)
