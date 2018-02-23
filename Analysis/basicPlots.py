@@ -186,6 +186,9 @@ def plot_balance(
     simX, simY, simYErr = np.zeros(nBins + 1), np.zeros(nBins + 1), np.zeros(nBins + 1)
     
     for bin in range(1, nBins + 2):
+        if profPtSim.GetBinEntries(bin) == 0:
+            raise RuntimeError('Pt bin {} contains no events in simulation.'.format(bin))
+        
         simX[bin - 1] = profPtSim.GetBinContent(bin)
         simY[bin - 1] = profBalSim.GetBinContent(bin)
         simYErr[bin - 1] = profBalSim.GetBinError(bin)
@@ -194,11 +197,11 @@ def plot_balance(
     simErrBandYLow, simErrBandYHigh = np.zeros(nBins + 2), np.zeros(nBins + 2)
     
     for bin in range(1, nBins + 2):
-        simErrBandX[bin - 1] = profPtData.GetBinLowEdge(bin)
+        simErrBandX[bin - 1] = profPtSim.GetBinLowEdge(bin)
     
     # Since the last bin is the overflow bin, there is no natural upper
     # boundary for the error band.  Set ptMax = <pt> + |ptMin - <pt>|.
-    simErrBandX[-1] = 2 * profPtData.GetBinContent(nBins + 1) - profPtData.GetBinLowEdge(nBins + 1)
+    simErrBandX[-1] = 2 * profPtSim.GetBinContent(nBins + 1) - profPtSim.GetBinLowEdge(nBins + 1)
     
     simErrBandYLow = np.append(simY - simYErr, simY[-1] - simYErr[-1])
     simErrBandYHigh = np.append(simY + simYErr, simY[-1] + simYErr[-1])
@@ -208,6 +211,11 @@ def plot_balance(
     residuals = dataY / simY - np.ones(nBins + 1)
     resDataYErr = dataYErr / simY
     resSimErrBandY = np.append(simYErr / simY, simYErr[-1] / simY[-1])
+    
+    
+    # Some bins in data may be empty.  Create a mask that filters them
+    # out.
+    dataMask = [(profPtData.GetBinEntries(bin) > 0) for bin in range(1, nBins + 2)]
     
     
     # Plot the graphs
@@ -220,7 +228,7 @@ def plot_balance(
     axesLower.set_xscale('log')
     
     axesUpper.errorbar(
-        dataX, dataY, yerr=dataYErr,
+        dataX[dataMask], dataY[dataMask], yerr=dataYErr[dataMask],
         color='black', marker='o', ls='none', label='Data'
     )
     axesUpper.fill_between(
@@ -234,7 +242,7 @@ def plot_balance(
     
     axesLower.fill_between(simErrBandX, resSimErrBandY, -resSimErrBandY, step='post', color='0.75')
     axesLower.errorbar(
-        dataX, residuals, yerr=resDataYErr,
+        dataX[dataMask], residuals[dataMask], yerr=resDataYErr[dataMask],
         color='black', marker='o', ls='none'
     )
     
