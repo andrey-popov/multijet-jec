@@ -170,6 +170,9 @@ public:
 private:
     /// Error message
     std::ostringstream message;
+    
+    /// Buffer to store completed messaged that is exposed as a C string
+    mutable std::string completedMessage;
 };
 
 
@@ -195,7 +198,15 @@ std::ostream & BadInputError::operator<<(T const &value)
 
 const char *BadInputError::what() const noexcept
 {
-    return message.str().c_str();
+    if (completedMessage.empty())
+    {
+        // It seems this is the first time this method is called. Save a copy of the completed
+        //error message before returning a pointer to the underlying C string because the
+        //std::string returned by std::ostringsteream::str() is a temporary object.
+        completedMessage = message.str();
+    }
+    
+    return completedMessage.c_str();
 }
 
 
@@ -370,7 +381,7 @@ int main(int argc, char **argv)
     
     
     // Determine the dataset ID from the name of the input file
-    regex fileNameRegex(R"(^([A-Za-z0-9_-]+_[A-Za-z]{3})(\.part[0-9]+)?\.root$)");
+    regex fileNameRegex(R"(^(.*/)?([A-Za-z0-9_-]+_[A-Za-z]{3})(\.part[0-9]+)?\.root$)");
     smatch fileNameMatch;
     
     if (not regex_match(inputFileName, fileNameMatch, fileNameRegex))
@@ -379,7 +390,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-    string const datasetID(fileNameMatch.str(1));
+    string const datasetID(fileNameMatch.str(2));
     
     
     // Parse the JSON file with luminosities and pileup profiles
