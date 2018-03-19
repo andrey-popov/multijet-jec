@@ -1,20 +1,20 @@
 {
   "eras": {
-    "Run2016BCD": {
+    "2016BCD": {
       "lumi": 12.6,
-      "label": "Run2016BCD"
+      "label": "2016BCD"
     },
-    "Run2016EFearly": {
+    "2016EFearly": {
       "lumi": 6.7,
-      "label": "Run2016EF"
+      "label": "2016EF"
     },
-    "Run2016FlateG": {
-      "lumi": 7.9,
-      "label": "Run2016G"
+    "2016FlateGH": {
+      "lumi": 16.6,
+      "label": "2016GH"
     },
-    "Run2016H": {
-      "lumi": 8.6,
-      "label": "Run2016H"
+    "2016All": {
+      "lumi": 35.9,
+      "label": "2016"
     }
   },
   "triggers": {
