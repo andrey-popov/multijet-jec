@@ -29,6 +29,7 @@
 #include <TTree.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/program_options.hpp>
 
 #include <array>
 #include <cstdlib>
@@ -38,10 +39,14 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+
+
+namespace po = boost::program_options;
 
 
 /*************************************************************************************************/
@@ -99,6 +104,12 @@ ReweighterObject::ReweighterObject(double lumi_, std::unique_ptr<TH1> &&targerPU
 
 std::array<double, 3> const &ReweighterObject::GetWeights(double lambdaPU)
 {
+    // Protection against a bug in sampling of pileup
+    //[1] https://indico.cern.ch/event/695872/#43-feature-in-fall17-pile-up-d
+    if (lambdaPU < 0.)
+        lambdaPU = 0.;
+    
+    
     // Compute pileup probability according to the simulated profile
     unsigned bin = simPUProfile->FindFixBin(lambdaPU);
     double const simProb = simPUProfile->GetBinContent(bin);
@@ -159,6 +170,9 @@ public:
 private:
     /// Error message
     std::ostringstream message;
+    
+    /// Buffer to store completed messaged that is exposed as a C string
+    mutable std::string completedMessage;
 };
 
 
@@ -184,7 +198,15 @@ std::ostream & BadInputError::operator<<(T const &value)
 
 const char *BadInputError::what() const noexcept
 {
-    return message.str().c_str();
+    if (completedMessage.empty())
+    {
+        // It seems this is the first time this method is called. Save a copy of the completed
+        //error message before returning a pointer to the underlying C string because the
+        //std::string returned by std::ostringsteream::str() is a temporary object.
+        completedMessage = message.str();
+    }
+    
+    return completedMessage.c_str();
 }
 
 
@@ -276,15 +298,45 @@ int main(int argc, char **argv)
     
     
     // Parse arguments
-    if (argc < 3 or argc > 4 or (argc > 1 and strcmp(argv[1], "-h") == 0))
+    po::options_description options("Allowed options");
+    options.add_options()
+      ("help,h", "Prints help message")
+      ("inputFile", po::value<string>(), "ROOT file with events (required)")
+      ("lumi,l", po::value<string>()->default_value("lumi.json"),
+        "JSON file with integrated luminosities and pileup profiles for each trigger")
+      ("sim-profile,s", po::value<string>()->default_value("pileup_sim.root"),
+        "ROOT file with pileup profiles in simulation")
+      ("loc", po::value<string>(), "Additional location to search for files with pileup profiles")
+      ("postfix,p", po::value<string>()->default_value(""),
+        "Postfix to be included in the name of output file");
+    
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("inputFile", 1);
+    
+    po::variables_map optionsMap;
+    
+    po::store(
+      po::command_line_parser(argc, argv).options(options).positional(positionalOptions).run(),
+      optionsMap);
+    po::notify(optionsMap);
+    
+    if (optionsMap.count("help"))
     {
-        cerr << "Usage: addWeights inputFile.root triggerBins.json [outFilePostfix]\n";
+        cerr << "Produces tuples with weights for luminosity and pileup.\n";
+        cerr << "Usage: addWeights inputFile [options]\n";
+        cerr << options << endl;
         return EXIT_FAILURE;
     }
     
-    string const inputFileName(argv[1]);
-    string const infoFileName(argv[2]);
-    string const outFilePostfix((argc > 3) ? argv[3] : "");
+    if (not optionsMap.count("inputFile"))
+    {
+        cerr << "Required argument \"inputFile\" is missing.\n";
+        return EXIT_FAILURE;
+    }
+    
+    string const inputFileName = optionsMap["inputFile"].as<string>();
+    string const infoFileName = optionsMap["lumi"].as<string>();
+    string const outFilePostfix = optionsMap["postfix"].as<string>();
     
     
     // Open input file and make sure that all trees are present
@@ -328,6 +380,19 @@ int main(int argc, char **argv)
     }
     
     
+    // Determine the dataset ID from the name of the input file
+    regex fileNameRegex(R"(^(.*/)?([A-Za-z0-9_-]+_[A-Za-z]{3})(\.part[0-9]+)?\.root$)");
+    smatch fileNameMatch;
+    
+    if (not regex_match(inputFileName, fileNameMatch, fileNameRegex))
+    {
+        cerr << "Failed to extract data set ID from file name \"" << inputFileName << "\".\n";
+        return EXIT_FAILURE;
+    }
+    
+    string const datasetID(fileNameMatch.str(2));
+    
+    
     // Parse the JSON file with luminosities and pileup profiles
     map<string, tuple<double, string>> triggerInfos;
     
@@ -342,7 +407,7 @@ int main(int argc, char **argv)
     }
     
     
-    // Add an additional location to seach for files with pileup profiles
+    // Add additional locations to seach for files with pileup profiles
     char const *installPath = getenv("MULTIJET_JEC_INSTALL");
     
     if (not installPath)
@@ -353,16 +418,25 @@ int main(int argc, char **argv)
     
     FileInPath::AddLocation(string(installPath) + "/data/");
     
+    if (optionsMap.count("loc"))
+        FileInPath::AddLocation(optionsMap["loc"].as<string>());
     
-    // Read simulated pileup profile
+    
+    // Read pileup profile for simulation
     string const simPUProfileFileName(
-      FileInPath::Resolve("PileUp/", "simPUProfiles_80Xv2.root"));
+      FileInPath::Resolve("PileUp/", optionsMap["sim-profile"].as<string>()));
     TFile simPUProfileFile(simPUProfileFileName.c_str());
-    shared_ptr<TH1> simPUProfile(dynamic_cast<TH1 *>(simPUProfileFile.Get("nominal")));
+    shared_ptr<TH1> simPUProfile(dynamic_cast<TH1 *>(simPUProfileFile.Get(datasetID.c_str())));
     
     if (not simPUProfile)
     {
-        cerr << "Failed to read simulated pileup profile.\n";
+        // Try the default profile
+        simPUProfile.reset(dynamic_cast<TH1 *>(simPUProfileFile.Get("nominal")));
+    }
+    
+    if (not simPUProfile)
+    {
+        cerr << "Failed to read pileup profile for simulation.\n";
         return EXIT_FAILURE;
     }
     
