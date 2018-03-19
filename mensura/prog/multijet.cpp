@@ -54,8 +54,7 @@ enum class Era
     All,
     Run2016BCD,
     Run2016EFearly,
-    Run2016FlateG,
-    Run2016H
+    Run2016FlateGH
 };
 
 
@@ -159,10 +158,8 @@ int main(int argc, char **argv)
             dataEra = Era::Run2016BCD;
         else if (dataEraText == "Run2016EFearly")
             dataEra = Era::Run2016EFearly;
-        else if (dataEraText == "Run2016FlateG")
-            dataEra = Era::Run2016FlateG;
-        else if (dataEraText == "Run2016H")
-            dataEra = Era::Run2016H;
+        else if (dataEraText == "Run2016FlateGH")
+            dataEra = Era::Run2016FlateGH;
         else
         {
             cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
@@ -197,12 +194,9 @@ int main(int argc, char **argv)
                 datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
                 break;
             
-            case Era::Run2016FlateG:
-                datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ"});
-                break;
-            
-            case Era::Run2016H:
-                datasets = datasetBuilder({"JetHT-Run2016H_xOF"});
+            case Era::Run2016FlateGH:
+                datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ",
+                  "JetHT-Run2016H_xOF"});
                 break;
             
             default:
@@ -224,8 +218,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-    FileInPath::AddLocation(string(installPath) + "/data/");
     FileInPath::AddLocation(string(installPath) + "/config/");
+    FileInPath::AddLocation("/gridgroup/cms/popov/Analyses/JetMET/JERC/");
     
     
     // Construct the run manager
@@ -251,7 +245,7 @@ int main(int argc, char **argv)
     {
         if (dataEra == Era::Run2016EFearly)
             manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
-        else if (dataEra == Era::Run2016FlateG)
+        else if (dataEra == Era::Run2016FlateGH)
             manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
     }
     
@@ -280,19 +274,15 @@ int main(int argc, char **argv)
                     jecVersion += "EF";
                     break;
                 
-                case Era::Run2016FlateG:
-                    jecVersion += "G";
-                    break;
-                
-                case Era::Run2016H:
-                    jecVersion += "H";
+                case Era::Run2016FlateGH:
+                    jecVersion += "GH";
                     break;
             }
             
-            jecVersion += "_V1";
+            jecVersion += "_V6";
         }
         else
-            jecVersion = "Summer16_07Aug2017_V1";
+            jecVersion = "Summer16_07Aug2017_V5";
     }
     
     
