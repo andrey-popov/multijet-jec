@@ -379,9 +379,10 @@ int main(int argc, char **argv)
     {
         EtaPhiFilter *etaPhiFilter = new EtaPhiFilter(15.);
         
-        etaPhiFilter->AddRegion(272007, 275376, -2.172, -2.043, 2.290, 2.422);
-        etaPhiFilter->AddRegion(275657, 276283, -3.314, -3.139, 2.237, 2.475);
-        etaPhiFilter->AddRegion(276315, 276811, -3.489, -3.139, 2.237, 2.475);
+        // Definition from 06.12.2017
+        etaPhiFilter->AddRegion(272007, 275376, -2.250, -1.930, 2.200, 2.500);
+        etaPhiFilter->AddRegion(275657, 276283, -3.489, -3.139, 2.237, 2.475);
+        etaPhiFilter->AddRegion(276315, 276811, -3.600, -3.139, 2.237, 2.475);
         
         manager.RegisterPlugin(etaPhiFilter);
     }
