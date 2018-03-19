@@ -306,6 +306,7 @@ int main(int argc, char **argv)
         "JSON file with integrated luminosities and pileup profiles for each trigger")
       ("sim-profile,s", po::value<string>()->default_value("pileup_sim.root"),
         "ROOT file with pileup profiles in simulation")
+      ("common-sim-profile", "Use standard pileup profile in simulation for all data sets")
       ("loc", po::value<string>(), "Additional location to search for files with pileup profiles")
       ("postfix,p", po::value<string>()->default_value(""),
         "Postfix to be included in the name of output file");
@@ -381,16 +382,21 @@ int main(int argc, char **argv)
     
     
     // Determine the dataset ID from the name of the input file
-    regex fileNameRegex(R"(^(.*/)?([A-Za-z0-9_-]+_[A-Za-z]{3})(\.part[0-9]+)?\.root$)");
-    smatch fileNameMatch;
+    string datasetID;
     
-    if (not regex_match(inputFileName, fileNameMatch, fileNameRegex))
+    if (not optionsMap.count("common-sim-profile"))
     {
-        cerr << "Failed to extract data set ID from file name \"" << inputFileName << "\".\n";
-        return EXIT_FAILURE;
+        regex fileNameRegex(R"(^(.*/)?([A-Za-z0-9_-]+_[A-Za-z]{3})(\.part[0-9]+)?\.root$)");
+        smatch fileNameMatch;
+        
+        if (not regex_match(inputFileName, fileNameMatch, fileNameRegex))
+        {
+            cerr << "Failed to extract data set ID from file name \"" << inputFileName << "\".\n";
+            return EXIT_FAILURE;
+        }
+        
+        datasetID = fileNameMatch.str(2);
     }
-    
-    string const datasetID(fileNameMatch.str(2));
     
     
     // Parse the JSON file with luminosities and pileup profiles
