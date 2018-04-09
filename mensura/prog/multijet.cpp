@@ -1,3 +1,4 @@
+#include <BalanceFilter.hpp>
 #include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
@@ -417,6 +418,13 @@ int main(int argc, char **argv)
     RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilder", 30.);
     recoilBuilder->SetBalanceSelection(0.6, 0.3);
     manager.RegisterPlugin(recoilBuilder);
+    
+    // Remove strongly imbalanced events in the high-pt region. This is a temporary solution to the
+    //problem described in [1].
+    //[1] https://indico.cern.ch/event/737609/#17-modified-typei-met-study-wi
+    BalanceFilter *balanceFilter = new BalanceFilter(0.5, 1.5);
+    balanceFilter->SetMinPtLead(1000.);
+    manager.RegisterPlugin(balanceFilter);
     
     
     manager.RegisterPlugin(new PECTriggerObjectReader);
