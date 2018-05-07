@@ -280,10 +280,10 @@ int main(int argc, char **argv)
                     break;
             }
             
-            jecVersion += "_V6";
+            jecVersion += "_V10";
         }
         else
-            jecVersion = "Summer16_07Aug2017_V5";
+            jecVersion = "Summer16_07Aug2017_V10";
     }
     
     
@@ -346,8 +346,8 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({jecVersion + "_MC_L1FastJet_AK4PFchs.txt",
           jecVersion + "_MC_L2Relative_AK4PFchs.txt",
           jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
-        jetCorrFull->SetJER("Spring16_25nsV10_MC_SF_AK4PFchs.txt",
-          "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt");
+        jetCorrFull->SetJER("Summer16_25nsV1_MC_SF_AK4PFchs.txt",
+          "Summer16_25nsV1_MC_PtResolution_AK4PFchs.txt");
         
         if (systType == "JEC")
             jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");

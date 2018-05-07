@@ -7,14 +7,14 @@ set -e
 
 
 dirSource=`pwd`
-version="6"
+version="10"
 
 for period in BCD EF GH
 do
     blocks+=("Summer16_07Aug2017${period}_V${version}_DATA")
 done
 
-blocks+=("Summer16_07Aug2017_V5_MC")
+blocks+=("Summer16_07Aug2017_V${version}_MC")
 
 
 # Temporary directory to store intermediate files
@@ -47,7 +47,7 @@ cd $dirUnpacked
 find . -not -name "*AK4PFchs*" -delete
 find . -name "*_DATA_Uncertainty*" -delete
 find . -name "*DataMcSF*" -delete
-find . -name "*_UncertaintySources_*" -delete
+# find . -name "*_UncertaintySources_*" -delete
 
 chmod 644 *.txt
 
