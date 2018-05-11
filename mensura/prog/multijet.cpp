@@ -36,6 +36,7 @@
 #include <iostream>
 #include <list>
 #include <sstream>
+#include <stdexcept>
 #include <regex>
 
 
@@ -57,6 +58,34 @@ enum class Era
     Run2016EFearly,
     Run2016FlateGH
 };
+
+
+/// Supported systematic uncertainties
+enum class SystType
+{
+    None,  ///< No variation
+    L2Res,
+    JER
+};
+
+
+std::string systTypeToString(SystType systType)
+{
+    switch (systType)
+    {
+        case SystType::None:
+            return "None";
+        
+        case SystType::L2Res:
+            return "L2Res";
+        
+        case SystType::JER:
+            return "JER";
+    }
+    
+    // This should never happen
+    throw std::runtime_error("Unhandled type of systematic variation");
+}
 
 
 int main(int argc, char **argv)
@@ -114,7 +143,7 @@ int main(int argc, char **argv)
     
     
     // Parse requested systematic uncertainty
-    string systType("None");
+    SystType systType(SystType::None);
     SystService::VarDirection systDirection = SystService::VarDirection::Undefined;
     
     if (optionsMap.count("syst"))
@@ -122,7 +151,7 @@ int main(int argc, char **argv)
         string systArg(optionsMap["syst"].as<string>());
         boost::to_lower(systArg);
         
-        std::regex systRegex("(jec|jer|metuncl)[-_]?(up|down)", std::regex::extended);
+        std::regex systRegex("(l2res|jer)[-_]?(up|down)", std::regex::extended);
         std::smatch matchResult;
         
         if (not std::regex_match(systArg, matchResult, systRegex))
@@ -132,12 +161,10 @@ int main(int argc, char **argv)
         }
         else
         {
-            if (matchResult[1] == "jec")
-                systType = "JEC";
+            if (matchResult[1] == "l2res")
+                systType = SystType::L2Res;
             else if (matchResult[1] == "jer")
-                systType = "JER";
-            else if (matchResult[1] == "metuncl")
-                systType = "METUncl";
+                systType = SystType::JER;
             
             if (matchResult[2] == "up")
                 systDirection = SystService::VarDirection::Up;
@@ -231,8 +258,8 @@ int main(int argc, char **argv)
     ostringstream outputNameStream;
     outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? dataEraText : "sim");
     
-    if (systType != "None")
-        outputNameStream << "_" << systType << "_" <<
+    if (systType != SystType::None)
+        outputNameStream << "_" << systTypeToString(systType) << "_" <<
           ((systDirection == SystService::VarDirection::Up) ? "up" : "down");
     
     outputNameStream << "/%";
@@ -303,10 +330,22 @@ int main(int argc, char **argv)
         string residualsType = (optionsMap.count("l3-res")) ? "L2L3Residual" : "L2Residual";
         
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        jetCorrFull->SetJEC({jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
+        std::vector<std::string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
           jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
           jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
-          jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"});
+          jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"};
+        
+        if (systType == SystType::JER)
+        {
+            // Add closure-style L2Res corrections obtained with varied JER. Taken from [1].
+            //[1] https://indico.cern.ch/event/724150/#14-dijet-with-2016-legacy-data
+            if (systDirection == SystService::VarDirection::Up)
+                jecLevels.push_back("L2Res_JER-up_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+            else
+                jecLevels.push_back("L2Res_JER-down_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+        }
+        
+        jetCorrFull->SetJEC(jecLevels);
         manager.RegisterService(jetCorrFull);
         
         // L1 corrections to be used in T1 MET corrections
@@ -324,7 +363,9 @@ int main(int argc, char **argv)
     }
     else
     {
-        manager.RegisterService(new SystService(systType, systDirection));
+        manager.RegisterService(new SystService(
+          (systType == SystType::L2Res) ? "JEC"s : systTypeToString(systType), systDirection));
+        
         manager.RegisterPlugin(new PECGenJetMETReader);
         
         
@@ -349,8 +390,11 @@ int main(int argc, char **argv)
         jetCorrFull->SetJER("Summer16_25nsV1_MC_SF_AK4PFchs.txt",
           "Summer16_25nsV1_MC_PtResolution_AK4PFchs.txt");
         
-        if (systType == "JEC")
-            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");
+        if (systType == SystType::L2Res)
+            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_UncertaintySources_AK4PFchs.txt",
+              {"RelativePtBB", "RelativePtEC1", "RelativePtEC2", "RelativePtHF",
+               "RelativeBal", "RelativeSample", "RelativeFSR",
+               "RelativeStatFSR", "RelativeStatEC", "RelativeStatHF"});
         
         manager.RegisterService(jetCorrFull);
         
