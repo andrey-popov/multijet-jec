@@ -63,9 +63,10 @@ enum class Era
 /// Supported systematic uncertainties
 enum class SystType
 {
-    None,  ///< No variation
-    L2Res,
-    JER
+    None,   ///< No variation
+    L1Res,  ///< Combined uncertainty in L1Res
+    L2Res,  ///< Combined uncertainty in L2Res
+    JER     ///< Variation due to JER
 };
 
 
@@ -75,6 +76,9 @@ std::string systTypeToString(SystType systType)
     {
         case SystType::None:
             return "None";
+        
+        case SystType::L1Res:
+            return "L1Res";
         
         case SystType::L2Res:
             return "L2Res";
@@ -151,7 +155,7 @@ int main(int argc, char **argv)
         string systArg(optionsMap["syst"].as<string>());
         boost::to_lower(systArg);
         
-        std::regex systRegex("(l2res|jer)[-_]?(up|down)", std::regex::extended);
+        std::regex systRegex("(l1res|l2res|jer)[-_]?(up|down)", std::regex::extended);
         std::smatch matchResult;
         
         if (not std::regex_match(systArg, matchResult, systRegex))
@@ -161,7 +165,9 @@ int main(int argc, char **argv)
         }
         else
         {
-            if (matchResult[1] == "l2res")
+            if (matchResult[1] == "l1res")
+                systType = SystType::L1Res;
+            else if (matchResult[1] == "l2res")
                 systType = SystType::L2Res;
             else if (matchResult[1] == "jer")
                 systType = SystType::JER;
@@ -364,7 +370,9 @@ int main(int argc, char **argv)
     else
     {
         manager.RegisterService(new SystService(
-          (systType == SystType::L2Res) ? "JEC"s : systTypeToString(systType), systDirection));
+          (systType == SystType::None or systType == SystType::JER) ?
+            systTypeToString(systType) : "JEC"s,
+          systDirection));
         
         manager.RegisterPlugin(new PECGenJetMETReader);
         
@@ -390,7 +398,10 @@ int main(int argc, char **argv)
         jetCorrFull->SetJER("Summer16_25nsV1_MC_SF_AK4PFchs.txt",
           "Summer16_25nsV1_MC_PtResolution_AK4PFchs.txt");
         
-        if (systType == SystType::L2Res)
+        if (systType == SystType::L1Res)
+            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_UncertaintySources_AK4PFchs.txt",
+              {"PileUpPtBB", "PileUpPtEC1", "PileUpPtEC2", "PileUpPtHF", "PileUpDataMC"});
+        else if (systType == SystType::L2Res)
             jetCorrFull->SetJECUncertainty(jecVersion + "_MC_UncertaintySources_AK4PFchs.txt",
               {"RelativePtBB", "RelativePtEC1", "RelativePtEC2", "RelativePtHF",
                "RelativeBal", "RelativeSample", "RelativeFSR",
