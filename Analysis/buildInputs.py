@@ -21,6 +21,8 @@ import os
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
+from triggerbins import TriggerBins
+
 
 if __name__ == '__main__':
     
@@ -58,17 +60,6 @@ if __name__ == '__main__':
         else:
             args.weights = args.simFile + '_weights.root'
     
-    if not os.path.exists(args.triggers):
-        path = None
-        
-        if 'MULTIJET_JEC_INSTALL' in os.environ:
-            path = os.path.join(os.environ['MULTIJET_JEC_INSTALL'], 'config', args.triggers)
-        
-        if path is None or not os.path.exists(path):
-            raise RuntimeError('Failed to find file "{}".'.format(args.triggers))
-        else:
-            args.triggers = path
-    
     
     ROOT.gROOT.SetBatch(True)
     ROOT.TH1.AddDirectory(False)
@@ -79,8 +70,7 @@ if __name__ == '__main__':
         binning = json.load(f)
         binning.sort()
     
-    with open(args.triggers) as f:
-        triggerBins = json.load(f, object_pairs_hook=OrderedDict)
+    triggerBins = TriggerBins(args.triggers, clip=binning[-1])
     
     
     # Analysis does not support overflow bins.  Check that the last
@@ -89,35 +79,7 @@ if __name__ == '__main__':
         raise RuntimeError('Inclusive overflow bins are not supported.')
     
     
-    # One of the trigger bins normally extends to very large pt (but the
-    # value is finite as infinities are not implemented in other code
-    # that uses that file).  Clip it.
-    for triggerName, triggerBin in triggerBins.items():
-        corrRange = triggerBin['corrPtRange']
-        
-        if corrRange[1] > binning[-1]:
-            corrRange[1] = binning[-1]
-        
-        if corrRange[0] >= corrRange[1]:
-            raise RuntimeError('Illegal corrected pt range for trigger "{}": {}.'.format(
-                triggerName, corrRange
-            ))
-    
-    
-    # Verify alignment of boundaries of trigger bins
-    mismatchedEdges = []
-    
-    for triggerBin in triggerBins.values():
-        for edge in triggerBin['corrPtRange']:
-            if edge not in binning:
-                mismatchedEdges.append(edge)
-    
-    if mismatchedEdges:
-        raise RuntimeError(
-            'Following boundaries of trigger bins are not aligned with the binning: {}.'.format(
-                mismatchedEdges
-            )
-        )
+    triggerBins.check_alignment(binning)
     
     
     dataFile = ROOT.TFile(args.dataFile)
