@@ -185,5 +185,27 @@ if __name__ == '__main__':
                 0., 1., ptBinLabel, ha='left', va='bottom', transform=axesUpper.transAxes
             )
             
+            
+            # Move the common exponent so that it does not collide with
+            # the pt bin label.  Technically, the actual exponent is
+            # turned invisible, and a new text object is added.
+            # Check the value of the common exponent as determined by
+            # the tick formatter.  To do it, need to feed locations of
+            # ticks to the formatter first.
+            ax = axesUpper.get_yaxis()
+            majorLocs = ax.major.locator()
+            formatter = ax.get_major_formatter()
+            formatter.set_locs(majorLocs)
+            
+            if formatter.orderOfMagnitude != 0:
+                # There is indeed a common exponent
+                ax.offsetText.set_visible(False)
+                
+                axesUpper.text(
+                    0., 1.05, '$\\times 10^{}$'.format(formatter.orderOfMagnitude),
+                    ha='right', va='bottom', transform=axesUpper.transAxes
+                )
+            
+            
             fig.savefig(os.path.join(args.figDir, '{}_ptBin{}.pdf'.format(label, ptBin)))
             plt.close(fig)
