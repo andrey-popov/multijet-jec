@@ -49,7 +49,6 @@ cd $dirUnpacked
 find . -not -name "*AK4PFchs*" -delete
 find . -name "*_DATA_Uncertainty*" -delete
 find . -name "*DataMcSF*" -delete
-find . -name "*_UncertaintySources_*" -delete
 
 chmod 644 *.txt
 

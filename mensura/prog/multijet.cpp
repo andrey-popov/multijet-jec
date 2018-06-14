@@ -32,9 +32,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <list>
-#include <set>
 #include <regex>
+#include <set>
 #include <sstream>
+#include <stdexcept>
 
 
 using namespace std;
@@ -46,6 +47,38 @@ enum class DatasetGroup
     Data,
     MC
 };
+
+
+/// Supported systematic uncertainties
+enum class SystType
+{
+    None,   ///< No variation
+    L1Res,  ///< Combined uncertainty in L1Res
+    L2Res,  ///< Combined uncertainty in L2Res
+    JER     ///< Variation due to JER
+};
+
+
+std::string systTypeToString(SystType systType)
+{
+    switch (systType)
+    {
+        case SystType::None:
+            return "None";
+        
+        case SystType::L1Res:
+            return "L1Res";
+        
+        case SystType::L2Res:
+            return "L2Res";
+        
+        case SystType::JER:
+            return "JER";
+    }
+    
+    // This should never happen
+    throw std::runtime_error("Unhandled type of systematic variation");
+}
 
 
 int main(int argc, char **argv)
@@ -109,7 +142,7 @@ int main(int argc, char **argv)
     
     
     // Parse requested systematic uncertainty
-    string systType("None");
+    SystType systType(SystType::None);
     SystService::VarDirection systDirection = SystService::VarDirection::Undefined;
     
     if (optionsMap.count("syst"))
@@ -117,7 +150,7 @@ int main(int argc, char **argv)
         string systArg(optionsMap["syst"].as<string>());
         boost::to_lower(systArg);
         
-        std::regex systRegex("(jec|jer|metuncl)[-_]?(up|down)", std::regex::extended);
+        std::regex systRegex("(l1res|l2res|jer)[-_]?(up|down)", std::regex::extended);
         std::smatch matchResult;
         
         if (not std::regex_match(systArg, matchResult, systRegex))
@@ -127,12 +160,12 @@ int main(int argc, char **argv)
         }
         else
         {
-            if (matchResult[1] == "jec")
-                systType = "JEC";
+            if (matchResult[1] == "l1res")
+                systType = SystType::L1Res;
+            else if (matchResult[1] == "l2res")
+                systType = SystType::L2Res;
             else if (matchResult[1] == "jer")
-                systType = "JER";
-            else if (matchResult[1] == "metuncl")
-                systType = "METUncl";
+                systType = SystType::JER;
             
             if (matchResult[2] == "up")
                 systDirection = SystService::VarDirection::Up;
@@ -153,8 +186,9 @@ int main(int argc, char **argv)
             dataEra = dataEra.substr(3);
         
         
-        set<string> allowedEras({"2016BCD", "2016EFearly", "2016FlateG", "2016H", "2017B",
-          "2017C", "2017D", "2017E", "2017F", "2017All"});
+        set<string> allowedEras({
+          "2016All", "2016BCD", "2016EFearly", "2016FlateG6H",
+          "2017All", "2017B", "2017C", "2017D", "2017E", "2017F"});
         
         if (allowedEras.count(dataEra) == 0)
         {
@@ -176,10 +210,14 @@ int main(int argc, char **argv)
               "JetHT-Run2016D_cgp"});
         else if (dataEra == "2016EFearly")
             datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
-        else if (dataEra == "2016FlateG")
-            datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ"});
-        else if (dataEra == "Run2016H")
-            datasets = datasetBuilder({"JetHT-Run2016H_xOF"});
+        else if (dataEra == "2016FlateGH")
+            datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ",
+              "JetHT-Run2016H_xOF"});
+        else if (dataEra == "2016All")
+            datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
+              "JetHT-Run2016D_cgp", "JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ",
+              "JetHT-Run2016G_fJQ", "JetHT-Run2016H_xOF"});
+        
         else if (dataEra == "2017B")
             datasets = datasetBuilder({"JetHT-Run2017B_RJp"});
         else if (dataEra == "2017C")
@@ -221,8 +259,8 @@ int main(int argc, char **argv)
     ostringstream outputNameStream;
     outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? dataEra : "sim");
     
-    if (systType != "None")
-        outputNameStream << "_" << systType << "_" <<
+    if (systType != SystType::None)
+        outputNameStream << "_" << systTypeToString(systType) << "_" <<
           ((systDirection == SystService::VarDirection::Up) ? "up" : "down");
     
     outputNameStream << "/%";
@@ -274,6 +312,16 @@ int main(int argc, char **argv)
                     jecLevels.emplace_back(jecVersion + "_DATA_L2Residual_AK4PFchs.txt");
             }
             
+            if (systType == SystType::JER)
+            {
+                throw std::runtime_error("Missing JER uncertainties in residual corrections.");
+                
+                if (systDirection == SystService::VarDirection::Up)
+                    jecLevels.push_back("");
+                else
+                    jecLevels.push_back("");
+            }
+            
             jetCorrFull->SetJEC(era, jecLevels);
             jetCorrL1->SetJEC(era, {jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
         }
@@ -291,7 +339,11 @@ int main(int argc, char **argv)
     }
     else
     {
-        manager.RegisterService(new SystService(systType, systDirection));
+        manager.RegisterService(new SystService(
+          (systType == SystType::None or systType == SystType::JER) ?
+            systTypeToString(systType) : "JEC"s,
+          systDirection));
+        
         manager.RegisterPlugin(new PECGenJetMETReader);
         
         
@@ -317,8 +369,14 @@ int main(int argc, char **argv)
         jetCorrFull->SetJER("Summer16_25nsV1_MC_SF_AK4PFchs.txt",
           "Summer16_25nsV1_MC_PtResolution_AK4PFchs.txt");
         
-        if (systType == "JEC")
-            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");
+        if (systType == SystType::L1Res)
+            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_UncertaintySources_AK4PFchs.txt",
+              {"PileUpPtBB", "PileUpPtEC1", "PileUpPtEC2", "PileUpPtHF", "PileUpDataMC"});
+        else if (systType == SystType::L2Res)
+            jetCorrFull->SetJECUncertainty(jecVersion + "_MC_UncertaintySources_AK4PFchs.txt",
+              {"RelativePtBB", "RelativePtEC1", "RelativePtEC2", "RelativePtHF",
+               "RelativeBal", "RelativeSample", "RelativeFSR",
+               "RelativeStatFSR", "RelativeStatEC", "RelativeStatHF"});
         
         manager.RegisterService(jetCorrFull);
         
