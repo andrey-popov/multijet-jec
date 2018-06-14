@@ -209,8 +209,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-    FileInPath::AddLocation(string(installPath) + "/data/");
     FileInPath::AddLocation(string(installPath) + "/config/");
+    FileInPath::AddLocation("/gridgroup/cms/popov/Analyses/JetMET/JERC/");
     
     
     // Construct the run manager
