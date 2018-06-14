@@ -260,7 +260,7 @@ int main(int argc, char **argv)
         
         for (string const &era: {"2017B", "2017C", "2017D", "2017E", "2017F"})
         {
-            string const jecVersion = "Fall17_17Nov" + era + "_V4";
+            string const jecVersion = "Fall17_17Nov" + era + "_V10";
             
             vector<string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
               jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetReader);
         
         
-        string const jecVersion("Fall17_17Nov2017_V4");
+        string const jecVersion("Fall17_17Nov2017_V10");
         
         // Corrections to be applied to jets and also to be propagated to MET. Although original
         //jets in simulation already have up-to-date corrections, they will be reapplied in order
@@ -314,8 +314,8 @@ int main(int argc, char **argv)
         jetCorrFull->SetJEC({jecVersion + "_MC_L1FastJet_AK4PFchs.txt",
           jecVersion + "_MC_L2Relative_AK4PFchs.txt",
           jecVersion + "_MC_L3Absolute_AK4PFchs.txt"});
-        jetCorrFull->SetJER("Spring16_25nsV10_MC_SF_AK4PFchs.txt",
-          "Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt");
+        jetCorrFull->SetJER("Summer16_25nsV1_MC_SF_AK4PFchs.txt",
+          "Summer16_25nsV1_MC_PtResolution_AK4PFchs.txt");
         
         if (systType == "JEC")
             jetCorrFull->SetJECUncertainty(jecVersion + "_MC_Uncertainty_AK4PFchs.txt");

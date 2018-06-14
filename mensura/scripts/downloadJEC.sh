@@ -9,14 +9,14 @@ set -e
 dirSource=`pwd`
 
 blocks=()
-version="4"
+version="10"
 
 for era in B C D E F
 do
     blocks+=("Fall17_17Nov2017${era}_V${version}_DATA")
 done
 
-blocks+=("Fall17_17Nov2017_V4_MC")
+blocks+=("Fall17_17Nov2017_V${version}_MC")
 
 
 # Temporary directory to store intermediate files
