@@ -9,7 +9,6 @@
 #include <cmath>
 #include <limits>
 #include <sstream>
-#include <stdexcept>
 
 
 RecoilBuilder::RecoilBuilder(std::string const &name, double minJetPt_):

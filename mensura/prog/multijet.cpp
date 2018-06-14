@@ -1,6 +1,7 @@
 #include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
 #include <DumpEventID.hpp>
+#include <EtaPhiFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <GenMatchFilter.hpp>
 #include <JERCJetMETReader.hpp>
@@ -247,6 +248,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
+    FileInPath::AddLocation(string(installPath) + "/data/");
     FileInPath::AddLocation(string(installPath) + "/config/");
     FileInPath::AddLocation("/gridgroup/cms/popov/Analyses/JetMET/JERC/");
     
@@ -401,6 +403,9 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new FirstJetFilter(150., 1.3));
     
     manager.RegisterPlugin(new JetIDFilter("JetIDFilter", 15.));
+    
+    if (dataGroup == DatasetGroup::Data)
+        manager.RegisterPlugin(new EtaPhiFilter("EtaPhiFilter", 15., "BadRegions_2017.root"));
     
     if (dataGroup == DatasetGroup::MC)
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
