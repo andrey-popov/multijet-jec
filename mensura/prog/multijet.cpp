@@ -279,6 +279,8 @@ int main(int argc, char **argv)
         // Read original jets and MET, which have outdated corrections
         JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
         jetmetReader->SetSelection(0., 5.);
+        jetmetReader->SetSelection([](Jet const &j){
+          return std::abs(j.Eta()) < 2.650 or std::abs(j.Eta()) > 3.139;});
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
@@ -352,6 +354,8 @@ int main(int argc, char **argv)
         // Read original jets and MET
         JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
         jetmetReader->SetSelection(0., 5.);
+        jetmetReader->SetSelection([](Jet const &j){
+          return std::abs(j.Eta()) < 2.650 or std::abs(j.Eta()) > 3.139;});
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->SetGenJetReader();  // Default one
         jetmetReader->SetApplyJetID(false);
