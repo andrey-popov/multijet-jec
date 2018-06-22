@@ -7,8 +7,10 @@ trigger bins.  For simulation this script builts profiles of balance
 observables versus pt of the leading jet.  This profiles also define the
 target binning to be used for the fit.  Histograms and profiles for data
 are copied from the input file without modification.  In each trigger
-bin they have a much finning and cover larger regions in pt, which is
-needed for the rebinning during the fit.
+bin they have a much finer binning and cover larger regions in pt, which
+is needed for the rebinning during the fit.  If the number of data
+events in some bin of the target binning is smaller than a threshold, a
+warning is printed.
 """
 
 import argparse
@@ -17,6 +19,7 @@ from collections import OrderedDict
 import json
 import math
 import os
+from uuid import uuid4
 
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -135,11 +138,35 @@ if __name__ == '__main__':
         
         
         # In case of data simply copy profiles and histograms
+        histPtLead = dataFile.Get('{}/PtLead'.format(triggerName))
+        histPtLead.SetDirectory(outDirectory)
+        
         for name in [
             'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj'
         ]:
             obj = dataFile.Get('{}/{}'.format(triggerName, name))
             obj.SetDirectory(outDirectory)
+        
+        
+        # Check if there are poorly populated bins in data.  Do not
+        # perform the same check for simulation as it is assumed to
+        # have larger effective intergrated luminosity
+        histPtLeadRebinned = histPtLead.Rebin(len(clippedBinning) - 1, uuid4().hex, clippedBinning)
+        underpopulatedBins = []
+        
+        for bin in range(1, histPtLeadRebinned.GetNbinsX() + 1):
+            if histPtLeadRebinned.GetBinContent(bin) < 10:
+                underpopulatedBins.append(bin)
+        
+        if underpopulatedBins:
+            print('There were under-populated bins when producing file "{}".'.format(args.output))
+            print('  Bin in ptLead   Events in data')
+            
+            for bin in underpopulatedBins:
+                print('  {:13}   {}'.format(
+                    '({:g}, {:g})'.format(clippedBinning[bin - 1], clippedBinning[bin]),
+                    round(histPtLeadRebinned.GetBinContent(bin))
+                ))
         
         
         outDirectory.Write()
