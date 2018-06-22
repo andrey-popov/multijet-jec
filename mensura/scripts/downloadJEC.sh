@@ -9,7 +9,7 @@ set -e
 dirSource=`pwd`
 
 blocks=()
-version="10"
+version="11"
 
 for era in B C D E F
 do
