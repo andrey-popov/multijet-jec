@@ -314,18 +314,24 @@ int main(int argc, char **argv)
                 if (optionsMap.count("l3-res"))
                     jecLevels.emplace_back(jecVersion + "_DATA_L2L3Residual_AK4PFchs.txt");
                 else
-                    jecLevels.emplace_back(jecVersion + "_DATA_L2Residual_AK4PFchs.txt");
+                {
+                    if (systType == SystType::JER)
+                    {
+                        // Modified L2Res derived with varied JER. Taken from [1].
+                        //[1] https://indico.cern.ch/event/734120/#4-l2res-for-ak4pfchs-2017-bcde
+                        if (systDirection == SystService::VarDirection::Up)
+                            jecLevels.push_back("L2Res_JER-up_180604_Fall17_17Nov2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+                        else
+                            jecLevels.push_back("L2Res_JER-down_180604_Fall17_17Nov2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+                    }
+                    else
+                    {
+                        // Nominal L2Res
+                        jecLevels.emplace_back(jecVersion + "_DATA_L2Residual_AK4PFchs.txt");
+                    }
+                }
             }
             
-            if (systType == SystType::JER)
-            {
-                throw std::runtime_error("Missing JER uncertainties in residual corrections.");
-                
-                if (systDirection == SystService::VarDirection::Up)
-                    jecLevels.push_back("");
-                else
-                    jecLevels.push_back("");
-            }
             
             jetCorrFull->SetJEC(era, jecLevels);
             jetCorrL1->SetJEC(era, {jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
