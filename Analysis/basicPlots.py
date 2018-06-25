@@ -142,6 +142,12 @@ def plot_distribution(histData, histSim, xLabel='', yLabel='Events', eraLabel=''
     axesUpper.get_yaxis().set_label_coords(-0.1, 0.5)
     axesLower.get_yaxis().set_label_coords(-0.1, 0.5)
     
+    # Mark the overflow bin
+    axesUpper.text(
+        0.995, 0.5, 'Overflow', transform=axesUpper.transAxes,
+        ha='right', va='center', rotation='vertical', size='xx-small', color='gray'
+    )
+    
     
     # Build legend ensuring desired ordering of the entries
     legendHandles, legendLabels = axesUpper.get_legend_handles_labels()
@@ -270,6 +276,12 @@ def plot_balance(
     # aligned with respect to each other
     axesUpper.get_yaxis().set_label_coords(-0.1, 0.5)
     axesLower.get_yaxis().set_label_coords(-0.1, 0.5)
+    
+    # Mark the overflow bin
+    axesUpper.text(
+        0.995, 0.5, 'Overflow', transform=axesUpper.transAxes,
+        ha='right', va='center', rotation='vertical', size='xx-small', color='gray'
+    )
     
     
     # Build legend ensuring desired ordering of the entries
