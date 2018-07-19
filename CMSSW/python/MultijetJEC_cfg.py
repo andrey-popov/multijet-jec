@@ -262,9 +262,16 @@ paths.append(process.pecTrigger)
 
 
 # Save trigger objects that pass last filters in the single-jet triggers
+process.unpackedPatTrigger = cms.EDProducer('PATTriggerObjectStandAloneUnpacker',
+    patTriggerObjectsStandAlone = cms.InputTag('slimmedPatTrigger'),
+    triggerResults = cms.InputTag('TriggerResults', processName=options.triggerProcessName),
+    unpackFilterLabels = cms.bool(True)
+)
+process.analysisTask.add(process.unpackedPatTrigger)
+
 process.pecTriggerObjects = cms.EDAnalyzer('PECTriggerObjects',
     triggerResults = cms.InputTag('TriggerResults', processName=options.triggerProcessName),
-    triggerObjects = cms.InputTag('slimmedPatTrigger'),
+    triggerObjects = cms.InputTag('unpackedPatTrigger'),
     filters = cms.vstring(
         'hltSinglePFJet140', 'hltSinglePFJet200', 'hltSinglePFJet260', 'hltSinglePFJet320',
         'hltSinglePFJet400', 'hltSinglePFJet450', 'hltSinglePFJet500'
