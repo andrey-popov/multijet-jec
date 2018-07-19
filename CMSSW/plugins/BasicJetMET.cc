@@ -114,10 +114,10 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
         }
         
         
-        // Loose PF jet ID [1-2]. Accessors to energy fractions take into account JEC, so there is
-        //no need to undo the corrections.
+        // PF jet ID [1-2]. Accessors to energy fractions take into account JEC, so there is no
+        //need to undo the corrections.
         //[1] https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2016?rev=1
-        //[2] https://indico.cern.ch/event/697258/contributions/2861096/attachments/1587829/2511362/JetID_run2017_rereco_23012018.pdf, slide 25
+        //[2] https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2017?rev=6
         bool passPFID = false;
         double const absEta = std::abs(rawP4.Eta());
         
@@ -143,11 +143,13 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
         }
         else if (jetIDVersion == JetID::Ver2017)
         {
+            // Use the "TightLepVeto" working point as recommended in [1]
+            //[1] https://hypernews.cern.ch/HyperNews/CMS/get/jet-algorithms/462/3/1.html
             if (absEta <= 2.7)
             {
                 bool const commonCriteria = (j.neutralHadronEnergyFraction() < 0.9 and
                   j.neutralEmEnergyFraction() < 0.9  and j.muonEnergyFraction() < 0.8 and
-                  j.neutralMultiplicity() > 1);
+                  j.numberOfDaughters() > 1);
                 
                 if (absEta <= 2.4)
                     passPFID = (commonCriteria and j.chargedHadronEnergyFraction() > 0. and
@@ -157,7 +159,7 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
             }
             else if (absEta <= 3.)
                 passPFID = (j.neutralMultiplicity() > 2 and
-                  j.neutralEmEnergyFraction() < 0.99);
+                  j.neutralEmEnergyFraction() < 0.99 and j.neutralEmEnergyFraction() > 0.02);
             else
                 passPFID = (j.neutralMultiplicity() > 10 and j.neutralEmEnergyFraction() < 0.9 and
                   j.neutralHadronEnergyFraction() > 0.02);
