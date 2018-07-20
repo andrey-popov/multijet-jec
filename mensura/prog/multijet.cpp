@@ -95,7 +95,9 @@ int main(int argc, char **argv)
       // ("jec-version", po::value<string>(), "Optional explicit JEC version")
       ("l3-res", "Enables L3 residual corrections")
       ("no-res", "Disables all residual corrections")
-      ("wide", "Loosen selection to |eta(j1)| < 2.4");
+      ("wide", "Loosen selection to |eta(j1)| < 2.4")
+      ("output", po::value<string>()->default_value("output"),
+        "Name for output directory");
     //^ This is some severe abuse of C++ syntax...
     
     po::positional_options_description positionalOptions;
@@ -260,7 +262,8 @@ int main(int argc, char **argv)
     
     // Register services and plugins
     ostringstream outputNameStream;
-    outputNameStream << "output/" << ((dataGroup == DatasetGroup::Data) ? dataEra : "sim");
+    outputNameStream << optionsMap["output"].as<string>() << "/" <<
+      ((dataGroup == DatasetGroup::Data) ? dataEra : "sim");
     
     if (systType != SystType::None)
         outputNameStream << "_" << systTypeToString(systType) << "_" <<
