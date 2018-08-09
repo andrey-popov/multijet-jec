@@ -1,9 +1,14 @@
 #include <EtaPhiFilter.hpp>
 
 #include <mensura/core/EventIDReader.hpp>
+#include <mensura/core/FileInPath.hpp>
 #include <mensura/core/JetMETReader.hpp>
 
+#include <TFile.h>
+
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
 
 
 EtaPhiFilter::Region::Region(unsigned long minRun_, unsigned long maxRun_, double minEta_,
@@ -24,15 +29,50 @@ EtaPhiFilter::Region::Region(unsigned long minRun_, unsigned long maxRun_, doubl
 }
 
 
+EtaPhiFilter::Region::Region(unsigned long minRun_, unsigned long maxRun_,
+  std::string const &filePath, std::string histName):
+    minRun(minRun_), maxRun(maxRun_)
+{
+    TFile srcFile((FileInPath::Resolve("Cleaning", filePath)).c_str());
+    
+    // If name for the histogram has not been given, assume the file contains only a single object
+    if (histName == "")
+        histName = srcFile.GetListOfKeys()->First()->GetName();
+    
+    TH2Poly *hist = dynamic_cast<TH2Poly *>(srcFile.Get(histName.c_str()));
+    
+    if (not hist)
+    {
+        std::ostringstream message;
+        message << "EtaPhiFilter::Region::Region: Failed to read TH2Poly \"" << histName
+          <<"\" from file \"" << filePath << "\".";
+        throw std::runtime_error(message.str());
+    }
+    
+    hist->SetDirectory(nullptr);
+    map.reset(hist);
+    
+    srcFile.Close();
+}
+
+
 bool EtaPhiFilter::Region::InEtaPhi(double eta, double phi) const
 {
-    if (eta <= minEta or eta >= maxEta)
-        return false;
-    
-    while (phi <= minPhi)
-        phi += 2 * M_PI;
-    
-    return (phi < maxPhi);
+    if (map)
+    {
+        auto const bin = map->FindBin(eta, phi);
+        return (map->GetBinContent(bin) > 0.5);
+    }
+    else
+    {
+        if (eta <= minEta or eta >= maxEta)
+            return false;
+        
+        while (phi <= minPhi)
+            phi += 2 * M_PI;
+        
+        return (phi < maxPhi);
+    }
 }
 
 
@@ -55,10 +95,25 @@ EtaPhiFilter::EtaPhiFilter(double minPt):
 {}
 
 
+EtaPhiFilter::EtaPhiFilter(std::string const &name, double minPt, std::string const &filePath,
+  std::string const histName):
+    EtaPhiFilter(name, minPt)
+{
+    AddRegion(0, -1, filePath, histName);
+}
+
+
 void EtaPhiFilter::AddRegion(unsigned long minRun, unsigned long maxRun, double startEta,
   double endEta, double startPhi, double endPhi)
 {
     regions.emplace_back(minRun, maxRun, startEta, endEta, startPhi, endPhi);
+}
+
+
+void EtaPhiFilter::AddRegion(unsigned long minRun, unsigned long maxRun,
+  std::string const &filePath, std::string const histName)
+{
+    regions.emplace_back(minRun, maxRun, filePath, histName);
 }
 
 

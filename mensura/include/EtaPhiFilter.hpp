@@ -2,6 +2,9 @@
 
 #include <mensura/core/AnalysisPlugin.hpp>
 
+#include <TH2Poly.h>
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -22,12 +25,21 @@ class JetMETReader;
 class EtaPhiFilter: public AnalysisPlugin
 {
 private:
-    /// Auxiliary structure that defines a rectangular region in (eta, phi) for a run range
+    /**
+     * \struct Region
+     * \brief Auxiliary structure that defines a region in (eta, phi) for a run range
+     * 
+     * Represents either a simple rectangular window or a generic TH2Poly.
+     */
     struct Region
     {
-        /// Constructor with a complete initialization
+        /// Constructor from a rectangular region
         Region(unsigned long minRun, unsigned long maxRun, double minEta, double maxEta,
           double minPhi, double maxPhi);
+        
+        /// Constructor from a TH2Poly
+        Region(unsigned long minRun, unsigned long maxRun, std::string const &fileName,
+          std::string const histName = "");
         
         /**
          * \brief Checks if given point (eta, phi) is included in the region
@@ -59,6 +71,9 @@ private:
          * Stored in a canonical form in which 0 <= minPhi < maxPhi.
          */
         double minPhi, maxPhi;
+        
+        /// 2D map in (eta, phi)
+        std::shared_ptr<TH2Poly> map;
     };
     
 public:
@@ -67,6 +82,14 @@ public:
     
     /// A short-cut for the above version with a default name "EtaPhiFilter"
     EtaPhiFilter(double minPt);
+    
+    /**
+     * \brief Creates a new instance with the given pt threshold and region given by a TH2Poly map
+     * 
+     * Internally calls appropriate version of AddRegion with run range [0, +inf).
+     */
+    EtaPhiFilter(std::string const &name, double minPt, std::string const &filePath,
+      std::string histName = "");
     
 public:
     /**
@@ -80,6 +103,18 @@ public:
      */
     void AddRegion(unsigned long minRun, unsigned long maxRun, double startEta, double endEta,
       double startPhi, double endPhi);
+    
+    /**
+     * \brief Registers a "bad" region in (eta, phi)
+     * 
+     * The region is represented by a TH2Poly, which is read from the given file. The path to the
+     * file is resolved using FileInPath, with "Cleaning" as default subdirectory. The name of the
+     * histogram is optional if this is the only object in the file. In the histogram, "bad"
+     * regions are given by bins whose content is larger than 0.5. The filtering is restricted to
+     * the specified run range (boundaries are included).
+     */
+    void AddRegion(unsigned long minRun, unsigned long maxRun, std::string const &filePath,
+      std::string const histName = "");
     
     /**
      * \brief Saves pointer to the jet reader
