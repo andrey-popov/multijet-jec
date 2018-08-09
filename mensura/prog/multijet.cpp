@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <list>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <regex>
@@ -48,15 +49,6 @@ enum class DatasetGroup
 {
     Data,
     MC
-};
-
-
-enum class Era
-{
-    All,
-    Run2016BCD,
-    Run2016EFearly,
-    Run2016FlateGH
 };
 
 
@@ -183,33 +175,24 @@ int main(int argc, char **argv)
     
     
     // Parse data-taking era
-    Era dataEra = Era::All;
-    string dataEraText;
+    string dataEra("None");
     
     if (optionsMap.count("era"))
     {
-        dataEraText = optionsMap["era"].as<string>();
+        dataEra = optionsMap["era"].as<string>();
         
-        if (dataEraText == "Run2016BCD")
-            dataEra = Era::Run2016BCD;
-        else if (dataEraText == "Run2016EFearly")
-            dataEra = Era::Run2016EFearly;
-        else if (dataEraText == "Run2016FlateGH")
-            dataEra = Era::Run2016FlateGH;
-        else
+        if (boost::starts_with(dataEra, "Run"))
+            dataEra = dataEra.substr(3);
+        
+        
+        set<string> allowedEras({"2016BCD", "2016EFearly", "2016FlateG6H"});
+        
+        if (allowedEras.count(dataEra) == 0)
         {
-            cerr << "Cannot recognize data-taking era \"" << dataEraText << "\".\n";
+            cerr << "Unsupported data-taking era \"" << dataEra << "\".\n";
             return EXIT_FAILURE;
         }
     }
-    
-    if (dataGroup == DatasetGroup::Data and dataEra == Era::All)
-    {
-        cerr << "Requested to run over full data-taking period, but no residual JEC are "
-          "available for it.\n";
-        return EXIT_FAILURE;
-    }
-    
     
     
     // Input datasets
@@ -219,25 +202,14 @@ int main(int argc, char **argv)
     
     if (dataGroup == DatasetGroup::Data)
     {
-        switch (dataEra)
-        {
-            case Era::Run2016BCD:
-                datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
-                  "JetHT-Run2016D_cgp"});
-                break;
-            
-            case Era::Run2016EFearly:
-                datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
-                break;
-            
-            case Era::Run2016FlateGH:
-                datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ",
-                  "JetHT-Run2016H_xOF"});
-                break;
-            
-            default:
-                break;
-        }
+        if (dataEra == "2016BCD")
+            datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
+              "JetHT-Run2016D_cgp"});
+        else if (dataEra == "2016EFearly")
+            datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
+        else if (dataEra == "2016FlateGH")
+            datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ",
+              "JetHT-Run2016H_xOF"});
     }
     else
         datasets = datasetBuilder({"QCD-Ht-100-200-mg_fRs", "QCD-Ht-200-300-mg_all",
@@ -280,9 +252,9 @@ int main(int argc, char **argv)
     
     if (dataGroup == DatasetGroup::Data)
     {
-        if (dataEra == Era::Run2016EFearly)
+        if (dataEra == "2016EFearly")
             manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
-        else if (dataEra == Era::Run2016FlateGH)
+        else if (dataEra == "2016FlateGH")
             manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
     }
     
@@ -301,20 +273,12 @@ int main(int argc, char **argv)
         {
             jecVersion = "Summer16_07Aug2017";
             
-            switch (dataEra)
-            {
-                case Era::Run2016BCD:
-                    jecVersion += "BCD";
-                    break;
-                
-                case Era::Run2016EFearly:
-                    jecVersion += "EF";
-                    break;
-                
-                case Era::Run2016FlateGH:
-                    jecVersion += "GH";
-                    break;
-            }
+            if (dataEra == "2016BCD")
+                jecVersion += "BCD";
+            else if (dataEra == "2016EFearly")
+                jecVersion += "EF";
+            else if (dataEra == "2016FlateGH")
+                jecVersion += "GH";
             
             jecVersion += "_V10";
         }
@@ -434,7 +398,7 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new JetIDFilter("JetIDFilter", 15.));
     
-    if (dataGroup == DatasetGroup::Data and dataEra == Era::Run2016BCD)
+    if (dataGroup == DatasetGroup::Data and dataEra == "2016BCD")
     {
         EtaPhiFilter *etaPhiFilter = new EtaPhiFilter(15.);
         
