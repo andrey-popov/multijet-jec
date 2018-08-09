@@ -47,7 +47,9 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     ROOTLock::Lock();
     
     tree->Branch("PtJ1", &bfPtJ1);
-    tree->Branch("EtaJ1", &bfEtaJ1);
+    tree->Branch("PtJ2", &bfPtJ2);
+    tree->Branch("PtJ3", &bfPtJ3);
+    
     tree->Branch("PtRecoil", &bfPtRecoil);
     tree->Branch("MET", &bfMET);
     
@@ -107,13 +109,15 @@ bool BalanceVars::ProcessEvent()
     auto const &j1 = recoilBuilder->GetP4LeadingJet();
     auto const &recoil = recoilBuilder->GetP4Recoil();
     auto const &met = jetmetPlugin->GetMET().P4();
+    auto const &jets = jetmetPlugin->GetJets();
     
     
     bfPtJ1 = j1.Pt();
-    bfEtaJ1 = j1.Eta();
     bfMET = met.Pt();    
-    
     bfPtRecoil = recoil.Pt();
+    
+    bfPtJ2 = (jets.size() > 1) ? jets[1].Pt(): 0.;
+    bfPtJ3 = (jets.size() > 1) ? jets[2].Pt(): 0.;
     
     bfPtBal = ComputePtBal(j1, recoil);
     bfMPF = ComputeMPF(j1, met);

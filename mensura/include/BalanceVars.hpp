@@ -91,7 +91,7 @@ private:
     TTree *tree;
     
     // Output buffers
-    Float_t bfPtJ1, bfEtaJ1;
+    Float_t bfPtJ1, bfPtJ2, bfPtJ3;
     Float_t bfPtRecoil;
     Float_t bfMET;
     Float_t bfPtBal, bfMPF;
