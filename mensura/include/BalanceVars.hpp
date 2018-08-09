@@ -2,6 +2,7 @@
 
 #include <mensura/core/AnalysisPlugin.hpp>
 
+#include <TLorentzVector.h>
 #include <TTree.h>
 
 
@@ -36,6 +37,12 @@ public:
      * Implemented from Plugin.
      */
     virtual Plugin *Clone() const override;
+    
+    /// Auxiliary method to compute MPF balance observable
+    static double ComputeMPF(TLorentzVector const &p4Lead, TLorentzVector const &p4Miss);
+    
+    /// Auxiliary method to compute pt balance
+    static double ComputePtBal(TLorentzVector const &p4Lead, TLorentzVector const &p4Recoil);
     
     /// Specifies name of the recoil builder
     void SetRecoilBuilderName(std::string const &name);
@@ -87,7 +94,6 @@ private:
     Float_t bfPtJ1, bfEtaJ1;
     Float_t bfPtRecoil;
     Float_t bfMET;
-    Float_t bfA, bfAlpha;
     Float_t bfPtBal, bfMPF;
     Float_t bfWeightDataset;
 };

@@ -415,7 +415,7 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
     
     RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilder", 30.);
-    recoilBuilder->SetBalanceSelection(0.6, 0.3);
+    recoilBuilder->SetDPhi12Selection(2.);
     manager.RegisterPlugin(recoilBuilder);
     
     // Remove strongly imbalanced events in the high-pt region. This is a temporary solution to the

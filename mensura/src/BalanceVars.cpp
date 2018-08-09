@@ -51,9 +51,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     tree->Branch("PtRecoil", &bfPtRecoil);
     tree->Branch("MET", &bfMET);
     
-    tree->Branch("A", &bfA);
-    tree->Branch("Alpha", &bfAlpha);
-    
     tree->Branch("PtBal", &bfPtBal);
     tree->Branch("MPF", &bfMPF);
     
@@ -67,6 +64,18 @@ void BalanceVars::BeginRun(Dataset const &dataset)
 Plugin *BalanceVars::Clone() const
 {
     return new BalanceVars(*this);
+}
+
+
+double BalanceVars::ComputeMPF(TLorentzVector const &p4Lead, TLorentzVector const &p4Miss)
+{
+    return 1. + (p4Miss.Px() * p4Lead.Px() + p4Miss.Py() * p4Lead.Py()) / std::pow(p4Lead.Pt(), 2);
+}
+
+
+double BalanceVars::ComputePtBal(TLorentzVector const &p4Lead, TLorentzVector const &p4Recoil)
+{
+    return -(p4Lead.Px() * p4Recoil.Px() + p4Lead.Py() * p4Recoil.Py()) / std::pow(p4Lead.Pt(), 2);
 }
 
 
@@ -105,11 +114,9 @@ bool BalanceVars::ProcessEvent()
     bfMET = met.Pt();    
     
     bfPtRecoil = recoil.Pt();
-    bfA = recoilBuilder->GetA();
-    bfAlpha = recoilBuilder->GetAlpha();
     
-    bfPtBal = recoil.Pt() * std::cos(bfAlpha) / j1.Pt();
-    bfMPF = 1. + (met.Px() * j1.Px() + met.Py() * j1.Py()) / std::pow(j1.Pt(), 2);
+    bfPtBal = ComputePtBal(j1, recoil);
+    bfMPF = ComputeMPF(j1, met);
     
     
     tree->Fill();

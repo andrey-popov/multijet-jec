@@ -1,5 +1,6 @@
 #include <BalanceFilter.hpp>
 
+#include <BalanceVars.hpp>
 #include <RecoilBuilder.hpp>
 
 #include <mensura/core/Processor.hpp>
@@ -49,7 +50,7 @@ bool BalanceFilter::ProcessEvent()
     }
     
     
-    double const ptBal = recoil.Pt() * std::cos(recoilBuilder->GetAlpha()) / j1.Pt();
+    double const ptBal = BalanceVars::ComputePtBal(j1, recoil);
     
     return (ptBal > minPtBal and ptBal < maxPtBal);
 }

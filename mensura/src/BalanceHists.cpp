@@ -1,5 +1,6 @@
 #include <BalanceHists.hpp>
 
+#include <BalanceVars.hpp>
 #include <RecoilBuilder.hpp>
 
 #include <mensura/core/JetMETReader.hpp>
@@ -113,12 +114,9 @@ bool BalanceHists::ProcessEvent()
     
     
     histPtLead->Fill(j1.Pt());
-    
-    double const ptBal = recoil.Pt() * std::cos(recoilBuilder->GetAlpha()) / j1.Pt();
-    double const mpf = 1. + (met.Px() * j1.Px() + met.Py() * j1.Py()) / std::pow(j1.Pt(), 2);
     profPtLead->Fill(j1.Pt(), j1.Pt());
-    profPtBal->Fill(j1.Pt(), ptBal);
-    profMPF->Fill(j1.Pt(), mpf);
+    profPtBal->Fill(j1.Pt(), BalanceVars::ComputePtBal(j1, recoil));
+    profMPF->Fill(j1.Pt(), BalanceVars::ComputeMPF(j1, met));
     
     
     // Remaining histograms are filled with all jets above the threshold but the leading one

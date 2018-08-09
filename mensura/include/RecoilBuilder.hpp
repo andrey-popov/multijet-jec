@@ -5,8 +5,8 @@
 
 #include <TLorentzVector.h>
 
-#include <initializer_list>
 #include <functional>
+#include <limits>
 #include <vector>
 
 
@@ -15,13 +15,12 @@ class JetMETReader;
 
 /**
  * \class RecoilBuilder
- * \brief Reconstructs the recoil, computes balancing variables, and applies a selection on them
+ * \brief Reconstructs the recoil and applies a L3Res-invariant selection
  * 
- * This plugin reconstructs the recoil from the sum of non-leading jets. It computes several
- * observables that quantify the balance between the recoil and the leading jet in the event.
- * 
- * The plugin unconditionally rejects events with less than two jets. User can also require a
- * selection on the balancing variables.
+ * The recoil is reconstructed from the sum of non-leading jets down to a specified pt threshold.
+ * Events with less than two jets (of any pt) are rejected. A selection is also applied on (the
+ * absolute value of) the azimutal angle between the two leading jets. This quantity is not
+ * affected by corrections to jet pt.
  * 
  * This plugin relies on the presence of a JetMETReader with a default name "JetMET".
  */
@@ -53,20 +52,6 @@ public:
      */
     virtual Plugin *Clone() const override;
     
-    /// Returns fraction A = pt(j2) / pt(recoil)
-    double GetA() const;
-    
-    /// Returns alpha = pi - dPhi(j1, recoil)
-    double GetAlpha() const;
-    
-    /**
-     * \brief Returns the beta separation
-     * 
-     * Defined as minimal dPhi(j1, j) where j runs over all jets included in the recoil that
-     * satisfy the selection on pt set by SetBetaPtFraction.
-     */
-    double GetBeta() const;
-    
     /// Returns jet pt threshold used in definition of the recoil
     double GetJetPtThreshold() const;
     
@@ -80,21 +65,12 @@ public:
     std::vector<std::reference_wrapper<Jet const>> const &GetRecoilJets() const;
     
     /**
-     * \brief Sets selection on balancing variables
+     * \brief Sets selection on Delta(phi) between two leading jets
      * 
-     * If minBeta <= 0, the selection on this observable is disabled.
+     * The selection is applied to the absolute value of the angle.
      */
-    void SetBalanceSelection(double maxA, double maxAlpha, double minBeta = 0.);
-    
-    /**
-     * \brief Sets definition of dynamic pt cuts for jets considered for the beta cut
-     * 
-     * In computation of the beta separation only those jets are used whose pt is larger than pt of
-     * the leading jet multiplied by the given fraction. They also must satisfy the standard pt cut
-     * for jets included in definition of the recoil. By default, this fraction is set to zero,
-     * which means that all jets included in the recoil are considered for computation of beta.
-     */
-    void SetBetaPtFraction(double betaPtFraction);
+    void SetDPhi12Selection(double minimum,
+      double maximum = std::numeric_limits<double>::infinity());
 
 private:
     /**
@@ -123,20 +99,6 @@ private:
     /// Jets included in the recoil
     std::vector<std::reference_wrapper<Jet const>> recoilJets;
     
-    /**
-     * \brief Balance variables in the current event
-     * 
-     * Consult documentation for methods GetA, GetAlpha, GetBeta for their definitions.
-     */
-    double A, alpha, beta;
-    
-    /// Cuts on balance variables
-    double maxA, maxAlpha, minBeta;
-    
-    /**
-     * \brief Relative threshold to choose what jets are considered to evaluate beta cut
-     * 
-     * Consult documentation for method SetBetaPtFraction for details.
-     */
-    double betaPtFraction;
+    /// Selection on Delta(phi) between the two leading jets
+    double minDPhi12, maxDPhi12;
 };
