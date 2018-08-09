@@ -93,7 +93,7 @@ int main(int argc, char **argv)
       ("datasetGroup", po::value<string>(), "Dataset group (required)")
       ("syst,s", po::value<string>(), "Systematic shift")
       ("era,e", po::value<string>(), "Data-taking era")
-      ("jec-version", po::value<string>(), "Optional explicit JEC version")
+      // ("jec-version", po::value<string>(), "Optional explicit JEC version")
       ("l3-res", "Enables L3 residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4")
       ("output", po::value<string>()->default_value("output"),
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
             dataEra = dataEra.substr(3);
         
         
-        set<string> allowedEras({"2016BCD", "2016EFearly", "2016FlateG6H"});
+        set<string> allowedEras({"2016All", "2016BCD", "2016EFearly", "2016FlateG6H"});
         
         if (allowedEras.count(dataEra) == 0)
         {
@@ -210,6 +210,10 @@ int main(int argc, char **argv)
         else if (dataEra == "2016FlateGH")
             datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ",
               "JetHT-Run2016H_xOF"});
+        else if (dataEra == "2016All")
+            datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
+              "JetHT-Run2016D_cgp", "JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ",
+              "JetHT-Run2016G_fJQ", "JetHT-Run2016H_xOF"});
     }
     else
         datasets = datasetBuilder({"QCD-Ht-100-200-mg_fRs", "QCD-Ht-200-300-mg_all",
@@ -259,34 +263,6 @@ int main(int argc, char **argv)
     }
     
     
-    // Determine JEC version
-    string jecVersion;
-    
-    if (optionsMap.count("jec-version"))
-    {
-        // If a JEC version is given explicitly, use it regardless of the data era
-        jecVersion = optionsMap["jec-version"].as<string>();
-    }
-    else
-    {
-        if (dataGroup == DatasetGroup::Data)
-        {
-            jecVersion = "Summer16_07Aug2017";
-            
-            if (dataEra == "2016BCD")
-                jecVersion += "BCD";
-            else if (dataEra == "2016EFearly")
-                jecVersion += "EF";
-            else if (dataEra == "2016FlateGH")
-                jecVersion += "GH";
-            
-            jecVersion += "_V10";
-        }
-        else
-            jecVersion = "Summer16_07Aug2017_V10";
-    }
-    
-    
     // Jet corrections
     if (dataGroup == DatasetGroup::Data)
     {
@@ -299,31 +275,54 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetReader);
         
         
-        // Corrections to be applied to jets. They will also be propagated to MET.
-        string residualsType = (optionsMap.count("l3-res")) ? "L2L3Residual" : "L2Residual";
-        
+        // Corrections to be applied to jets. The full correction will also be propagated into
+        //missing pt.
         JetCorrectorService *jetCorrFull = new JetCorrectorService("JetCorrFull");
-        std::vector<std::string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
-          jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
-          jecVersion + "_DATA_L3Absolute_AK4PFchs.txt",
-          jecVersion + "_DATA_" + residualsType + "_AK4PFchs.txt"};
+        JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
         
-        if (systType == SystType::JER)
+        for (auto jetCorr: {jetCorrFull, jetCorrL1})
         {
-            // Add closure-style L2Res corrections obtained with varied JER. Taken from [1].
-            //[1] https://indico.cern.ch/event/724150/#14-dijet-with-2016-legacy-data
-            if (systDirection == SystService::VarDirection::Up)
-                jecLevels.push_back("L2Res_JER-up_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
-            else
-                jecLevels.push_back("L2Res_JER-down_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+            // Periods for jet corrections are not aligned perfectly with data-taking eras: the
+            //period "2016GH" includes few last runs from era 2016F
+            jetCorr->RegisterIOV("2016BCD", 272007, 276811);
+            jetCorr->RegisterIOV("2016EF", 276831, 278801);
+            jetCorr->RegisterIOV("2016GH", 278802, 284044);
         }
         
-        jetCorrFull->SetJEC(jecLevels);
-        manager.RegisterService(jetCorrFull);
+        for (string const &period: {"BCD", "EF", "GH"})
+        {
+            string const jecVersion = "Summer16_07Aug2017" + period + "_V10";
+            
+            vector<string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
+              jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
+              jecVersion + "_DATA_L3Absolute_AK4PFchs.txt"};
+            
+            if (not optionsMap.count("no-res"))
+            {
+                if (optionsMap.count("l3-res"))
+                    jecLevels.emplace_back(jecVersion + "_DATA_L2L3Residual_AK4PFchs.txt");
+                else
+                {
+                    jecLevels.emplace_back(jecVersion + "_DATA_L2Residual_AK4PFchs.txt");
+                    
+                    if (systType == SystType::JER)
+                    {
+                        // Add closure-style L2Res corrections obtained with varied JER. Taken
+                        //from [1].
+                        //[1] https://indico.cern.ch/event/724150/#14-dijet-with-2016-legacy-data
+                        if (systDirection == SystService::VarDirection::Up)
+                            jecLevels.emplace_back("L2Res_JER-up_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+                        else
+                            jecLevels.emplace_back("L2Res_JER-down_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+                    }
+                }
+            }
+            
+            jetCorrFull->SetJEC("2016" + period, jecLevels);
+            jetCorrL1->SetJEC("2016" + period, {jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
+        }
         
-        // L1 corrections to be used in T1 MET corrections
-        JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
-        jetCorrL1->SetJEC({jecVersion + "_DATA_L1RC_AK4PFchs.txt"});
+        manager.RegisterService(jetCorrFull);
         manager.RegisterService(jetCorrL1);
         
         
@@ -353,6 +352,8 @@ int main(int argc, char **argv)
         jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
         
+        
+        string const jecVersion("Summer16_07Aug2017_V10");
         
         // Corrections to be applied to jets and also to be propagated to MET. Although original
         //jets in simulation already have up-to-date corrections, they will be reapplied in order
