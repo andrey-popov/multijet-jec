@@ -7,6 +7,7 @@
 #include <GenMatchFilter.hpp>
 #include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
+#include <MPIMatchFilter.hpp>
 #include <PileUpVars.hpp>
 #include <RecoilBuilder.hpp>
 #include <RunFilter.hpp>
@@ -24,6 +25,7 @@
 #include <mensura/extensions/TFileService.hpp>
 
 #include <mensura/PECReader/PECGenJetMETReader.hpp>
+#include <mensura/PECReader/PECGenParticleReader.hpp>
 #include <mensura/PECReader/PECInputData.hpp>
 #include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
@@ -412,7 +414,11 @@ int main(int argc, char **argv)
     }
     
     if (dataGroup == DatasetGroup::MC)
+    {
+        manager.RegisterPlugin(new PECGenParticleReader);
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
+        manager.RegisterPlugin(new MPIMatchFilter(0.4));
+    }
     
     RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilder", 30.);
     recoilBuilder->SetDPhi12Selection(2.);

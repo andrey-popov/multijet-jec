@@ -13,10 +13,12 @@ class JetMETReader;
 
 /**
  * \class GenMatchFilter
- * \brief Selects events in which leading reconstructed jet is matched to a generator-level jet.
+ * \brief Selects events in which leading reconstructed jet is matched to a generator-level jet
  * 
  * The matching is done based on maximal dR distance and minimal ratio of pt of the generator-level
- * jet to the leading reconstructed jet.
+ * jet to the leading reconstructed jet. This filtering eliminates potential double counting with
+ * pileup interactions, effectively ensuring that the nominal interaction has the highest energy
+ * scale.
  * 
  * This plugin relies on the presence of a JetMETReader with a default name "JetMET" and a
  * GenJetMETReader with a default name "GenJetMET".
