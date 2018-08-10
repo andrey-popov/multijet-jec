@@ -117,7 +117,7 @@ bool BalanceVars::ProcessEvent()
     bfPtRecoil = recoil.Pt();
     
     bfPtJ2 = (jets.size() > 1) ? jets[1].Pt(): 0.;
-    bfPtJ3 = (jets.size() > 1) ? jets[2].Pt(): 0.;
+    bfPtJ3 = (jets.size() > 2) ? jets[2].Pt(): 0.;
     
     bfPtBal = ComputePtBal(j1, recoil);
     bfMPF = ComputeMPF(j1, met);
