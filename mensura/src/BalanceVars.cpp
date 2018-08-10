@@ -8,6 +8,8 @@
 
 #include <mensura/extensions/TFileService.hpp>
 
+#include <TVector2.h>
+
 #include <cmath>
 
 
@@ -52,6 +54,7 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     
     tree->Branch("PtRecoil", &bfPtRecoil);
     tree->Branch("MET", &bfMET);
+    tree->Branch("DPhi12", &bfDPhi12);
     
     tree->Branch("PtBal", &bfPtBal);
     tree->Branch("MPF", &bfMPF);
@@ -113,11 +116,12 @@ bool BalanceVars::ProcessEvent()
     
     
     bfPtJ1 = j1.Pt();
-    bfMET = met.Pt();    
-    bfPtRecoil = recoil.Pt();
-    
     bfPtJ2 = (jets.size() > 1) ? jets[1].Pt(): 0.;
     bfPtJ3 = (jets.size() > 2) ? jets[2].Pt(): 0.;
+    
+    bfMET = met.Pt();
+    bfPtRecoil = recoil.Pt();
+    bfDPhi12 = (jets.size() > 1) ? std::abs(TVector2::Phi_mpi_pi(j1.Phi() - jets[1].Phi())) : 0.;
     
     bfPtBal = ComputePtBal(j1, recoil);
     bfMPF = ComputeMPF(j1, met);

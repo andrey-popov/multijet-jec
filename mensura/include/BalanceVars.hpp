@@ -94,6 +94,7 @@ private:
     Float_t bfPtJ1, bfPtJ2, bfPtJ3;
     Float_t bfPtRecoil;
     Float_t bfMET;
+    Float_t bfDPhi12;
     Float_t bfPtBal, bfMPF;
     Float_t bfWeightDataset;
 };
