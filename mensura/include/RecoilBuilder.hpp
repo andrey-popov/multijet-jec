@@ -15,12 +15,10 @@ class JetMETReader;
 
 /**
  * \class RecoilBuilder
- * \brief Reconstructs the recoil and applies a L3Res-invariant selection
+ * \brief Reconstructs the recoil
  * 
  * The recoil is reconstructed from the sum of non-leading jets down to a specified pt threshold.
- * Events with less than two jets (of any pt) are rejected. A selection is also applied on (the
- * absolute value of) the azimutal angle between the two leading jets. This quantity is not
- * affected by corrections to jet pt.
+ * Events with less than two jets (of any pt) are rejected.
  * 
  * This plugin relies on the presence of a JetMETReader with a default name "JetMET".
  */
@@ -63,14 +61,6 @@ public:
     
     /// Returns collection of jets included in the recoil
     std::vector<std::reference_wrapper<Jet const>> const &GetRecoilJets() const;
-    
-    /**
-     * \brief Sets selection on Delta(phi) between two leading jets
-     * 
-     * The selection is applied to the absolute value of the angle.
-     */
-    void SetDPhi12Selection(double minimum,
-      double maximum = std::numeric_limits<double>::infinity());
 
 private:
     /**
@@ -98,7 +88,4 @@ private:
     
     /// Jets included in the recoil
     std::vector<std::reference_wrapper<Jet const>> recoilJets;
-    
-    /// Selection on Delta(phi) between the two leading jets
-    double minDPhi12, maxDPhi12;
 };

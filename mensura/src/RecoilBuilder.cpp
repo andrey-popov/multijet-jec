@@ -3,7 +3,6 @@
 #include <mensura/core/JetMETReader.hpp>
 
 #include <TMath.h>
-#include <TVector2.h>
 
 #include <cmath>
 
@@ -11,8 +10,7 @@
 RecoilBuilder::RecoilBuilder(std::string const &name, double minJetPt_):
     AnalysisPlugin(name),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
-    minJetPt(minJetPt_),
-    minDPhi12(0.), maxDPhi12(std::numeric_limits<double>::infinity())
+    minJetPt(minJetPt_)
 {}
 
 
@@ -57,13 +55,6 @@ std::vector<std::reference_wrapper<Jet const>> const &RecoilBuilder::GetRecoilJe
 }
 
 
-void RecoilBuilder::SetDPhi12Selection(double minimum, double maximum)
-{
-    minDPhi12 = minimum;
-    maxDPhi12 = maximum;
-}
-
-
 bool RecoilBuilder::ProcessEvent()
 {
     // Make sure there is at least a couple of jets
@@ -91,9 +82,5 @@ bool RecoilBuilder::ProcessEvent()
         recoilJets.emplace_back(j);
     }
     
-    
-    // Apply selection on Delta(phi)
-    double const dPhi12 = std::abs(TVector2::Phi_mpi_pi(jets[0].Phi() - jets[1].Phi()));
-    
-    return (dPhi12 > minDPhi12 and dPhi12 < maxDPhi12);
+    return true;
 }

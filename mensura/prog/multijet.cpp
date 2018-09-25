@@ -1,3 +1,4 @@
+#include <AngularFilter.hpp>
 #include <BalanceFilter.hpp>
 #include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
@@ -420,9 +421,15 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new MPIMatchFilter(0.4));
     }
     
-    RecoilBuilder *recoilBuilder = new RecoilBuilder("RecoilBuilder", 30.);
-    recoilBuilder->SetDPhi12Selection(2.);
-    manager.RegisterPlugin(recoilBuilder);
+    // Set angular selection based on [1-3]
+    //[1] https://indico.cern.ch/event/749862/#2-l3res-multijet-update
+    //[2] https://indico.cern.ch/event/759977/#28-ideas-on-multijet
+    AngularFilter *angularFilter = new AngularFilter;
+    angularFilter->SetDPhi12Cut(2., 2.9);
+    angularFilter->SetDPhi23Cut(0., 1.);
+    manager.RegisterPlugin(angularFilter);
+    
+    manager.RegisterPlugin(new RecoilBuilder("RecoilBuilder", 30.));
     
     // Remove strongly imbalanced events in the high-pt region. This is a temporary solution to the
     //problem described in [1].
