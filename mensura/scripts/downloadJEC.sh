@@ -7,14 +7,16 @@ set -e
 
 
 dirSource=`pwd`
-version="10"
+
+dataVersion="16"
+simVersion="15"
 
 for period in BCD EF GH
 do
-    blocks+=("Summer16_07Aug2017${period}_V${version}_DATA")
+    blocks+=("Summer16_07Aug2017${period}_V${dataVersion}_DATA")
 done
 
-blocks+=("Summer16_07Aug2017_V${version}_MC")
+blocks+=("Summer16_07Aug2017_V${simVersion}_MC")
 
 
 # Temporary directory to store intermediate files
