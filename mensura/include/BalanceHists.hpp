@@ -118,4 +118,7 @@ private:
     
     /// Sum of pt(j) * cos(gamma) in bins of ptlead and pt of other jets in the event
     TH2D *histPtJetSumProj;
+    
+    /// As histPtJetSumProj, but divided by ptlead
+    TH2D *histRelPtJetSumProj;
 };

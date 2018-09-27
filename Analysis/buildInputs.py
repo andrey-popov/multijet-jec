@@ -142,7 +142,8 @@ if __name__ == '__main__':
         histPtLead.SetDirectory(outDirectory)
         
         for name in [
-            'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj'
+            'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj',
+            'RelPtJetSumProj'
         ]:
             obj = dataFile.Get('{}/{}'.format(triggerName, name))
             obj.SetDirectory(outDirectory)

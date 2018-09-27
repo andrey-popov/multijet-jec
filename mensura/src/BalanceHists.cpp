@@ -72,6 +72,10 @@ void BalanceHists::BeginRun(Dataset const &)
       ";p_{T}^{lead} [GeV];Jet p_{T} [GeV]",
       ptLeadBinning.size() - 1, ptLeadBinning.data(),
       ptJetBinning.size() - 1, ptJetBinning.data());
+    histRelPtJetSumProj = fileService->Create<TH2D>(outDirectoryName, "RelPtJetSumProj",
+      ";p_{T}^{lead} [GeV];Jet p_{T} [GeV]",
+      ptLeadBinning.size() - 1, ptLeadBinning.data(),
+      ptJetBinning.size() - 1, ptJetBinning.data());
 }
 
 
@@ -129,6 +133,7 @@ bool BalanceHists::ProcessEvent()
         
         histPtJet->Fill(j1.Pt(), pt);
         histPtJetSumProj->Fill(j1.Pt(), pt, pt * std::cos(jets[i].Phi() - j1.Phi()));
+        histRelPtJetSumProj->Fill(j1.Pt(), pt, pt * std::cos(jets[i].Phi() - j1.Phi()) / j1.Pt());
     }
     
     
