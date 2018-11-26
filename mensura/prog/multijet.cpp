@@ -11,7 +11,6 @@
 #include <LeadJetTriggerFilter.hpp>
 #include <MPIMatchFilter.hpp>
 #include <PileUpVars.hpp>
-#include <RecoilBuilder.hpp>
 #include <RunFilter.hpp>
 
 #include <mensura/core/Dataset.hpp>
@@ -431,7 +430,6 @@ int main(int argc, char **argv)
     manager.RegisterPlugin(angularFilter);
     
     manager.RegisterPlugin(new BalanceCalc(30.));
-    manager.RegisterPlugin(new RecoilBuilder("RecoilBuilder", 30.));
     
     // Remove strongly imbalanced events in the high-pt region. This is a temporary solution to the
     //problem described in [1].
@@ -449,7 +447,7 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
           "triggerBins.json", (dataGroup == DatasetGroup::Data)), {"RecoilBuilder"});
         
-        BalanceVars *balanceVars = new BalanceVars("BalanceVars"s + trigger);
+        BalanceVars *balanceVars = new BalanceVars("BalanceVars"s + trigger, 30.);
         balanceVars->SetTreeName(trigger + "/BalanceVars");
         manager.RegisterPlugin(balanceVars, {"TriggerFilter"s + trigger});
         

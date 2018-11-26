@@ -1,7 +1,6 @@
 #include <BalanceVars.hpp>
 
 #include <BalanceCalc.hpp>
-#include <RecoilBuilder.hpp>
 
 #include <mensura/core/JetMETReader.hpp>
 #include <mensura/core/Processor.hpp>
@@ -9,18 +8,24 @@
 
 #include <mensura/extensions/TFileService.hpp>
 
+#include <TLorentzVector.h>
 #include <TVector2.h>
 
 #include <cmath>
 
 
-BalanceVars::BalanceVars(std::string const name /*= "BalanceVars"*/):
+BalanceVars::BalanceVars(std::string const &name, double minPtRecoil_):
     AnalysisPlugin(name),
+    minPtRecoil(minPtRecoil_),
     fileServiceName("TFileService"), fileService(nullptr),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
     balanceCalcName("BalanceCalc"), balanceCalc(nullptr),
-    recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
     treeName(name)
+{}
+
+
+BalanceVars::BalanceVars(double minPtRecoil):
+    BalanceVars("BalanceVars", minPtRecoil)
 {}
 
 
@@ -40,7 +45,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
     balanceCalc = dynamic_cast<BalanceCalc const *>(GetDependencyPlugin(balanceCalcName));
-    recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
     
     
     // Create output tree
@@ -75,12 +79,6 @@ Plugin *BalanceVars::Clone() const
 }
 
 
-void BalanceVars::SetRecoilBuilderName(std::string const &name)
-{
-    recoilBuilderName = name;
-}
-
-
 void BalanceVars::SetTreeName(std::string const &name)
 {
     auto const pos = name.rfind('/');
@@ -103,7 +101,6 @@ bool BalanceVars::ProcessEvent()
     auto const &jets = jetmetPlugin->GetJets();
     auto const &met = jetmetPlugin->GetMET().P4();
     auto const &j1 = jets.at(0);
-    auto const &recoil = recoilBuilder->GetP4Recoil();
     
     
     bfPtJ1 = j1.Pt();
@@ -111,8 +108,21 @@ bool BalanceVars::ProcessEvent()
     bfPtJ3 = (jets.size() > 2) ? jets[2].Pt(): 0.;
     
     bfMET = met.Pt();
-    bfPtRecoil = recoil.Pt();
     bfDPhi12 = (jets.size() > 1) ? std::abs(TVector2::Phi_mpi_pi(j1.Phi() - jets[1].Phi())) : 0.;
+    
+    
+    TLorentzVector p4Recoil;
+    
+    for (auto const &j: jets)
+    {
+        if (j.Pt() < minPtRecoil)
+            break;
+        
+        p4Recoil += j.P4();
+    }
+    
+    bfPtRecoil = p4Recoil.Pt();
+    
     
     bfPtBal = balanceCalc->GetPtBal();
     bfMPF = balanceCalc->GetMPF();

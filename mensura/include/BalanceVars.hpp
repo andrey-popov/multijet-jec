@@ -8,7 +8,6 @@
 
 class BalanceCalc;
 class JetMETReader;
-class RecoilBuilder;
 class TFileService;
 
 
@@ -16,14 +15,16 @@ class TFileService;
  * \class BalanceVars
  * \brief Produces tuples with variables that describe multijet balancing
  * 
- * Depends on the presence of a jet reader, a recoil builder, and a plugin to compute balance
- * observables.
+ * Depends on the presence of a jet reader and a plugin to compute balance observables.
  */
 class BalanceVars: public AnalysisPlugin
 {
 public:
-    /// Constructs a plugin with the given name
-    BalanceVars(std::string const name = "BalanceVars");
+    /// Constructs a plugin with the given name and pt threshold for the recoil
+    BalanceVars(std::string const &name, double minPtRecoil);
+    
+    /// Constructs a plugin with default name "BalanceVars" and given threshold for the recoil
+    BalanceVars(double minPtRecoil);
     
 public:
     /**
@@ -39,9 +40,6 @@ public:
      * Implemented from Plugin.
      */
     virtual Plugin *Clone() const override;
-    
-    /// Specifies name of the recoil builder
-    void SetRecoilBuilderName(std::string const &name);
     
     /**
      * \brief Specifies name for the output tree
@@ -59,6 +57,9 @@ private:
     virtual bool ProcessEvent() override;
     
 private:
+    /// Threshold used in the definition of the recoil
+    double minPtRecoil;
+    
     /// Name of TFileService
     std::string fileServiceName;
     
@@ -76,12 +77,6 @@ private:
     
     /// Non-owning pointer to a plugin that computes balance observables
     BalanceCalc const *balanceCalc;
-    
-    /// Name of a plugin that reconstructs recoil
-    std::string recoilBuilderName;
-    
-    /// Non-owning pointer to a plugin that reconstruct recoil
-    RecoilBuilder const *recoilBuilder;
     
     /// Name of the output tree and in-file directory
     std::string treeName, directoryName;

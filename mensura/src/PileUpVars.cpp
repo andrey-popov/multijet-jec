@@ -1,7 +1,5 @@
 #include <PileUpVars.hpp>
 
-#include <RecoilBuilder.hpp>
-
 #include <mensura/core/PileUpReader.hpp>
 #include <mensura/core/Processor.hpp>
 #include <mensura/core/ROOTLock.hpp>
