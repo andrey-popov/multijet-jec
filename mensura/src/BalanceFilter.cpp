@@ -1,8 +1,8 @@
 #include <BalanceFilter.hpp>
 
-#include <BalanceVars.hpp>
-#include <RecoilBuilder.hpp>
+#include <BalanceCalc.hpp>
 
+#include <mensura/core/JetMETReader.hpp>
 #include <mensura/core/Processor.hpp>
 
 #include <cmath>
@@ -11,7 +11,8 @@
 BalanceFilter::BalanceFilter(std::string const &name, double minPtBal_, double maxPtBal_):
     AnalysisPlugin(name),
     minPtBal(minPtBal_), maxPtBal(maxPtBal_), minPtLead(0.),
-    recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr)
+    jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
+    balanceCalcName("BalanceCalc"), balanceCalc(nullptr)
 {}
 
 
@@ -22,7 +23,8 @@ BalanceFilter::BalanceFilter(double minPtBal, double maxPtBal):
 
 void BalanceFilter::BeginRun(Dataset const &)
 {
-    recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
+    jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
+    balanceCalc = dynamic_cast<BalanceCalc const *>(GetDependencyPlugin(balanceCalcName));
 }
 
 
@@ -40,17 +42,20 @@ void BalanceFilter::SetMinPtLead(double minPtLead_)
 
 bool BalanceFilter::ProcessEvent()
 {
-    auto const &j1 = recoilBuilder->GetP4LeadingJet();
-    auto const &recoil = recoilBuilder->GetP4Recoil();
+    auto const &jets = jetmetPlugin->GetJets();
     
-    if (j1.Pt() <= minPtLead)
+    if (jets.size() < 2)
+        return false;
+    
+    
+    if (jets[0].Pt() <= minPtLead)
     {
         // Filtering is disabled
         return true;
     }
     
     
-    double const ptBal = BalanceVars::ComputePtBal(j1, recoil);
+    double const ptBal = balanceCalc->GetPtBal();
     
     return (ptBal > minPtBal and ptBal < maxPtBal);
 }

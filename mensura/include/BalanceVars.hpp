@@ -6,6 +6,7 @@
 #include <TTree.h>
 
 
+class BalanceCalc;
 class JetMETReader;
 class RecoilBuilder;
 class TFileService;
@@ -15,7 +16,8 @@ class TFileService;
  * \class BalanceVars
  * \brief Produces tuples with variables that describe multijet balancing
  * 
- * Depends on the presence of a jet reader and a recoil builder.
+ * Depends on the presence of a jet reader, a recoil builder, and a plugin to compute balance
+ * observables.
  */
 class BalanceVars: public AnalysisPlugin
 {
@@ -37,12 +39,6 @@ public:
      * Implemented from Plugin.
      */
     virtual Plugin *Clone() const override;
-    
-    /// Auxiliary method to compute MPF balance observable
-    static double ComputeMPF(TLorentzVector const &p4Lead, TLorentzVector const &p4Miss);
-    
-    /// Auxiliary method to compute pt balance
-    static double ComputePtBal(TLorentzVector const &p4Lead, TLorentzVector const &p4Recoil);
     
     /// Specifies name of the recoil builder
     void SetRecoilBuilderName(std::string const &name);
@@ -74,6 +70,12 @@ private:
     
     /// Non-owning pointer to a plugin that produces jets and MET
     JetMETReader const *jetmetPlugin;
+    
+    /// Name of a plugin that computes balance observables
+    std::string balanceCalcName;
+    
+    /// Non-owning pointer to a plugin that computes balance observables
+    BalanceCalc const *balanceCalc;
     
     /// Name of a plugin that reconstructs recoil
     std::string recoilBuilderName;

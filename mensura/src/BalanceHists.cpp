@@ -1,7 +1,6 @@
 #include <BalanceHists.hpp>
 
-#include <BalanceVars.hpp>
-#include <RecoilBuilder.hpp>
+#include <BalanceCalc.hpp>
 
 #include <mensura/core/JetMETReader.hpp>
 #include <mensura/core/Processor.hpp>
@@ -15,7 +14,7 @@ BalanceHists::BalanceHists(std::string const &name, double minPt_ /*= 15.*/):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
-    recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
+    balanceCalcName("BalanceCalc"), balanceCalc(nullptr),
     outDirectoryName(name), minPt(minPt_)
 {
     // Construct default binning
@@ -50,7 +49,7 @@ void BalanceHists::BeginRun(Dataset const &)
     // Save pointers to required services and plugins
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
-    recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
+    balanceCalc = dynamic_cast<BalanceCalc const *>(GetDependencyPlugin(balanceCalcName));
     
     
     // Create all histograms
@@ -103,24 +102,16 @@ void BalanceHists::SetBinningPtJetRecoil(std::vector<double> const &binning)
 }
 
 
-void BalanceHists::SetRecoilBuilderName(std::string const &name)
-{
-    recoilBuilderName = name;
-}
-
-
 bool BalanceHists::ProcessEvent()
 {
-    auto const &j1 = recoilBuilder->GetP4LeadingJet();
-    auto const &recoil = recoilBuilder->GetP4Recoil();
-    auto const &met = jetmetPlugin->GetMET().P4();
     auto const &jets = jetmetPlugin->GetJets();
+    auto const &j1 = jets.at(0);
     
     
     histPtLead->Fill(j1.Pt());
     profPtLead->Fill(j1.Pt(), j1.Pt());
-    profPtBal->Fill(j1.Pt(), BalanceVars::ComputePtBal(j1, recoil));
-    profMPF->Fill(j1.Pt(), BalanceVars::ComputeMPF(j1, met));
+    profPtBal->Fill(j1.Pt(), balanceCalc->GetPtBal());
+    profMPF->Fill(j1.Pt(), balanceCalc->GetMPF());
     
     
     // Remaining histograms are filled with all jets above the threshold but the leading one

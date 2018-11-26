@@ -1,4 +1,5 @@
 #include <AngularFilter.hpp>
+#include <BalanceCalc.hpp>
 #include <BalanceFilter.hpp>
 #include <BalanceHists.hpp>
 #include <BalanceVars.hpp>
@@ -429,6 +430,7 @@ int main(int argc, char **argv)
     angularFilter->SetDPhi23Cut(0., 1.);
     manager.RegisterPlugin(angularFilter);
     
+    manager.RegisterPlugin(new BalanceCalc(30.));
     manager.RegisterPlugin(new RecoilBuilder("RecoilBuilder", 30.));
     
     // Remove strongly imbalanced events in the high-pt region. This is a temporary solution to the

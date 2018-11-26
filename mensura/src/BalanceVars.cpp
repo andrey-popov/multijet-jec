@@ -1,5 +1,6 @@
 #include <BalanceVars.hpp>
 
+#include <BalanceCalc.hpp>
 #include <RecoilBuilder.hpp>
 
 #include <mensura/core/JetMETReader.hpp>
@@ -17,6 +18,7 @@ BalanceVars::BalanceVars(std::string const name /*= "BalanceVars"*/):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
+    balanceCalcName("BalanceCalc"), balanceCalc(nullptr),
     recoilBuilderName("RecoilBuilder"), recoilBuilder(nullptr),
     treeName(name)
 {}
@@ -37,6 +39,7 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     // Save pointers to required services and plugins
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
+    balanceCalc = dynamic_cast<BalanceCalc const *>(GetDependencyPlugin(balanceCalcName));
     recoilBuilder = dynamic_cast<RecoilBuilder const *>(GetDependencyPlugin(recoilBuilderName));
     
     
@@ -72,18 +75,6 @@ Plugin *BalanceVars::Clone() const
 }
 
 
-double BalanceVars::ComputeMPF(TLorentzVector const &p4Lead, TLorentzVector const &p4Miss)
-{
-    return 1. + (p4Miss.Px() * p4Lead.Px() + p4Miss.Py() * p4Lead.Py()) / std::pow(p4Lead.Pt(), 2);
-}
-
-
-double BalanceVars::ComputePtBal(TLorentzVector const &p4Lead, TLorentzVector const &p4Recoil)
-{
-    return -(p4Lead.Px() * p4Recoil.Px() + p4Lead.Py() * p4Recoil.Py()) / std::pow(p4Lead.Pt(), 2);
-}
-
-
 void BalanceVars::SetRecoilBuilderName(std::string const &name)
 {
     recoilBuilderName = name;
@@ -109,10 +100,10 @@ void BalanceVars::SetTreeName(std::string const &name)
 
 bool BalanceVars::ProcessEvent()
 {
-    auto const &j1 = recoilBuilder->GetP4LeadingJet();
-    auto const &recoil = recoilBuilder->GetP4Recoil();
-    auto const &met = jetmetPlugin->GetMET().P4();
     auto const &jets = jetmetPlugin->GetJets();
+    auto const &met = jetmetPlugin->GetMET().P4();
+    auto const &j1 = jets.at(0);
+    auto const &recoil = recoilBuilder->GetP4Recoil();
     
     
     bfPtJ1 = j1.Pt();
@@ -123,8 +114,8 @@ bool BalanceVars::ProcessEvent()
     bfPtRecoil = recoil.Pt();
     bfDPhi12 = (jets.size() > 1) ? std::abs(TVector2::Phi_mpi_pi(j1.Phi() - jets[1].Phi())) : 0.;
     
-    bfPtBal = ComputePtBal(j1, recoil);
-    bfMPF = ComputeMPF(j1, met);
+    bfPtBal = balanceCalc->GetPtBal();
+    bfMPF = balanceCalc->GetMPF();
     
     
     tree->Fill();

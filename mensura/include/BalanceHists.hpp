@@ -11,8 +11,8 @@
 #include <vector>
 
 
+class BalanceCalc;
 class JetMETReader;
-class RecoilBuilder;
 class TFileService;
 
 
@@ -20,8 +20,8 @@ class TFileService;
  * \class BalanceHists
  * \brief Produces histograms needed to recompute balancing in multijet events
  * 
- * Intended to be used with data only. Depends on the presence of a jet reader and a recoil
- * builder.
+ * Intended to be used with data only. Depends on the presence of a jet reader and a plugin to
+ * compute balance observables.
  */
 class BalanceHists: public AnalysisPlugin
 {
@@ -65,9 +65,6 @@ public:
      */
     void SetDirectoryName(std::string const &name);
     
-    /// Specifies name of the recoil builder
-    void SetRecoilBuilderName(std::string const &name);
-    
 private:
     /**
      * \brief Computes variables and fills the output tree
@@ -89,11 +86,11 @@ private:
     /// Non-owning pointer to a plugin that produces jets and MET
     JetMETReader const *jetmetPlugin;
     
-    /// Name of a plugin that reconstructs recoil
-    std::string recoilBuilderName;
+    /// Name of a plugin that computes balance observables
+    std::string balanceCalcName;
     
-    /// Non-owning pointer to a plugin that reconstruct recoil
-    RecoilBuilder const *recoilBuilder;
+    /// Non-owning pointer to a plugin that computes balance observables
+    BalanceCalc const *balanceCalc;
     
     /// Name for the output directory
     std::string outDirectoryName;

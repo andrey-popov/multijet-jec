@@ -2,12 +2,11 @@
 
 #include <mensura/core/AnalysisPlugin.hpp>
 
-#include <TTree.h>
-
 #include <limits>
 
 
-class RecoilBuilder;
+class BalanceCalc;
+class JetMETReader;
 
 
 /**
@@ -16,7 +15,7 @@ class RecoilBuilder;
  * 
  * This filter is intended to reject extreme tails in the distribution of pt balance observable.
  * 
- * Depends on the presence of a recoil builder.
+ * Depends on the presence of a jet reader and a plugin to compute balance observables.
  */
 class BalanceFilter: public AnalysisPlugin
 {
@@ -66,9 +65,15 @@ private:
     /// Minimal pt of the leading jet for the filtering to be enabled
     double minPtLead;
     
-    /// Name of a plugin that reconstructs recoil
-    std::string recoilBuilderName;
+    /// Name of a plugin that produces jets and MET
+    std::string jetmetPluginName;
     
-    /// Non-owning pointer to a plugin that reconstruct recoil
-    RecoilBuilder const *recoilBuilder;
+    /// Non-owning pointer to a plugin that produces jets and MET
+    JetMETReader const *jetmetPlugin;
+    
+    /// Name of a plugin that computes balance observables
+    std::string balanceCalcName;
+    
+    /// Non-owning pointer to a plugin that computes balance observables
+    BalanceCalc const *balanceCalc;
 };
