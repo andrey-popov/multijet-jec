@@ -107,7 +107,7 @@ if __name__ == '__main__':
         
         
         # Create profiles in simulation
-        ptRange = triggerBin['corrPtRange']
+        ptRange = triggerBin['ptRange']
         clippedBinning = array('d', [edge for edge in binning if ptRange[0] <= edge <= ptRange[1]])
         
         profPtBal = ROOT.TProfile(

@@ -17,7 +17,7 @@
 
 
 LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string const &triggerName,
-  std::string const &configFileName, bool uncorrPt /*= true*/):
+  std::string const &configFileName, bool useMargin):
     AnalysisPlugin(name),
     jetmetPluginName("JetMET"), jetmetPlugin(nullptr),
     triggerObjectsPluginName("TriggerObjects"), triggerObjectsPlugin(nullptr),
@@ -65,7 +65,7 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
     }
     
     auto const &triggerInfo = root[triggerName];
-    std::string const ptRangeLabel(uncorrPt ? "uncorrPtRange" : "corrPtRange");
+    std::string const ptRangeLabel(useMargin ? "ptRangeMargined" : "ptRange");
     
     if (not triggerInfo.isMember("filter") or not triggerInfo.isMember(ptRangeLabel))
     {
@@ -94,8 +94,8 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
 
 
 LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &triggerName,
-  std::string const &configFileName, bool uncorrPt /*= true*/):
-    LeadJetTriggerFilter("TriggerFilter", triggerName, configFileName, uncorrPt)
+  std::string const &configFileName, bool useMargin):
+    LeadJetTriggerFilter("TriggerFilter", triggerName, configFileName, useMargin)
 {}
 
 

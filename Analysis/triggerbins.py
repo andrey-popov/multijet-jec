@@ -50,7 +50,7 @@ class TriggerBins(OrderedDict):
         # the value is finite as infinities are not supported in other
         # code that uses that file).  Clip it.
         for triggerName, triggerBin in self.items():
-            corrRange = triggerBin['corrPtRange']
+            corrRange = triggerBin['ptRange']
             
             if corrRange[1] > clip:
                 corrRange[1] = clip
@@ -81,7 +81,7 @@ class TriggerBins(OrderedDict):
         mismatchedEdges = []
         
         for triggerBin in self.values():
-            for edge in triggerBin['corrPtRange']:
+            for edge in triggerBin['ptRange']:
                 if edge not in binning:
                     mismatchedEdges.append(edge)
         

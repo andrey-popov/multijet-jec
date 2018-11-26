@@ -445,7 +445,7 @@ int main(int argc, char **argv)
       {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450"})
     {
         manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
-          "triggerBins.json", (dataGroup == DatasetGroup::Data)), {"RecoilBuilder"});
+          "triggerBins.json", (dataGroup != DatasetGroup::Data)), {"RecoilBuilder"});
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVars"s + trigger, 30.);
         balanceVars->SetTreeName(trigger + "/BalanceVars");

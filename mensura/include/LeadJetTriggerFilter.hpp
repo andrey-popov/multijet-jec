@@ -18,13 +18,13 @@ class PECTriggerObjectReader;
  *   {
  *     "PFJet200": {
  *       "filter": "hltSinglePFJet200",
- *       "corrPtRange": [250.0, 320.0],
- *       "uncorrPtRange": [220.0, 360.0]
+ *       "ptRange": [250.0, 320.0],
+ *       "ptRangeMargined": [220.0, 360.0]
  *     },
  *     ...
  *   }
- * For each trigger the corresponding trigger name is provided along with two pt ranges. The ranges
- * are supposed to be chosen based on whether jets are fully corrected.
+ * For each trigger the corresponding trigger name is provided along with two pt ranges. Specific
+ * pt range is chosen based on the configuration of the plugin.
  */
 class LeadJetTriggerFilter: public AnalysisPlugin
 {
@@ -34,11 +34,11 @@ public:
      * 
      * Creates a plugin with the given name that applies selection specified for the given trigger.
      * The selection is described in a JSON configuration file, whose structure is explained in the
-     * documentation for this class. The boolean flag uncorrPt determines which of the two pt
+     * documentation for this class. The boolean flag useMargin determines which of the two pt
      * ranges are to be used in the event selection.
      */
     LeadJetTriggerFilter(std::string const &name, std::string const &triggerName,
-      std::string const &configFileName, bool uncorrPt = true);
+      std::string const &configFileName, bool useMargin = true);
     
     /**
      * \brief Constructor
@@ -46,7 +46,7 @@ public:
      * A shortcut for the above version with default name "TriggerFilter".
      */
     LeadJetTriggerFilter(std::string const &triggerName, std::string const &configFileName,
-      bool uncorrPt = true);
+      bool useMargin = true);
     
 public:
     /**
