@@ -50,7 +50,7 @@ class BalanceBuilder:
         self.clipped_binnings = {}
         
         for trigger_name, trigger_bin in self.trigger_bins.items():
-            self.clipped_binnings[trigger_name] = self.clip_binning(*trigger_bin['ptRange'])
+            self.clipped_binnings[trigger_name] = self.clip_binning(*trigger_bin.pt_range)
     
     
     def build_data(self, data_file_path, errors=False):
@@ -74,7 +74,7 @@ class BalanceBuilder:
             prof_pt_bal = data_file.Get(trigger_name + '/PtBalProfile')
             prof_mpf = data_file.Get(trigger_name + '/MPFProfile')
             
-            clipped_binning = self.clip_binning(*trigger_bin['ptRange'])
+            clipped_binning = self.clip_binning(*trigger_bin.pt_range)
             distrs['PtBal'][trigger_name] = self.hist_to_np(
                 prof_pt_bal.Rebin(len(clipped_binning) - 1, uuid4().hex, clipped_binning),
                 errors=errors

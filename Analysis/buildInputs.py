@@ -107,7 +107,7 @@ if __name__ == '__main__':
         
         
         # Create profiles in simulation
-        pt_range = trigger_bin['ptRange']
+        pt_range = trigger_bin.pt_range
         clipped_binning = array('d', [
             edge for edge in binning if pt_range[0] <= edge <= pt_range[1]
         ])

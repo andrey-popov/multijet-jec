@@ -4,6 +4,36 @@ import math
 import os
 
 
+class TriggerBin:
+    """Auxiliary class that represents a single trigger bin."""
+    
+    __slots__ = ['filter_name', 'pt_range', 'pt_range_margined']
+    
+    def __init__(self, config):
+        """Initialize from configuration read from JSON file."""
+        
+        self.filter_name = config['filter']
+        self.pt_range = tuple(config['ptRange'])
+        self.pt_range_margined = tuple(config['ptRangeMargined'])
+    
+    
+    def __getitem__(self, field_name):
+        """Provide an alternative way to access data members.
+        
+        Needed for backward compatibility with code in which trigger
+        bins were represented with dictionaries.
+        """
+        
+        if field_name == 'ptRange':
+            return self.pt_range
+        elif field_name == 'ptRangeMargined':
+            return self.pt_range_margined
+        elif field_name == 'filter':
+            return self.filter_name
+        else:
+            raise AttributeError('Unknown attribute "{}".'.format(filter_name))
+
+
 class TriggerBins(OrderedDict):
     """Facilitates working with configuration for trigger bins.
     
@@ -22,8 +52,8 @@ class TriggerBins(OrderedDict):
         
         Arguments:
             path:  Path to JSON file with the configuration.
-            clip:  Upper boundaries of trigger bins in terms of
-                corrected pt will be clipped using this value.
+            clip:  Upper boundaries of trigger bins in pt (without the
+                margin) will be clipped using this value.
         """
         
         super().__init__()
@@ -44,8 +74,8 @@ class TriggerBins(OrderedDict):
         
         # Read the configuration.  Sort trigger bins in pt.
         with open(path) as f:
-            bins = list(json.load(f).items())
-            bins.sort(key=lambda b: b[1]['ptRange'][0])
+            bins = list((k, TriggerBin(v)) for k, v in json.load(f).items())
+            bins.sort(key=lambda b: b.pt_range[0])
             self.update(bins)
         
         
@@ -53,22 +83,23 @@ class TriggerBins(OrderedDict):
         # the value is finite as infinities are not supported in other
         # code that uses that file).  Clip it.
         for trigger_name, trigger_bin in self.items():
-            corr_range = trigger_bin['ptRange']
+            r = trigger_bin.pt_range
             
-            if corr_range[1] > clip:
-                corr_range[1] = clip
+            if r[1] > clip:
+                r = (r[0], clip)
+                trigger_bin.pt_range = r
             
-            if corr_range[0] >= corr_range[1]:
-                raise RuntimeError('Illegal corrected pt range for trigger "{}": {}.'.format(
-                    trigger_name, corr_range
+            if r[0] >= r[1]:
+                raise RuntimeError('Illegal pt range for trigger "{}": {}.'.format(
+                    trigger_name, r
                 ))
     
     
     def check_alignment(self, binning, silent=False):
         """Check alignment with given binning.
         
-        If all boundaries of trigger bins expressed in corrected pt are
-        found in the given binning, the two are aligned.
+        If all boundaries of trigger bins without the margins are found
+        in the given binning, the two are aligned.
         
         Arguments:
             binning:  Binning against which to check the alignment.
@@ -84,7 +115,7 @@ class TriggerBins(OrderedDict):
         mismatched_edges = []
         
         for trigger_bin in self.values():
-            for edge in trigger_bin['ptRange']:
+            for edge in trigger_bin.pt_range:
                 if edge not in binning:
                     mismatched_edges.append(edge)
         
