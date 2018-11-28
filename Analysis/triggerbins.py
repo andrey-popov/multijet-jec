@@ -9,7 +9,8 @@ class TriggerBins(OrderedDict):
     
     This class reads a configuration that defines trigger bins and
     implements some sanity checks.  The configuration is exposed as an
-    ordered dictionary, which this class subclasses.
+    ordered dictionary, which this class subclasses.  Triggers bins are
+    sorted in the increasing order in pt.
     """
     
     def __init__(self, path, clip=math.inf):
@@ -41,9 +42,11 @@ class TriggerBins(OrderedDict):
                 path = try_path
         
         
-        # Read the configuration
+        # Read the configuration.  Sort trigger bins in pt.
         with open(path) as f:
-            self.update(json.load(f, object_pairs_hook=OrderedDict))
+            bins = list(json.load(f).items())
+            bins.sort(key=lambda b: b[1]['ptRange'][0])
+            self.update(bins)
         
         
         # One of the trigger bins normally extends to very large pt (but
