@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import json
 import math
 import os
@@ -7,11 +6,12 @@ import os
 class TriggerBin:
     """Auxiliary class that represents a single trigger bin."""
     
-    __slots__ = ['filter_name', 'pt_range', 'pt_range_margined']
+    __slots__ = ['name', 'filter_name', 'pt_range', 'pt_range_margined']
     
-    def __init__(self, config):
+    def __init__(self, trigger_name, config):
         """Initialize from configuration read from JSON file."""
         
+        self.name = trigger_name
         self.filter_name = config['filter']
         self.pt_range = tuple(config['ptRange'])
         self.pt_range_margined = tuple(config['ptRangeMargined'])
@@ -34,13 +34,13 @@ class TriggerBin:
             raise AttributeError('Unknown attribute "{}".'.format(filter_name))
 
 
-class TriggerBins(OrderedDict):
-    """Facilitates working with configuration for trigger bins.
+class TriggerBins:
+    """Collection of triggers bins.
     
-    This class reads a configuration that defines trigger bins and
-    implements some sanity checks.  The configuration is exposed as an
-    ordered dictionary, which this class subclasses.  Triggers bins are
-    sorted in the increasing order in pt.
+    This class represents a collection of trigger bins, which can be
+    accessed by index or by name.  The bins are sorted in the increasin
+    order in pt.  Definitions of triggers bins are read from a JSON
+    file.
     """
     
     def __init__(self, path, clip=math.inf):
@@ -56,8 +56,6 @@ class TriggerBins(OrderedDict):
                 margin) will be clipped using this value.
         """
         
-        super().__init__()
-        
         # Attempt to resolve the path with respect to a standard
         # location if it does not match any file
         if not os.path.exists(path):
@@ -72,27 +70,51 @@ class TriggerBins(OrderedDict):
                 path = try_path
         
         
-        # Read the configuration.  Sort trigger bins in pt.
+        # Read the configuration
         with open(path) as f:
-            bins = list((k, TriggerBin(v)) for k, v in json.load(f).items())
-            bins.sort(key=lambda b: b.pt_range[0])
-            self.update(bins)
+            self.bins = list(TriggerBin(k, v) for k, v in json.load(f).items())
+        
+        
+        # Make sure the bins are sorted in pt
+        self.bins.sort(key=lambda b: b.pt_range[0])
         
         
         # One of the trigger bins normally extends to very large pt (but
         # the value is finite as infinities are not supported in other
         # code that uses that file).  Clip it.
-        for trigger_name, trigger_bin in self.items():
-            r = trigger_bin.pt_range
+        for bin in self.bins:
+            r = bin.pt_range
             
             if r[1] > clip:
                 r = (r[0], clip)
-                trigger_bin.pt_range = r
+                bin.pt_range = r
             
             if r[0] >= r[1]:
                 raise RuntimeError('Illegal pt range for trigger "{}": {}.'.format(
                     trigger_name, r
                 ))
+        
+        
+        self.names = [b.name for b in self.bins]
+        self._lookup_by_name = {b.name: b for b in self.bins}
+    
+    
+    def __getitem__(self, index):
+        """Access trigger bin by index."""
+        
+        return self.bins[index]
+    
+    
+    def __iter__(self):
+        """Return iterator over trigger bins."""
+        
+        return iter(self.bins)
+    
+    
+    def __len__(self):
+        """Return number of available trigger bins."""
+        
+        return len(self.bins)
     
     
     def check_alignment(self, binning, silent=False):
@@ -114,7 +136,7 @@ class TriggerBins(OrderedDict):
         
         mismatched_edges = []
         
-        for trigger_bin in self.values():
+        for trigger_bin in self.bins:
             for edge in trigger_bin.pt_range:
                 if edge not in binning:
                     mismatched_edges.append(edge)
@@ -130,3 +152,9 @@ class TriggerBins(OrderedDict):
                 )
         else:
             return True
+    
+    
+    def find(self, name):
+        """Access trigger bin by trigger name."""
+        
+        return self._lookup_by_name[name]

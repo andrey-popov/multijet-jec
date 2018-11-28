@@ -49,8 +49,8 @@ class BalanceBuilder:
         
         self.clipped_binnings = {}
         
-        for trigger_name, trigger_bin in self.trigger_bins.items():
-            self.clipped_binnings[trigger_name] = self.clip_binning(*trigger_bin.pt_range)
+        for trigger_bin in self.trigger_bins:
+            self.clipped_binnings[trigger_bin.name] = self.clip_binning(*trigger_bin.pt_range)
     
     
     def build_data(self, data_file_path, errors=False):
@@ -69,7 +69,8 @@ class BalanceBuilder:
         data_file = ROOT.TFile(data_file_path)
         distrs = {'PtBal': {}, 'MPF': {}}
         
-        for trigger_name, trigger_bin in self.trigger_bins.items():
+        for trigger_bin in self.trigger_bins:
+            trigger_name = trigger_bin.name
             
             prof_pt_bal = data_file.Get(trigger_name + '/PtBalProfile')
             prof_mpf = data_file.Get(trigger_name + '/MPFProfile')
@@ -108,17 +109,17 @@ class BalanceBuilder:
         
         distrs = {'PtBal': {}, 'MPF': {}}
         
-        for trigger_name, trigger_bin in self.trigger_bins.items():
+        for trigger_bin in self.trigger_bins:
             
-            clipped_binning = self.clipped_binnings[trigger_name]
+            clipped_binning = self.clipped_binnings[trigger_bin.name]
             prof_pt_bal = ROOT.TProfile(uuid4().hex, '', len(clipped_binning) - 1, clipped_binning)
             prof_mpf = prof_pt_bal.Clone(uuid4().hex)
             
             for obj in [prof_pt_bal, prof_mpf]:
                 obj.SetDirectory(ROOT.gROOT)
             
-            tree = sim_file.Get(trigger_name + '/BalanceVars')
-            tree.AddFriend(trigger_name + '/Weights', weight_file)
+            tree = sim_file.Get(trigger_bin.name + '/BalanceVars')
+            tree.AddFriend(trigger_bin.name + '/Weights', weight_file)
             tree.SetBranchStatus('*', False)
             
             for branch_name in ['PtJ1', 'PtBal', 'MPF', 'TotalWeight']:
@@ -128,8 +129,8 @@ class BalanceBuilder:
             tree.Draw('PtBal:PtJ1>>' + prof_pt_bal.GetName(), 'TotalWeight[0]', 'goff')
             tree.Draw('MPF:PtJ1>>' + prof_mpf.GetName(), 'TotalWeight[0]', 'goff')
             
-            distrs['PtBal'][trigger_name] = self.hist_to_np(prof_pt_bal, errors=errors)
-            distrs['MPF'][trigger_name] = self.hist_to_np(prof_mpf, errors=errors)
+            distrs['PtBal'][trigger_bin.name] = self.hist_to_np(prof_pt_bal, errors=errors)
+            distrs['MPF'][trigger_bin.name] = self.hist_to_np(prof_mpf, errors=errors)
         
         weight_file.Close()
         sim_file.Close()
@@ -278,7 +279,7 @@ if __name__ == '__main__':
     # Output file and in-file directory structure
     output_file = ROOT.TFile(args.output, 'recreate')
     
-    for trigger_name in trigger_bins:
+    for trigger_name in trigger_bins.names:
         output_file.mkdir(trigger_name)
     
     
@@ -295,7 +296,7 @@ if __name__ == '__main__':
     # file
     hists_to_store = []
     
-    for trigger_name, variable in itertools.product(builder.trigger_bins, data_nominal):
+    for trigger_name, variable in itertools.product(builder.trigger_bins.names, data_nominal):
         rel_errors = np.hypot(
             data_nominal[variable][trigger_name][1],
             sim_nominal[variable][trigger_name][1]
@@ -329,7 +330,7 @@ if __name__ == '__main__':
                 data_syst = None
             
             
-            for trigger_name, variable in itertools.product(trigger_bins, sim_nominal):
+            for trigger_name, variable in itertools.product(trigger_bins.names, sim_nominal):
                 
                 # Compute the total variation in the difference between
                 # data and simulation.  This shift will be applied to

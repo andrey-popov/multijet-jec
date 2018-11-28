@@ -102,8 +102,8 @@ if __name__ == '__main__':
     
     
     # Loop over triggers
-    for trigger_name, trigger_bin in trigger_bins.items():
-        out_directory = out_file.mkdir(trigger_name)
+    for trigger_bin in trigger_bins:
+        out_directory = out_file.mkdir(trigger_bin.name)
         
         
         # Create profiles in simulation
@@ -124,8 +124,8 @@ if __name__ == '__main__':
         for obj in [prof_pt_bal, prof_mpf]:
             obj.SetDirectory(ROOT.gROOT)
         
-        tree = sim_file.Get(trigger_name + '/BalanceVars')
-        tree.AddFriend(trigger_name + '/Weights', weight_file)
+        tree = sim_file.Get(trigger_bin.name + '/BalanceVars')
+        tree.AddFriend(trigger_bin.name + '/Weights', weight_file)
         tree.SetBranchStatus('*', False)
         
         for branch_name in ['PtJ1', 'PtBal', 'MPF', 'TotalWeight']:
@@ -140,14 +140,14 @@ if __name__ == '__main__':
         
         
         # In case of data simply copy profiles and histograms
-        hist_pt_lead = data_file.Get('{}/PtLead'.format(trigger_name))
+        hist_pt_lead = data_file.Get('{}/PtLead'.format(trigger_bin.name))
         hist_pt_lead.SetDirectory(out_directory)
         
         for name in [
             'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj',
             'RelPtJetSumProj'
         ]:
-            obj = data_file.Get('{}/{}'.format(trigger_name, name))
+            obj = data_file.Get('{}/{}'.format(trigger_bin.name, name))
             obj.SetDirectory(out_directory)
         
         
