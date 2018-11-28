@@ -123,8 +123,8 @@ bool BalanceHists::ProcessEvent()
             break;
         
         histPtJet->Fill(j1.Pt(), pt);
-        histPtJetSumProj->Fill(j1.Pt(), pt, pt * std::cos(jets[i].Phi() - j1.Phi()));
-        histRelPtJetSumProj->Fill(j1.Pt(), pt, pt * std::cos(jets[i].Phi() - j1.Phi()) / j1.Pt());
+        histPtJetSumProj->Fill(j1.Pt(), pt, -pt * std::cos(jets[i].Phi() - j1.Phi()));
+        histRelPtJetSumProj->Fill(j1.Pt(), pt, -pt * std::cos(jets[i].Phi() - j1.Phi()) / j1.Pt());
     }
     
     
