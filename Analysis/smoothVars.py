@@ -29,37 +29,37 @@ class Reader:
     trigger bins to a combined NumPy array and the inverse conversion.
     """
     
-    def __init__(self, inputFilePath):
+    def __init__(self, input_file_path):
         """Initialize from path to ROOT file with deviations."""
         
-        self.inputFile = ROOT.TFile(inputFilePath)
+        self.input_file = ROOT.TFile(input_file_path)
         
         # Read names of trigger bins.  Assume they are ordered properly
         # in the input file.
-        self.triggerNames = []
+        self.trigger_names = []
         
-        for key in self.inputFile.GetListOfKeys():
+        for key in self.input_file.GetListOfKeys():
             if key.GetClassName() != 'TDirectoryFile':
                 continue
             
-            self.triggerNames.append(key.GetName())
+            self.trigger_names.append(key.GetName())
         
         
         # Extract the binning combined over all trigger bins and find
         # first indices of bins in each trigger bin
         binning = []
-        self.triggerBoundaries = [0]
+        self.trigger_boundaries = [0]
         
-        for triggerName in self.triggerNames:
-            hist = self.inputFile.Get(triggerName + '/RelUnc_PtBal')
-            numBins = hist.GetNbinsX()
+        for trigger_name in self.trigger_names:
+            hist = self.input_file.Get(trigger_name + '/RelUnc_PtBal')
+            num_bins = hist.GetNbinsX()
             
-            for bin in range(1, numBins + 1):
+            for bin in range(1, num_bins + 1):
                 binning.append(hist.GetBinLowEdge(bin))
             
-            self.triggerBoundaries.append(self.triggerBoundaries[-1] + numBins)
+            self.trigger_boundaries.append(self.trigger_boundaries[-1] + num_bins)
         
-        binning.append(hist.GetBinLowEdge(numBins + 1))
+        binning.append(hist.GetBinLowEdge(num_bins + 1))
         self.binning = np.asarray(binning)
         
         if not np.all(self.binning[:-1] < self.binning[1:]):
@@ -84,11 +84,11 @@ class Reader:
         
         values = np.empty(len(self.binning) - 1)
         
-        for iTrigger, triggerName in enumerate(self.triggerNames):
-            hist = self.inputFile.Get('{}/{}'.format(triggerName, label))
+        for itrigger, trigger_name in enumerate(self.trigger_names):
+            hist = self.input_file.Get('{}/{}'.format(trigger_name, label))
             
             for bin in range(1, hist.GetNbinsX() + 1):
-                values[self.triggerBoundaries[iTrigger] + bin - 1] = hist.GetBinContent(bin)
+                values[self.trigger_boundaries[itrigger] + bin - 1] = hist.GetBinContent(bin)
         
         return values
     
@@ -114,17 +114,17 @@ class Reader:
         
         hists = {}
         
-        for iTrigger, triggerName in enumerate(self.triggerNames):
+        for itrigger, trigger_name in enumerate(self.trigger_names):
             
-            firstBin = self.triggerBoundaries[iTrigger]
-            numBins = self.triggerBoundaries[iTrigger + 1] - firstBin
-            hist = ROOT.TH1D(name, '', numBins, self.binning[firstBin:firstBin + numBins + 1])
+            first_bin = self.trigger_boundaries[itrigger]
+            num_bins = self.trigger_boundaries[itrigger + 1] - first_bin
+            hist = ROOT.TH1D(name, '', num_bins, self.binning[first_bin:first_bin + num_bins + 1])
             hist.SetDirectory(None)
             
-            for bin in range(1, numBins + 1):
-                hist.SetBinContent(bin, array[firstBin + bin - 1])
+            for bin in range(1, num_bins + 1):
+                hist.SetBinContent(bin, array[first_bin + bin - 1])
             
-            hists[triggerName] = hist
+            hists[trigger_name] = hist
         
         return hists
 
@@ -152,8 +152,8 @@ class Smoother:
         self.down = down
         self.weights = weights
         
-        self.isRelative = False
-        self.smoothAveragedDeviation = None
+        self.is_relative = False
+        self.smooth_averaged_deviation = None
     
     
     @classmethod
@@ -170,31 +170,31 @@ class Smoother:
         """
         
         smoother = cls(np.zeros_like(up), up, down, weights)
-        smoother.isRelative = True
+        smoother.is_relative = True
         
         return smoother
     
     
     @staticmethod
-    def lowess(y, externalWeights, bandwidth):
+    def lowess(y, external_weights, bandwidth):
         """Peform LOWESS smoothing.
         
         Arguments:
             y:  Input sequence to be smoothed.
-            externalWeights:  Weights of points in the sequence.
+            external_weights:  Weights of points in the sequence.
             bandwidth:  Smoothing bandwidth defined in terms of indices.
         
         Return value:
             Smoothed sequence.
         """
         
-        ySmooth = np.empty_like(y)
+        y_smooth = np.empty_like(y)
         
-        for i in range(len(ySmooth)):
+        for i in range(len(y_smooth)):
             
             # Point indices, centred at the current point, will be used
             # as x coordinate
-            x = np.arange(len(ySmooth)) - i
+            x = np.arange(len(y_smooth)) - i
             
             # Compute standard weights for LOWESS
             distances = np.abs(x) / bandwidth
@@ -203,7 +203,7 @@ class Smoother:
             
             # Include weights provided by the caller and rescale weights
             # to simplify computation of various mean values below
-            weights *= externalWeights
+            weights *= external_weights
             weights /= np.sum(weights)
             
             
@@ -211,14 +211,14 @@ class Smoother:
             # least-squares fit with a linear function.  Since x
             # coordinates are centred at the current point, only need to
             # find the constant term in the linear function.
-            meanX = np.dot(weights, x)
-            meanY = np.dot(weights, y)
-            meanX2 = np.dot(weights, x ** 2)
-            meanXY = np.dot(weights, x * y)
+            mean_x = np.dot(weights, x)
+            mean_y = np.dot(weights, y)
+            mean_x2 = np.dot(weights, x ** 2)
+            mean_xy = np.dot(weights, x * y)
             
-            ySmooth[i] = (meanX2 * meanY - meanX * meanXY) / (meanX2 - meanX ** 2)
+            y_smooth[i] = (mean_x2 * mean_y - mean_x * mean_xy) / (mean_x2 - mean_x ** 2)
         
-        return ySmooth
+        return y_smooth
     
     
     def smooth(self, bandwidth=5, symmetric=False):
@@ -238,27 +238,27 @@ class Smoother:
         templates, unless called with flag symmetric set to true.
         """
         
-        averagedDeviation = 0.5 * (self.up - self.down)
+        averaged_deviation = 0.5 * (self.up - self.down)
         
-        if not self.isRelative:
-            averagedDeviation /= self.nominal
+        if not self.is_relative:
+            averaged_deviation /= self.nominal
         
-        self.smoothAveragedDeviation = self.lowess(
-            averagedDeviation, self.weights, bandwidth
+        self.smooth_averaged_deviation = self.lowess(
+            averaged_deviation, self.weights, bandwidth
         )
         
         if symmetric:
-            sfUp, sfDown = 1., -1.
+            sf_up, sf_down = 1., -1.
         else:
-            sfUp = self._scale_factor(self.up)
-            sfDown = self._scale_factor(self.down)
+            sf_up = self._scale_factor(self.up)
+            sf_down = self._scale_factor(self.down)
         
-        if self.isRelative:
-            return sfUp * self.smoothAveragedDeviation, sfDown * self.smoothAveragedDeviation
+        if self.is_relative:
+            return sf_up * self.smooth_averaged_deviation, sf_down * self.smooth_averaged_deviation
         else:
             return (
-                self.nominal * (1 + sfUp * self.smoothAveragedDeviation),
-                self.nominal * (1 + sfDown * self.smoothAveragedDeviation)
+                self.nominal * (1 + sf_up * self.smooth_averaged_deviation),
+                self.nominal * (1 + sf_down * self.smooth_averaged_deviation)
             )
     
     
@@ -275,36 +275,36 @@ class Smoother:
             Scale factor to be applied to smoothed relative deviation.
         """
         
-        if self.isRelative:
-            smoothAbsDev = self.smoothAveragedDeviation
+        if self.is_relative:
+            smooth_abs_dev = self.smooth_averaged_deviation
         else:
-            smoothAbsDev = self.smoothAveragedDeviation * self.nominal
+            smooth_abs_dev = self.smooth_averaged_deviation * self.nominal
         
         # This is result of an analytical computation
-        return np.sum(smoothAbsDev * (template - self.nominal) * self.weights) / \
-            np.sum(smoothAbsDev ** 2 * self.weights)
+        return np.sum(smooth_abs_dev * (template - self.nominal) * self.weights) / \
+            np.sum(smooth_abs_dev ** 2 * self.weights)
         
 
 
 if __name__ == '__main__':
     
-    argParser = argparse.ArgumentParser(epilog=__doc__)
-    argParser.add_argument('inputFile', help='ROOT file with input variations and uncertainties.')
-    argParser.add_argument(
+    arg_parser = argparse.ArgumentParser(epilog=__doc__)
+    arg_parser.add_argument('input_file', help='ROOT file with input variations and uncertainties.')
+    arg_parser.add_argument(
         '-o', '--output', default=None,
         help='Name for output ROOT file with smoothed variations.'
     )
-    argParser.add_argument(
-        '--fig-dir', dest='figDir', default='figSmooth',
+    arg_parser.add_argument(
+        '--fig-dir', default='figSmooth',
         help='Name for directory with plots.'
     )
-    args = argParser.parse_args()
+    args = arg_parser.parse_args()
     
     if args.output is None:
-        args.output = os.path.splitext(args.inputFile)[0] + '_smooth.root'
+        args.output = os.path.splitext(args.input_file)[0] + '_smooth.root'
     
-    if not os.path.exists(args.figDir):
-        os.makedirs(args.figDir)
+    if not os.path.exists(args.fig_dir):
+        os.makedirs(args.fig_dir)
     
     
     mpl.rc('xtick', top=True, direction='in')
@@ -313,25 +313,25 @@ if __name__ == '__main__':
     mpl.rc('axes.formatter', limits=[-2, 4], use_mathtext=True)
     
     
-    reader = Reader(args.inputFile)
-    smoothDeviations = OrderedDict()
+    reader = Reader(args.input_file)
+    smooth_deviations = OrderedDict()
     
-    for (variable, variableLabel), systName in itertools.product(
+    for (variable, variable_label), syst_name in itertools.product(
         [('PtBal', '$p_\\mathrm{T}$ balance'), ('MPF', 'MPF')],
         ['L1Res', 'L2Res', 'JER']
     ):
         # Read input relative deviations
-        up = reader.read('RelVar_{}_{}Up'.format(variable, systName))
-        down = reader.read('RelVar_{}_{}Down'.format(variable, systName))
+        up = reader.read('RelVar_{}_{}Up'.format(variable, syst_name))
+        down = reader.read('RelVar_{}_{}Down'.format(variable, syst_name))
         
         
         # Smooth them
-        numBins = len(reader.binning) - 1
+        num_bins = len(reader.binning) - 1
         smoother = Smoother.fromrelative(up, down, 1 / reader.unc[variable] ** 2)
-        upSmooth, downSmooth = smoother.smooth(bandwidth=0.1 * numBins)
+        up_smooth, down_smooth = smoother.smooth(bandwidth=0.1 * num_bins)
         
-        smoothDeviations['RelVar_{}_{}Up'.format(variable, systName)] = upSmooth
-        smoothDeviations['RelVar_{}_{}Down'.format(variable, systName)] = downSmooth
+        smooth_deviations['RelVar_{}_{}Up'.format(variable, syst_name)] = up_smooth
+        smooth_deviations['RelVar_{}_{}Down'.format(variable, syst_name)] = down_smooth
         
         
         # Plot input and smoothed deviations
@@ -343,7 +343,7 @@ if __name__ == '__main__':
             color='#a8d2f0', label='Up, input'
         )
         axes.hist(
-            reader.binning[:-1], bins=reader.binning, weights=upSmooth * 100, histtype='step',
+            reader.binning[:-1], bins=reader.binning, weights=up_smooth * 100, histtype='step',
             color='#1f77b4', label='Up, smoothed'
         )
         axes.hist(
@@ -351,7 +351,7 @@ if __name__ == '__main__':
             color='#ffc999', label='Down, input'
         )
         axes.hist(
-            reader.binning[:-1], bins=reader.binning, weights=downSmooth * 100, histtype='step',
+            reader.binning[:-1], bins=reader.binning, weights=down_smooth * 100, histtype='step',
             color='#ff7f0e', label='Down, smoothed'
         )
         
@@ -369,28 +369,28 @@ if __name__ == '__main__':
         axes.xaxis.set_minor_formatter(mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4)))
         
         axes.text(
-            0.5, 1.005, '{}, {}'.format(systName, variableLabel), size='large',
+            0.5, 1.005, '{}, {}'.format(syst_name, variable_label), size='large',
             ha='center', va='bottom', transform=axes.transAxes
         )
         
-        fig.savefig(os.path.join(args.figDir, '{}_{}.pdf'.format(systName, variable)))
+        fig.savefig(os.path.join(args.fig_dir, '{}_{}.pdf'.format(syst_name, variable)))
         plt.close(fig)
     
     
     # Save smoothed deviations to a file
-    outputFile = ROOT.TFile(args.output, 'recreate')
-    histsToStore = []
+    output_file = ROOT.TFile(args.output, 'recreate')
+    hists_to_store = []
     
-    for triggerName in reader.triggerNames:
-        outputFile.mkdir(triggerName)
+    for trigger_name in reader.trigger_names:
+        output_file.mkdir(trigger_name)
     
-    for label, deviation in smoothDeviations.items():
+    for label, deviation in smooth_deviations.items():
         hists = reader.to_hists(deviation, label)
         
-        for triggerName in reader.triggerNames:
-            hist = hists[triggerName]
-            hist.SetDirectory(outputFile.Get(triggerName))
-            histsToStore.append(hist)  # Prevent garbage collection
+        for trigger_name in reader.trigger_names:
+            hist = hists[trigger_name]
+            hist.SetDirectory(output_file.Get(trigger_name))
+            hists_to_store.append(hist)  # Prevent garbage collection
     
-    outputFile.Write()
-    outputFile.Close()
+    output_file.Write()
+    output_file.Close()

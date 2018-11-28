@@ -23,36 +23,36 @@ from basicPlots import plot_distribution
 if __name__ == '__main__':
     
     # Parse arguments
-    argParser = argparse.ArgumentParser(description=__doc__)
-    argParser.add_argument(
-        'dataFile', help='Name of ROOT file with data'
+    arg_parser = argparse.ArgumentParser(description=__doc__)
+    arg_parser.add_argument(
+        'data', help='Name of ROOT file with data'
     )
-    argParser.add_argument(
-        'simFile', help='Name of ROOT file with simulation'
+    arg_parser.add_argument(
+        'sim', help='Name of ROOT file with simulation'
     )
-    argParser.add_argument(
-        'weightFile', help='Name of ROOT file with weights for simulation'
+    arg_parser.add_argument(
+        'weight', help='Name of ROOT file with weights for simulation'
     )
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-c', '--config', default='plotConfig.json',
         help='JSON file with configuration for plotting'
     )
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-e', '--era', default=None,
         help='Era to access luminosity and era label from configuration'
     )
-    argParser.add_argument(
-        '-o', '--fig-dir',
-        help='Directory to store figures', default='figControl', dest='figDir'
+    arg_parser.add_argument(
+        '-o', '--fig-dir', default='figControl',
+        help='Directory to store figures'
     )
-    args = argParser.parse_args()
+    args = arg_parser.parse_args()
     
-    if not os.path.exists(args.figDir):
-        os.makedirs(args.figDir)
+    if not os.path.exists(args.fig_dir):
+        os.makedirs(args.fig_dir)
     
     if args.era is None:
         # Try to figure the era label from the name of the data file
-        args.era = os.path.splitext(os.path.basename(args.dataFile))[0]
+        args.era = os.path.splitext(os.path.basename(args.data))[0]
     
     
     # Customization
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     with open(args.config) as f:
         config = json.load(f)
     
-    eraLabel = '{} {} fb$^{{-1}}$ (13 TeV)'.format(
+    era_label = '{} {} fb$^{{-1}}$ (13 TeV)'.format(
         config['eras'][args.era]['label'], config['eras'][args.era]['lumi']
     )
     
@@ -83,106 +83,106 @@ if __name__ == '__main__':
     # plotted.
     binning = array('d', config['control']['binning'])
     hist = ROOT.TH2D(uuid4().hex, '', 80, 0., 2., len(binning) - 1, binning)
-    histPtBal = {'data': hist, 'sim': hist.Clone(uuid4().hex)}
-    histMPF = {'data': hist.Clone(uuid4().hex), 'sim': hist.Clone(uuid4().hex)}
+    hist_pt_bal = {'data': hist, 'sim': hist.Clone(uuid4().hex)}
+    hist_mpf = {'data': hist.Clone(uuid4().hex), 'sim': hist.Clone(uuid4().hex)}
     
-    for d in [histPtBal, histMPF]:
+    for d in [hist_pt_bal, hist_mpf]:
         for hist in d.values():
             hist.SetDirectory(ROOT.gROOT)
     
     
     # Fill the histograms
-    dataFile = ROOT.TFile(args.dataFile)
-    simFile = ROOT.TFile(args.simFile)
-    weightFile = ROOT.TFile(args.weightFile)
+    data_file = ROOT.TFile(args.data)
+    sim_file = ROOT.TFile(args.sim)
+    weight_file = ROOT.TFile(args.weight)
     
-    for trigger, ptRange in config['triggers'].items():
+    for trigger, pt_range in config['triggers'].items():
         
-        treeData = dataFile.Get(trigger + '/BalanceVars')
+        tree_data = data_file.Get(trigger + '/BalanceVars')
         
-        treeSim = simFile.Get(trigger + '/BalanceVars')
-        treeWeight = weightFile.Get(trigger + '/Weights')
-        treeSim.AddFriend(treeWeight)
+        tree_sim = sim_file.Get(trigger + '/BalanceVars')
+        tree_weight = weight_file.Get(trigger + '/Weights')
+        tree_sim.AddFriend(tree_weight)
         
-        for tree in [treeData, treeSim]:
+        for tree in [tree_data, tree_sim]:
             tree.SetBranchStatus('*', False)
             
-            for branchName in ['PtJ1', 'PtBal', 'MPF']:
-                tree.SetBranchStatus(branchName, True)
+            for branch_name in ['PtJ1', 'PtBal', 'MPF']:
+                tree.SetBranchStatus(branch_name, True)
         
-        treeSim.SetBranchStatus('TotalWeight', True)
+        tree_sim.SetBranchStatus('TotalWeight', True)
         
         
         ROOT.gROOT.cd()
         
-        ptSelection = 'PtJ1 > {}'.format(ptRange[0])
+        pt_selection = 'PtJ1 > {}'.format(pt_range[0])
         
-        if not math.isinf(ptRange[1]):
-            ptSelection += ' && PtJ1 < {}'.format(ptRange[1])
+        if not math.isinf(pt_range[1]):
+            pt_selection += ' && PtJ1 < {}'.format(pt_range[1])
         
         for label, tree, selection in [
-            ('data', treeData, ptSelection),
-            ('sim', treeSim, '({}) * TotalWeight[0]'.format(ptSelection))
+            ('data', tree_data, pt_selection),
+            ('sim', tree_sim, '({}) * TotalWeight[0]'.format(pt_selection))
         ]:
-            tree.Draw('PtJ1:PtBal>>+' + histPtBal[label].GetName(), selection, 'goff')
-            tree.Draw('PtJ1:MPF>>+' + histMPF[label].GetName(), selection, 'goff')
+            tree.Draw('PtJ1:PtBal>>+' + hist_pt_bal[label].GetName(), selection, 'goff')
+            tree.Draw('PtJ1:MPF>>+' + hist_mpf[label].GetName(), selection, 'goff')
     
-    dataFile.Close()
-    simFile.Close()
-    weightFile.Close()
+    data_file.Close()
+    sim_file.Close()
+    weight_file.Close()
     
     
     # Add under- and overflows in balance
-    for d in [histPtBal, histMPF]:
+    for d in [hist_pt_bal, hist_mpf]:
         for hist in d.values():
-            for ptBin in range(0, hist.GetNbinsY() + 2):
+            for pt_bin in range(0, hist.GetNbinsY() + 2):
                 hist.SetBinContent(
-                    1, ptBin,
-                    hist.GetBinContent(1, ptBin) + hist.GetBinContent(0, ptBin)
+                    1, pt_bin,
+                    hist.GetBinContent(1, pt_bin) + hist.GetBinContent(0, pt_bin)
                 )
                 hist.SetBinError(
-                    1, ptBin,
-                    math.hypot(hist.GetBinError(1, ptBin), hist.GetBinError(0, ptBin))
+                    1, pt_bin,
+                    math.hypot(hist.GetBinError(1, pt_bin), hist.GetBinError(0, pt_bin))
                 )
                 
                 n = hist.GetNbinsX()
                 hist.SetBinContent(
-                    n, ptBin,
-                    hist.GetBinContent(n, ptBin) + hist.GetBinContent(n + 1, ptBin)
+                    n, pt_bin,
+                    hist.GetBinContent(n, pt_bin) + hist.GetBinContent(n + 1, pt_bin)
                 )
                 hist.SetBinError(
-                    n, ptBin,
-                    math.hypot(hist.GetBinError(n, ptBin), hist.GetBinError(n + 1, ptBin))
+                    n, pt_bin,
+                    math.hypot(hist.GetBinError(n, pt_bin), hist.GetBinError(n + 1, pt_bin))
                 )
     
     
     # Plot distributions of balance observables
-    for histBal, label, xLabel in [
-        (histPtBal, 'PtBal', r'$p_\mathrm{T}$ balance'),
-        (histMPF, 'MPF', 'MPF')
+    for hist_bal, label, xLabel in [
+        (hist_pt_bal, 'PtBal', r'$p_\mathrm{T}$ balance'),
+        (hist_mpf, 'MPF', 'MPF')
     ]:
-        nBinsPt = histBal['data'].GetNbinsY()
+        num_bins_pt = hist_bal['data'].GetNbinsY()
         
-        for ptBin in range(1, nBinsPt + 2):
-            histData = histBal['data'].ProjectionX(uuid4().hex, ptBin, ptBin, 'e')
-            histSim = histBal['sim'].ProjectionX(uuid4().hex, ptBin, ptBin, 'e')
+        for pt_bin in range(1, num_bins_pt + 2):
+            hist_data = hist_bal['data'].ProjectionX(uuid4().hex, pt_bin, pt_bin, 'e')
+            hist_sim = hist_bal['sim'].ProjectionX(uuid4().hex, pt_bin, pt_bin, 'e')
             
-            fig, axesUpper, axesLower = plot_distribution(
-                histData, histSim, xLabel=xLabel, eraLabel=eraLabel
+            fig, axes_upper, axes_lower = plot_distribution(
+                hist_data, hist_sim, xLabel=xLabel, era_label=era_label
             )
             
-            if ptBin == nBinsPt + 1:
-                ptBinLabel = r'$p_\mathrm{{T}}^\mathrm{{lead}} > {:g}$ GeV'.format(
-                    histBal['data'].GetYaxis().GetBinLowEdge(ptBin)
+            if pt_bin == num_bins_pt + 1:
+                pt_bin_label = r'$p_\mathrm{{T}}^\mathrm{{lead}} > {:g}$ GeV'.format(
+                    hist_bal['data'].GetYaxis().GetBinLowEdge(pt_bin)
                 )
             else:
-                ptBinLabel = r'${:g} < p_\mathrm{{T}}^\mathrm{{lead}} < {:g}$ GeV'.format(
-                    histBal['data'].GetYaxis().GetBinLowEdge(ptBin),
-                    histBal['data'].GetYaxis().GetBinLowEdge(ptBin + 1)
+                pt_bin_label = r'${:g} < p_\mathrm{{T}}^\mathrm{{lead}} < {:g}$ GeV'.format(
+                    hist_bal['data'].GetYaxis().GetBinLowEdge(pt_bin),
+                    hist_bal['data'].GetYaxis().GetBinLowEdge(pt_bin + 1)
                 )
             
-            axesUpper.text(
-                0., 1., ptBinLabel, ha='left', va='bottom', transform=axesUpper.transAxes
+            axes_upper.text(
+                0., 1., pt_bin_label, ha='left', va='bottom', transform=axes_upper.transAxes
             )
             
             
@@ -192,20 +192,20 @@ if __name__ == '__main__':
             # Check the value of the common exponent as determined by
             # the tick formatter.  To do it, need to feed locations of
             # ticks to the formatter first.
-            ax = axesUpper.get_yaxis()
-            majorLocs = ax.major.locator()
+            ax = axes_upper.get_yaxis()
+            major_locs = ax.major.locator()
             formatter = ax.get_major_formatter()
-            formatter.set_locs(majorLocs)
+            formatter.set_locs(major_locs)
             
             if formatter.orderOfMagnitude != 0:
                 # There is indeed a common exponent
                 ax.offsetText.set_visible(False)
                 
-                axesUpper.text(
+                axes_upper.text(
                     0., 1.05, '$\\times 10^{}$'.format(formatter.orderOfMagnitude),
-                    ha='right', va='bottom', transform=axesUpper.transAxes
+                    ha='right', va='bottom', transform=axes_upper.transAxes
                 )
             
             
-            fig.savefig(os.path.join(args.figDir, '{}_ptBin{}.pdf'.format(label, ptBin)))
+            fig.savefig(os.path.join(args.fig_dir, '{}_ptBin{}.pdf'.format(label, pt_bin)))
             plt.close(fig)

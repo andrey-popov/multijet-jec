@@ -25,11 +25,11 @@ import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 
-def make_hists(binningDef):
+def make_hists(binning_def):
     """Create a pair of 1D histograms from given binning."""
     
-    r = binningDef['range']
-    binning = np.linspace(r[0], r[1], num=(r[1] - r[0]) / binningDef['step'] + 1)
+    r = binning_def['range']
+    binning = np.linspace(r[0], r[1], num=(r[1] - r[0]) / binning_def['step'] + 1)
     
     hist1 = ROOT.TH1D(uuid4().hex, '', len(binning) - 1, binning)
     hist1.SetDirectory(ROOT.gROOT)
@@ -50,7 +50,9 @@ def make_profiles(binning):
     return {'data': prof1, 'sim': prof2}
 
 
-def plot_distribution(histData, histSim, xLabel='', yLabel='Events', eraLabel='', heightRatio=3.):
+def plot_distribution(
+    hist_data, hist_sim, x_label='', y_label='Events', era_label='', height_ratio=3.
+):
     """Plot distributions in data and simulation.
     
     Plot the two distributions and the deviations.  Under- and overflow
@@ -58,117 +60,117 @@ def plot_distribution(histData, histSim, xLabel='', yLabel='Events', eraLabel=''
     """
     
     # Convert histograms to NumPy representations
-    nBins = histData.GetNbinsX()
-    binning = np.zeros(nBins + 1)
-    binCentres = np.zeros(nBins)
+    num_bins = hist_data.GetNbinsX()
+    binning = np.zeros(num_bins + 1)
+    bin_centres = np.zeros(num_bins)
     
-    for bin in range(1, nBins + 2):
-        binning[bin - 1] = histData.GetBinLowEdge(bin)
+    for bin in range(1, num_bins + 2):
+        binning[bin - 1] = hist_data.GetBinLowEdge(bin)
     
-    for i in range(len(binCentres)):
-        binCentres[i] = (binning[i] + binning[i + 1]) / 2
+    for i in range(len(bin_centres)):
+        bin_centres[i] = (binning[i] + binning[i + 1]) / 2
     
-    dataValues, dataErrors = np.zeros(nBins), np.zeros(nBins)
-    simValues, simErros = np.zeros(nBins), np.zeros(nBins)
+    data_values, data_errors = np.zeros(num_bins), np.zeros(num_bins)
+    sim_values, sim_errors = np.zeros(num_bins), np.zeros(num_bins)
     
-    for bin in range(1, nBins + 1):
-        dataValues[bin - 1] = histData.GetBinContent(bin)
-        dataErrors[bin - 1] = histData.GetBinError(bin)
-        simValues[bin - 1] = histSim.GetBinContent(bin)
-        simErros[bin - 1] = histSim.GetBinError(bin)
+    for bin in range(1, num_bins + 1):
+        data_values[bin - 1] = hist_data.GetBinContent(bin)
+        data_errors[bin - 1] = hist_data.GetBinError(bin)
+        sim_values[bin - 1] = hist_sim.GetBinContent(bin)
+        sim_errors[bin - 1] = hist_sim.GetBinError(bin)
     
     
     # Compute residuals, allowing for possible zero expectation
-    residuals, resDataErrors, resBinCentres = [], [], []
+    residuals, res_data_errors, res_bin_centres = [], [], []
     
-    for i in range(len(simValues)):
-        if simValues[i] == 0.:
+    for i in range(len(sim_values)):
+        if sim_values[i] == 0.:
             continue
         
-        residuals.append(dataValues[i] / simValues[i] - 1)
-        resDataErrors.append(dataErrors[i] / simValues[i])
-        resBinCentres.append(binCentres[i])
+        residuals.append(data_values[i] / sim_values[i] - 1)
+        res_data_errors.append(data_errors[i] / sim_values[i])
+        res_bin_centres.append(bin_centres[i])
     
-    resSimErrorBand = []
+    res_sim_error_band = []
     
-    for i in range(len(simValues)):
-        if simValues[i] == 0.:
-            resSimErrorBand.append(0.)
+    for i in range(len(sim_values)):
+        if sim_values[i] == 0.:
+            res_sim_error_band.append(0.)
         else:
-            resSimErrorBand.append(simErros[i] / simValues[i])
+            res_sim_error_band.append(sim_errors[i] / sim_values[i])
     
-    resSimErrorBand.append(resSimErrorBand[-1])
-    resSimErrorBand = np.array(resSimErrorBand)
+    res_sim_error_band.append(res_sim_error_band[-1])
+    res_sim_error_band = np.array(res_sim_error_band)
     
     
     # Plot the histograms
     fig = plt.figure()
-    gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[heightRatio, 1])
-    axesUpper = fig.add_subplot(gs[0, 0])
-    axesLower = fig.add_subplot(gs[1, 0])
+    gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[height_ratio, 1])
+    axes_upper = fig.add_subplot(gs[0, 0])
+    axes_lower = fig.add_subplot(gs[1, 0])
     
-    axesUpper.errorbar(
-        binCentres, dataValues, yerr=dataErrors,
+    axes_upper.errorbar(
+        bin_centres, data_values, yerr=data_errors,
         color='black', marker='o', ls='none', label='Data'
     )
-    axesUpper.hist(
-        binning[:-1], bins=binning, weights=simValues, histtype='stepfilled',
+    axes_upper.hist(
+        binning[:-1], bins=binning, weights=sim_values, histtype='stepfilled',
         color='#3399cc', label='Sim'
     )
     
-    axesLower.fill_between(
-        binning, resSimErrorBand, -resSimErrorBand,
+    axes_lower.fill_between(
+        binning, res_sim_error_band, -res_sim_error_band,
         step='post', color='0.75', lw=0
     )
-    axesLower.errorbar(
-        resBinCentres, residuals, yerr=resDataErrors,
+    axes_lower.errorbar(
+        res_bin_centres, residuals, yerr=res_data_errors,
         color='black', marker='o', ls='none'
     )
     
     # Remove tick labels on the x axis of the upper axes
-    axesUpper.set_xticklabels([''] * len(axesUpper.get_xticklabels()))
+    axes_upper.set_xticklabels([''] * len(axes_upper.get_xticklabels()))
     
-    axesUpper.set_xlim(binning[0], binning[-1])
-    axesLower.set_xlim(binning[0], binning[-1])
-    axesLower.set_ylim(-0.35, 0.37)
-    axesLower.grid(axis='y', color='black', ls='dotted')
+    axes_upper.set_xlim(binning[0], binning[-1])
+    axes_lower.set_xlim(binning[0], binning[-1])
+    axes_lower.set_ylim(-0.35, 0.37)
+    axes_lower.grid(axis='y', color='black', ls='dotted')
     
-    axesLower.set_xlabel(xLabel)
-    axesLower.set_ylabel(r'$\frac{\mathrm{Data} - \mathrm{MC}}{\mathrm{MC}}$')
-    axesUpper.set_ylabel(yLabel)
+    axes_lower.set_xlabel(x_label)
+    axes_lower.set_ylabel(r'$\frac{\mathrm{Data} - \mathrm{MC}}{\mathrm{MC}}$')
+    axes_upper.set_ylabel(y_label)
     
     # Manually set positions of labels of the y axes so that they are
     # aligned with respect to each other
-    axesUpper.get_yaxis().set_label_coords(-0.1, 0.5)
-    axesLower.get_yaxis().set_label_coords(-0.1, 0.5)
+    axes_upper.get_yaxis().set_label_coords(-0.1, 0.5)
+    axes_lower.get_yaxis().set_label_coords(-0.1, 0.5)
     
     # Mark the overflow bin
-    axesUpper.text(
-        0.995, 0.5, 'Overflow', transform=axesUpper.transAxes,
+    axes_upper.text(
+        0.995, 0.5, 'Overflow', transform=axes_upper.transAxes,
         ha='right', va='center', rotation='vertical', size='xx-small', color='gray'
     )
     
     
     # Build legend ensuring desired ordering of the entries
-    legendHandles, legendLabels = axesUpper.get_legend_handles_labels()
-    legendHandleMap = {}
+    legend_handles, legend_labels = axes_upper.get_legend_handles_labels()
+    legend_handle_map = {}
     
-    for i in range(len(legendHandles)):
-        legendHandleMap[legendLabels[i]] = legendHandles[i]
+    for i in range(len(legend_handles)):
+        legend_handle_map[legend_labels[i]] = legend_handles[i]
     
-    axesUpper.legend(
-        [legendHandleMap['Data'], legendHandleMap['Sim']], ['Data', 'Simulation'],
+    axes_upper.legend(
+        [legend_handle_map['Data'], legend_handle_map['Sim']], ['Data', 'Simulation'],
         loc='upper right', frameon=False
     )
     
-    axesUpper.text(1., 1., eraLabel, ha='right', va='bottom', transform=axesUpper.transAxes)
+    axes_upper.text(1., 1., era_label, ha='right', va='bottom', transform=axes_upper.transAxes)
     
-    return fig, axesUpper, axesLower
+    return fig, axes_upper, axes_lower
 
 
 def plot_balance(
-    profPtData, profPtSim, profBalData, profBalSim,
-    xLabel=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', yLabel='', eraLabel='', heightRatio=2.
+    prof_pt_data, prof_pt_sim, prof_bal_data, prof_bal_sim,
+    x_label=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', y_label='', era_label='', height_ratio=2.
 ):
     """Plot mean balance in data and simulation.
     
@@ -181,150 +183,154 @@ def plot_balance(
     """
     
     # Convert profiles to NumPy representations
-    nBins = profPtData.GetNbinsX()
-    dataX, dataY, dataYErr = np.zeros(nBins + 1), np.zeros(nBins + 1), np.zeros(nBins + 1)
+    num_bins = prof_pt_data.GetNbinsX()
+    data_x = np.zeros(num_bins + 1)
+    data_y, data_yerr = np.zeros(num_bins + 1), np.zeros(num_bins + 1)
     
-    for bin in range(1, nBins + 2):
-        dataX[bin - 1] = profPtData.GetBinContent(bin)
-        dataY[bin - 1] = profBalData.GetBinContent(bin)
-        dataYErr[bin - 1] = profBalData.GetBinError(bin)
+    for bin in range(1, num_bins + 2):
+        data_x[bin - 1] = prof_pt_data.GetBinContent(bin)
+        data_y[bin - 1] = prof_bal_data.GetBinContent(bin)
+        data_yerr[bin - 1] = prof_bal_data.GetBinError(bin)
     
-    simX, simY, simYErr = np.zeros(nBins + 1), np.zeros(nBins + 1), np.zeros(nBins + 1)
+    sim_x, sim_y, sim_yerr = np.zeros(num_bins + 1), np.zeros(num_bins + 1), np.zeros(num_bins + 1)
     
-    for bin in range(1, nBins + 2):
-        simX[bin - 1] = profPtSim.GetBinContent(bin)
-        simY[bin - 1] = profBalSim.GetBinContent(bin)
-        simYErr[bin - 1] = profBalSim.GetBinError(bin)
+    for bin in range(1, num_bins + 2):
+        sim_x[bin - 1] = prof_pt_sim.GetBinContent(bin)
+        sim_y[bin - 1] = prof_bal_sim.GetBinContent(bin)
+        sim_yerr[bin - 1] = prof_bal_sim.GetBinError(bin)
     
-    simErrBandX = np.zeros(nBins + 2)
-    simErrBandYLow, simErrBandYHigh = np.zeros(nBins + 2), np.zeros(nBins + 2)
+    sim_err_band_x = np.zeros(num_bins + 2)
+    sim_err_band_y_low, sim_err_band_y_high = np.zeros(num_bins + 2), np.zeros(num_bins + 2)
     
-    for bin in range(1, nBins + 2):
-        simErrBandX[bin - 1] = profPtData.GetBinLowEdge(bin)
+    for bin in range(1, num_bins + 2):
+        sim_err_band_x[bin - 1] = prof_pt_data.GetBinLowEdge(bin)
     
     # Since the last bin is the overflow bin, there is no natural upper
     # boundary for the error band.  Set ptMax = <pt> + |ptMin - <pt>|.
-    simErrBandX[-1] = 2 * profPtData.GetBinContent(nBins + 1) - profPtData.GetBinLowEdge(nBins + 1)
+    sim_err_band_x[-1] = 2 * prof_pt_data.GetBinContent(num_bins + 1) - \
+        prof_pt_data.GetBinLowEdge(num_bins + 1)
     
-    simErrBandYLow = np.append(simY - simYErr, simY[-1] - simYErr[-1])
-    simErrBandYHigh = np.append(simY + simYErr, simY[-1] + simYErr[-1])
+    sim_err_band_y_low = np.append(sim_y - sim_yerr, sim_y[-1] - sim_yerr[-1])
+    sim_err_band_y_high = np.append(sim_y + sim_yerr, sim_y[-1] + sim_yerr[-1])
     
     
     # Compute residuals
-    residuals = dataY / simY - np.ones(nBins + 1)
-    resDataYErr = dataYErr / simY
-    resSimErrBandY = np.append(simYErr / simY, simYErr[-1] / simY[-1])
+    residuals = data_y / sim_y - np.ones(num_bins + 1)
+    res_data_yerr = data_yerr / sim_y
+    res_sim_err_band_y = np.append(sim_yerr / sim_y, sim_yerr[-1] / sim_y[-1])
     
     
     # Plot the graphs
     fig = plt.figure()
-    gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[heightRatio, 1])
-    axesUpper = fig.add_subplot(gs[0, 0])
-    axesLower = fig.add_subplot(gs[1, 0])
+    gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[height_ratio, 1])
+    axes_upper = fig.add_subplot(gs[0, 0])
+    axes_lower = fig.add_subplot(gs[1, 0])
     
-    axesUpper.set_xscale('log')
-    axesLower.set_xscale('log')
+    axes_upper.set_xscale('log')
+    axes_lower.set_xscale('log')
     
-    axesUpper.errorbar(
-        dataX, dataY, yerr=dataYErr,
+    axes_upper.errorbar(
+        data_x, data_y, yerr=data_yerr,
         color='black', marker='o', ls='none', label='Data'
     )
-    axesUpper.fill_between(
-        simErrBandX, simErrBandYLow, simErrBandYHigh, step='post',
+    axes_upper.fill_between(
+        sim_err_band_x, sim_err_band_y_low, sim_err_band_y_high, step='post',
         color='#3399cc', alpha=0.5, linewidth=0
     )
-    axesUpper.plot(
-        simX, simY,
+    axes_upper.plot(
+        sim_x, sim_y,
         color='#3399cc', marker='o', mfc='none', ls='none', label='Sim'
     )
     
-    axesLower.fill_between(simErrBandX, resSimErrBandY, -resSimErrBandY, step='post', color='0.75')
-    axesLower.errorbar(
-        dataX, residuals, yerr=resDataYErr,
+    axes_lower.fill_between(
+        sim_err_band_x, res_sim_err_band_y, -res_sim_err_band_y, step='post', color='0.75'
+    )
+    axes_lower.errorbar(
+        data_x, residuals, yerr=res_data_yerr,
         color='black', marker='o', ls='none'
     )
     
     # Remove tick labels in the upper axes
-    axesUpper.set_xticklabels([''] * len(axesUpper.get_xticklabels()))
+    axes_upper.set_xticklabels([''] * len(axes_upper.get_xticklabels()))
     
     # Provide a formatter for minor ticks so that thay get labelled.
     # Also set a formatter for major ticks in order to obtain a
     # consistent formatting (1000 instead of 10^3).
-    axesLower.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
-    axesLower.xaxis.set_minor_formatter(mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4)))
+    axes_lower.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
+    axes_lower.xaxis.set_minor_formatter(mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4)))
     
-    axesUpper.set_xlim(simErrBandX[0], simErrBandX[-1])
-    axesLower.set_xlim(simErrBandX[0], simErrBandX[-1])
-    axesUpper.set_ylim(0.9, 1.)
-    axesLower.set_ylim(-0.02, 0.028)
-    axesLower.grid(axis='y', color='black', ls='dotted')
+    axes_upper.set_xlim(sim_err_band_x[0], sim_err_band_x[-1])
+    axes_lower.set_xlim(sim_err_band_x[0], sim_err_band_x[-1])
+    axes_upper.set_ylim(0.9, 1.)
+    axes_lower.set_ylim(-0.02, 0.028)
+    axes_lower.grid(axis='y', color='black', ls='dotted')
     
-    axesLower.set_xlabel(xLabel)
-    axesLower.set_ylabel(r'$\frac{\mathrm{Data} - \mathrm{MC}}{\mathrm{MC}}$')
-    axesUpper.set_ylabel(yLabel)
+    axes_lower.set_xlabel(x_label)
+    axes_lower.set_ylabel(r'$\frac{\mathrm{Data} - \mathrm{MC}}{\mathrm{MC}}$')
+    axes_upper.set_ylabel(y_label)
     
     # Manually set positions of labels of the y axes so that they are
     # aligned with respect to each other
-    axesUpper.get_yaxis().set_label_coords(-0.1, 0.5)
-    axesLower.get_yaxis().set_label_coords(-0.1, 0.5)
+    axes_upper.get_yaxis().set_label_coords(-0.1, 0.5)
+    axes_lower.get_yaxis().set_label_coords(-0.1, 0.5)
     
     # Mark the overflow bin
-    axesUpper.text(
-        0.995, 0.5, 'Overflow', transform=axesUpper.transAxes,
+    axes_upper.text(
+        0.995, 0.5, 'Overflow', transform=axes_upper.transAxes,
         ha='right', va='center', rotation='vertical', size='xx-small', color='gray'
     )
     
     
     # Build legend ensuring desired ordering of the entries
-    legendHandles, legendLabels = axesUpper.get_legend_handles_labels()
-    legendHandleMap = {}
+    legend_handles, legend_labels = axes_upper.get_legend_handles_labels()
+    legend_handle_map = {}
     
-    for i in range(len(legendHandles)):
-        legendHandleMap[legendLabels[i]] = legendHandles[i]
+    for i in range(len(legend_handles)):
+        legend_handle_map[legend_labels[i]] = legend_handles[i]
     
-    axesUpper.legend(
-        [legendHandleMap['Data'], legendHandleMap['Sim']], ['Data', 'Simulation'],
+    axes_upper.legend(
+        [legend_handle_map['Data'], legend_handle_map['Sim']], ['Data', 'Simulation'],
         loc='upper right', frameon=True
     )
     
-    axesUpper.text(1., 1., eraLabel, ha='right', va='bottom', transform=axesUpper.transAxes)
+    axes_upper.text(1., 1., era_label, ha='right', va='bottom', transform=axes_upper.transAxes)
     
-    return fig, axesUpper, axesLower
+    return fig, axes_upper, axes_lower
 
 
 if __name__ == '__main__':
     
     # Parse arguments
-    argParser = argparse.ArgumentParser(description=__doc__)
-    argParser.add_argument(
-        'dataFile', help='Name of ROOT file with data'
+    arg_parser = argparse.ArgumentParser(description=__doc__)
+    arg_parser.add_argument(
+        'data', help='Name of ROOT file with data'
     )
-    argParser.add_argument(
-        'simFile', help='Name of ROOT file with simulation'
+    arg_parser.add_argument(
+        'sim', help='Name of ROOT file with simulation'
     )
-    argParser.add_argument(
-        'weightFile', help='Name of ROOT file with weights for simulation'
+    arg_parser.add_argument(
+        'weight_file', help='Name of ROOT file with weights for simulation'
     )
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-c', '--config', default='plotConfig.json',
         help='JSON file with configuration for plotting'
     )
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-e', '--era', default=None,
         help='Era to access luminosity and era label from configuration'
     )
-    argParser.add_argument(
-        '-o', '--fig-dir',
-        help='Directory to store figures', default='fig', dest='figDir'
+    arg_parser.add_argument(
+        '-o', '--fig-dir', default='fig',
+        help='Directory to store figures'
     )
-    args = argParser.parse_args()
+    args = arg_parser.parse_args()
     
-    if not os.path.exists(args.figDir):
-        os.makedirs(args.figDir)
+    if not os.path.exists(args.fig_dir):
+        os.makedirs(args.fig_dir)
     
     if args.era is None:
         # Try to figure the era label from the name of the data file
-        args.era = os.path.splitext(os.path.basename(args.dataFile))[0]
+        args.era = os.path.splitext(os.path.basename(args.data))[0]
     
     
     # Customization
@@ -346,121 +352,121 @@ if __name__ == '__main__':
     with open(args.config) as f:
         config = json.load(f)
     
-    eraLabel = '{} {} fb$^{{-1}}$ (13 TeV)'.format(
+    era_label = '{} {} fb$^{{-1}}$ (13 TeV)'.format(
         config['eras'][args.era]['label'], config['eras'][args.era]['lumi']
     )
     
     
     # Construct histograms
-    histPtLead = make_hists(config['binning']['ptLead'])
-    histPtRecoil = make_hists(config['binning']['ptRecoil'])
-    histPtMiss = make_hists(config['binning']['ptMiss'])
+    hist_pt_lead = make_hists(config['binning']['ptLead'])
+    hist_pt_recoil = make_hists(config['binning']['ptRecoil'])
+    hist_pt_miss = make_hists(config['binning']['ptMiss'])
     
-    profPtLead = make_profiles(config['balance']['binning'])
-    profPtBal = make_profiles(config['balance']['binning'])
-    profMPF = make_profiles(config['balance']['binning'])
+    prof_pt_lead = make_profiles(config['balance']['binning'])
+    prof_pt_bal = make_profiles(config['balance']['binning'])
+    prof_mpf = make_profiles(config['balance']['binning'])
     
     
     # Fill the histograms
-    dataFile = ROOT.TFile(args.dataFile)
-    simFile = ROOT.TFile(args.simFile)
-    weightFile = ROOT.TFile(args.weightFile)
+    data_file = ROOT.TFile(args.data)
+    sim_file = ROOT.TFile(args.sim)
+    weight_file = ROOT.TFile(args.weight_file)
     
-    for trigger, ptRange in config['triggers'].items():
+    for trigger, pt_range in config['triggers'].items():
         
-        treeData = dataFile.Get(trigger + '/BalanceVars')
+        tree_data = data_file.Get(trigger + '/BalanceVars')
         
-        treeSim = simFile.Get(trigger + '/BalanceVars')
-        treeWeight = weightFile.Get(trigger + '/Weights')
-        treeSim.AddFriend(treeWeight)
+        tree_sim = sim_file.Get(trigger + '/BalanceVars')
+        tree_weight = weight_file.Get(trigger + '/Weights')
+        tree_sim.AddFriend(tree_weight)
         
-        for tree in [treeData, treeSim]:
+        for tree in [tree_data, tree_sim]:
             tree.SetBranchStatus('A', False)
             tree.SetBranchStatus('Alpha', False)
         
-        treeSim.SetBranchStatus('WeightDataset', False)
+        tree_sim.SetBranchStatus('WeightDataset', False)
         
         
         ROOT.gROOT.cd()
         
-        ptSelection = 'PtJ1 > {}'.format(ptRange[0])
+        pt_selection = 'PtJ1 > {}'.format(pt_range[0])
         
-        if not math.isinf(ptRange[1]):
-            ptSelection += ' && PtJ1 < {}'.format(ptRange[1])
+        if not math.isinf(pt_range[1]):
+            pt_selection += ' && PtJ1 < {}'.format(pt_range[1])
         
         for label, tree, selection in [
-            ('data', treeData, ptSelection),
-            ('sim', treeSim, '({}) * TotalWeight[0]'.format(ptSelection))
+            ('data', tree_data, pt_selection),
+            ('sim', tree_sim, '({}) * TotalWeight[0]'.format(pt_selection))
         ]:
-            tree.Draw('PtJ1>>+' + histPtLead[label].GetName(), selection, 'goff')
-            tree.Draw('PtRecoil>>+' + histPtRecoil[label].GetName(), selection, 'goff')
-            tree.Draw('MET>>+' + histPtMiss[label].GetName(), selection, 'goff')
+            tree.Draw('PtJ1>>+' + hist_pt_lead[label].GetName(), selection, 'goff')
+            tree.Draw('PtRecoil>>+' + hist_pt_recoil[label].GetName(), selection, 'goff')
+            tree.Draw('MET>>+' + hist_pt_miss[label].GetName(), selection, 'goff')
             
-            tree.Draw('PtJ1:PtJ1>>+' + profPtLead[label].GetName(), selection, 'goff')
-            tree.Draw('PtBal:PtJ1>>+' + profPtBal[label].GetName(), selection, 'goff')
-            tree.Draw('MPF:PtJ1>>+' + profMPF[label].GetName(), selection, 'goff')
+            tree.Draw('PtJ1:PtJ1>>+' + prof_pt_lead[label].GetName(), selection, 'goff')
+            tree.Draw('PtBal:PtJ1>>+' + prof_pt_bal[label].GetName(), selection, 'goff')
+            tree.Draw('MPF:PtJ1>>+' + prof_mpf[label].GetName(), selection, 'goff')
     
-    dataFile.Close()
-    simFile.Close()
-    weightFile.Close()
+    data_file.Close()
+    sim_file.Close()
+    weight_file.Close()
     
     
     # In distributions, include under- and overflow bins
-    for p in [histPtLead, histPtRecoil, histPtMiss]:
+    for p in [hist_pt_lead, hist_pt_recoil, hist_pt_miss]:
         for hist in p.values():
             hist.SetBinContent(1, hist.GetBinContent(1) + hist.GetBinContent(0))
             hist.SetBinError(1, math.hypot(hist.GetBinError(1), hist.GetBinError(0)))
             
-            nBins = hist.GetNbinsX()
-            hist.SetBinContent(nBins, hist.GetBinContent(nBins) + hist.GetBinContent(nBins + 1))
+            num_bins = hist.GetNbinsX()
+            hist.SetBinContent(num_bins, hist.GetBinContent(num_bins) + hist.GetBinContent(num_bins + 1))
             hist.SetBinError(
-                nBins, math.hypot(hist.GetBinError(nBins), hist.GetBinError(nBins + 1))
+                num_bins, math.hypot(hist.GetBinError(num_bins), hist.GetBinError(num_bins + 1))
             )
     
     
     # Plot distributions
-    fig, axesUpper, axesLower = plot_distribution(
-        histPtLead['data'], histPtLead['sim'],
-        xLabel=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', eraLabel=eraLabel
+    fig, axes_upper, axes_lower = plot_distribution(
+        hist_pt_lead['data'], hist_pt_lead['sim'],
+        x_label=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', era_label=era_label
     )
     
-    for triggerRange in config['triggers'].values():
-        minPt = triggerRange[0]
-        axesLower.axvline(minPt, color='#ff9933', ls='dashed')
-        axesUpper.axvline(minPt, color='#ff9933', ls='dashed')
+    for trigger_range in config['triggers'].values():
+        min_pt = trigger_range[0]
+        axes_lower.axvline(min_pt, color='#ff9933', ls='dashed')
+        axes_upper.axvline(min_pt, color='#ff9933', ls='dashed')
     
-    fig.savefig(os.path.join(args.figDir, 'PtLead.pdf'))
+    fig.savefig(os.path.join(args.fig_dir, 'PtLead.pdf'))
     plt.close(fig)
     
     
-    fig, axesUpper, axesLower = plot_distribution(
-        histPtRecoil['data'], histPtRecoil['sim'],
-        xLabel=r'$p_\mathrm{T}^\mathrm{recoil}$ [GeV]', eraLabel=eraLabel
+    fig, axes_upper, axes_lower = plot_distribution(
+        hist_pt_recoil['data'], hist_pt_recoil['sim'],
+        x_label=r'$p_\mathrm{T}^\mathrm{recoil}$ [GeV]', era_label=era_label
     )
-    fig.savefig(os.path.join(args.figDir, 'PtRecoil.pdf'))
+    fig.savefig(os.path.join(args.fig_dir, 'PtRecoil.pdf'))
     plt.close(fig)
     
-    fig, axesUpper, axesLower = plot_distribution(
-        histPtMiss['data'], histPtMiss['sim'],
-        xLabel=r'$p_\mathrm{T}^\mathrm{miss}$ [GeV]', eraLabel=eraLabel
+    fig, axes_upper, axes_lower = plot_distribution(
+        hist_pt_miss['data'], hist_pt_miss['sim'],
+        x_label=r'$p_\mathrm{T}^\mathrm{miss}$ [GeV]', era_label=era_label
     )
-    fig.savefig(os.path.join(args.figDir, 'PtMiss.pdf'))
+    fig.savefig(os.path.join(args.fig_dir, 'PtMiss.pdf'))
     plt.close(fig)
     
     
     # Plot profiles
-    fig, axesUpper, axesLower = plot_balance(
-        profPtLead['data'], profPtLead['sim'],
-        profPtBal['data'], profPtBal['sim'],
-        yLabel=r'Mean $p_\mathrm{T}$ balance', eraLabel=eraLabel
+    fig, axes_upper, axes_lower = plot_balance(
+        prof_pt_lead['data'], prof_pt_lead['sim'],
+        prof_pt_bal['data'], prof_pt_bal['sim'],
+        y_label=r'Mean $p_\mathrm{T}$ balance', era_label=era_label
     )
-    fig.savefig(os.path.join(args.figDir, 'PtBal.pdf'))
+    fig.savefig(os.path.join(args.fig_dir, 'PtBal.pdf'))
     plt.close(fig)
     
-    fig, axesUpper, axesLower = plot_balance(
-        profPtLead['data'], profPtLead['sim'],
-        profMPF['data'], profMPF['sim'],
-        yLabel=r'Mean MPF', eraLabel=eraLabel
+    fig, axes_upper, axes_lower = plot_balance(
+        prof_pt_lead['data'], prof_pt_lead['sim'],
+        prof_mpf['data'], prof_mpf['sim'],
+        y_label=r'Mean MPF', era_label=era_label
     )
-    fig.savefig(os.path.join(args.figDir, 'MPF.pdf'))
+    fig.savefig(os.path.join(args.fig_dir, 'MPF.pdf'))
     plt.close(fig)

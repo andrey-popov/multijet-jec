@@ -30,15 +30,15 @@ class TriggerBins(OrderedDict):
         # Attempt to resolve the path with respect to a standard
         # location if it does not match any file
         if not os.path.exists(path):
-            tryPath = None
+            try_path = None
             
             if 'MULTIJET_JEC_INSTALL' in os.environ:
-                tryPath = os.path.join(os.environ['MULTIJET_JEC_INSTALL'], 'config', path)
+                try_path = os.path.join(os.environ['MULTIJET_JEC_INSTALL'], 'config', path)
             
-            if tryPath is None or not os.path.exists(tryPath):
+            if try_path is None or not os.path.exists(try_path):
                 raise RuntimeError('Failed to find file "{}".'.format(path))
             else:
-                path = tryPath
+                path = try_path
         
         
         # Read the configuration
@@ -49,15 +49,15 @@ class TriggerBins(OrderedDict):
         # One of the trigger bins normally extends to very large pt (but
         # the value is finite as infinities are not supported in other
         # code that uses that file).  Clip it.
-        for triggerName, triggerBin in self.items():
-            corrRange = triggerBin['ptRange']
+        for trigger_name, trigger_bin in self.items():
+            corr_range = trigger_bin['ptRange']
             
-            if corrRange[1] > clip:
-                corrRange[1] = clip
+            if corr_range[1] > clip:
+                corr_range[1] = clip
             
-            if corrRange[0] >= corrRange[1]:
+            if corr_range[0] >= corr_range[1]:
                 raise RuntimeError('Illegal corrected pt range for trigger "{}": {}.'.format(
-                    triggerName, corrRange
+                    trigger_name, corr_range
                 ))
     
     
@@ -78,20 +78,20 @@ class TriggerBins(OrderedDict):
             wrong and caller has not requested to raise an exception.
         """
         
-        mismatchedEdges = []
+        mismatched_edges = []
         
-        for triggerBin in self.values():
-            for edge in triggerBin['ptRange']:
+        for trigger_bin in self.values():
+            for edge in trigger_bin['ptRange']:
                 if edge not in binning:
-                    mismatchedEdges.append(edge)
+                    mismatched_edges.append(edge)
         
-        if mismatchedEdges:
+        if mismatched_edges:
             if silent:
                 return False
             else:
                 raise RuntimeError(
                     'Following boundaries of trigger bins are not aligned with the binning: {}.'.format(
-                        mismatchedEdges
+                        mismatched_edges
                     )
                 )
         else:
