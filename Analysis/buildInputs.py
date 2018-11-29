@@ -115,6 +115,18 @@ if __name__ == '__main__':
         out_directory.cd()
         
         
+        # Store definition for pt bins in the current trigger bin
+        clipped_binning = [
+            edge for edge in binning if trigger_bin.pt_range[0] <= edge <= trigger_bin.pt_range[1]
+        ]
+        clipped_binning_store = ROOT.TVectorD(len(clipped_binning))
+        
+        for i in range(len(clipped_binning)):
+            clipped_binning_store[i] = clipped_binning[i]
+        
+        clipped_binning_store.Write('Binning')
+        
+        
         # Store splines constructed for simulation after converting them
         # to ROOT classes
         for variable in ['PtBal', 'MPF']:
@@ -141,11 +153,8 @@ if __name__ == '__main__':
         # Check if there are poorly populated bins in data.  Do not
         # perform the same check for simulation as it is assumed to
         # have larger effective intergrated luminosity
-        clipped_binning = array('d', [
-            edge for edge in binning if trigger_bin.pt_range[0] <= edge <= trigger_bin.pt_range[1]
-        ])
         hist_pt_lead_rebinned = hist_pt_lead.Rebin(
-            len(clipped_binning) - 1, uuid4().hex, clipped_binning
+            len(clipped_binning) - 1, uuid4().hex, array('d', clipped_binning)
         )
         underpopulated_bins = []
         
