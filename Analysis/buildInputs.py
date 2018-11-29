@@ -100,13 +100,16 @@ if __name__ == '__main__':
     out_file = ROOT.TFile(args.output, 'recreate')
     
     
-    # Write jet pt thresholds
-    pt_threshold = ROOT.TVectorD(1)
+    # Write jet pt thresholds.  For the pt balance a smooth threshold is
+    # used, and the two numbers define the range over which the
+    # efficiency changes from 0 to 1.
+    pt_threshold = ROOT.TVectorD(2)
     pt_threshold[0] = 30.
-    pt_threshold.Write('MinPtPtBal')
+    pt_threshold[1] = 33.
+    pt_threshold.Write('PtBalThreshold')
     
     pt_threshold[0] = 15.
-    pt_threshold.Write('MinPtMPF')
+    pt_threshold.Write('MPFThreshold')
     
     
     # Loop over triggers
