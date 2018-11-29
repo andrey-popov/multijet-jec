@@ -3,14 +3,13 @@
 """Constructs inputs for the fit of multijet data.
 
 Information in the output ROOT file is organized into directories by
-trigger bins.  For simulation this script builts profiles of balance
-observables versus pt of the leading jet.  This profiles also define the
-target binning to be used for the fit.  Histograms and profiles for data
-are copied from the input file without modification.  In each trigger
-bin they have a much finer binning and cover larger regions in pt, which
-is needed for the rebinning during the fit.  If the number of data
-events in some bin of the target binning is smaller than a threshold, a
-warning is printed.
+trigger bins.  For simulation this script constructs a spline
+approximation for mean values of balance observables as a function of
+the (natural) logarithm of the pt of the leading jet.  Histograms and
+profiles for data are copied from the input file without modification.
+In each trigger bin they have a much finer binning, which is needed for
+the rebinning during the fit.  If the number of data events in some bin
+of the target binning is smaller than a threshold, a warning is printed.
 """
 
 import argparse
@@ -24,6 +23,7 @@ from uuid import uuid4
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
+from regularization import SplineSimFitter
 from triggerbins import TriggerBins
 
 
@@ -55,6 +55,8 @@ if __name__ == '__main__':
         '-o', '--output', default='multijet.root',
         help='Name for output ROOT file.'
     )
+    arg_parser.add_argument('--plots', default='fig', help='Directory for diagnostic plots.')
+    arg_parser.add_argument('--era', help='Era label for diagnostic plots.')
     args = arg_parser.parse_args()
     
     if args.weights is None:
@@ -85,10 +87,16 @@ if __name__ == '__main__':
     trigger_bins.check_alignment(binning)
     
     
-    data_file = ROOT.TFile(args.data)
-    sim_file = ROOT.TFile(args.sim_file)
-    weight_file = ROOT.TFile(args.weights)
+    # Construct continuous model for mean balance observables in
+    # simulation
+    sim_fitter = SplineSimFitter(
+        args.sim, args.weights, trigger_bins,
+        diagnostic_plots_dir=args.plots + '/sim_fit', era=args.era
+    )
+    sim_fitter.fit(['PtBal', 'MPF'])
     
+    
+    data_file = ROOT.TFile(args.data)
     out_file = ROOT.TFile(args.output, 'recreate')
     
     
@@ -104,39 +112,16 @@ if __name__ == '__main__':
     # Loop over triggers
     for trigger_bin in trigger_bins:
         out_directory = out_file.mkdir(trigger_bin.name)
+        out_directory.cd()
         
         
-        # Create profiles in simulation
-        pt_range = trigger_bin.pt_range
-        clipped_binning = array('d', [
-            edge for edge in binning if pt_range[0] <= edge <= pt_range[1]
-        ])
-        
-        prof_pt_bal = ROOT.TProfile(
-            'SimPtBalProfile', ';p_{T}^{lead} [GeV];<p_{T} balance>',
-            len(clipped_binning) - 1, clipped_binning
-        )
-        prof_mpf = ROOT.TProfile(
-            'SimMPFProfile', ';p_{T}^{lead} [GeV];<MPF>',
-            len(clipped_binning) - 1, clipped_binning
-        )
-        
-        for obj in [prof_pt_bal, prof_mpf]:
-            obj.SetDirectory(ROOT.gROOT)
-        
-        tree = sim_file.Get(trigger_bin.name + '/BalanceVars')
-        tree.AddFriend(trigger_bin.name + '/Weights', weight_file)
-        tree.SetBranchStatus('*', False)
-        
-        for branch_name in ['PtJ1', 'PtBal', 'MPF', 'TotalWeight']:
-            tree.SetBranchStatus(branch_name, True)
-        
-        ROOT.gROOT.cd()
-        tree.Draw('PtBal:PtJ1>>' + prof_pt_bal.GetName(), 'TotalWeight[0]', 'goff')
-        tree.Draw('MPF:PtJ1>>' + prof_mpf.GetName(), 'TotalWeight[0]', 'goff')
-        
-        for obj in [prof_pt_bal, prof_mpf]:
-            obj.SetDirectory(out_directory)
+        # Store splines constructed for simulation after converting them
+        # to ROOT classes
+        for variable in ['PtBal', 'MPF']:
+            root_spline = sim_fitter.spline_to_root(
+                sim_fitter.fit_results[variable][trigger_bin.name]
+            )
+            root_spline.Write('Sim' + variable)
         
         
         # In case of data simply copy profiles and histograms
@@ -144,16 +129,21 @@ if __name__ == '__main__':
         hist_pt_lead.SetDirectory(out_directory)
         
         for name in [
-            'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj',
+            'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj',
             'RelPtJetSumProj'
         ]:
             obj = data_file.Get('{}/{}'.format(trigger_bin.name, name))
             obj.SetDirectory(out_directory)
         
+        out_directory.Write()
+        
         
         # Check if there are poorly populated bins in data.  Do not
         # perform the same check for simulation as it is assumed to
         # have larger effective intergrated luminosity
+        clipped_binning = array('d', [
+            edge for edge in binning if trigger_bin.pt_range[0] <= edge <= trigger_bin.pt_range[1]
+        ])
         hist_pt_lead_rebinned = hist_pt_lead.Rebin(
             len(clipped_binning) - 1, uuid4().hex, clipped_binning
         )
@@ -172,10 +162,7 @@ if __name__ == '__main__':
                     '({:g}, {:g})'.format(clipped_binning[bin - 1], clipped_binning[bin]),
                     round(hist_pt_lead_rebinned.GetBinContent(bin))
                 ))
-        
-        
-        out_directory.Write()
     
     
-    for f in [out_file, data_file, sim_file, weight_file]:
+    for f in [out_file, data_file]:
         f.Close()
