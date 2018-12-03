@@ -25,7 +25,10 @@ BalanceHists::BalanceHists(std::string const &name, double minPt_ /*= 15.*/):
         ptLeadBinning.emplace_back(pt);
     
     
-    for (int pt = minPt; pt < 50; pt += 1)
+    for (double pt = minPt, step = 0.25; pt < 40. - step / 2; pt += step)
+        ptJetBinning.emplace_back(pt);
+    
+    for (int pt = 40; pt < 50; pt += 1)
         ptJetBinning.emplace_back(pt);
     
     for (int pt = 50; pt < 200; pt += 2)
