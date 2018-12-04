@@ -18,7 +18,7 @@ BalanceHists::BalanceHists(std::string const &name, double minPt_ /*= 15.*/):
     outDirectoryName(name), minPt(minPt_)
 {
     // Construct default binning
-    for (int pt = 150; pt < 1000; pt += 5)
+    for (int pt = 180; pt < 1000; pt += 5)
         ptLeadBinning.emplace_back(pt);
     
     for (int pt = 1000; pt < 3000; pt += 10)
