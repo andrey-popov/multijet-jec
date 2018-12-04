@@ -162,7 +162,7 @@ if __name__ == '__main__':
         underpopulated_bins = []
         
         for bin in range(1, hist_pt_lead_rebinned.GetNbinsX() + 1):
-            if hist_pt_lead_rebinned.GetBinContent(bin) < 10:
+            if hist_pt_lead_rebinned.GetBinContent(bin) < 100:
                 underpopulated_bins.append(bin)
         
         if underpopulated_bins:
