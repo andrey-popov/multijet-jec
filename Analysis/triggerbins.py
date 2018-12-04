@@ -38,7 +38,7 @@ class TriggerBins:
     """Collection of triggers bins.
     
     This class represents a collection of trigger bins, which can be
-    accessed by index or by name.  The bins are sorted in the increasin
+    accessed by index or by name.  The bins are sorted in the increasing
     order in pt.  Definitions of triggers bins are read from a JSON
     file.
     """

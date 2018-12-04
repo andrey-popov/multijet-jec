@@ -2,14 +2,17 @@
 
 """Constructs inputs for the fit of multijet data.
 
-Information in the output ROOT file is organized into directories by
-trigger bins.  For simulation this script constructs a spline
-approximation for mean values of balance observables as a function of
-the (natural) logarithm of the pt of the leading jet.  Histograms and
-profiles for data are copied from the input file without modification.
-In each trigger bin they have a much finer binning, which is needed for
-the rebinning during the fit.  If the number of data events in some bin
-of the target binning is smaller than a threshold, a warning is printed.
+Produced ROOT files contains the suggested binning for the computation
+of the chi^2, as well as jet thresholds.  Histograms and profiles for
+data from different trigger bins are merged together (since there is no
+overlap) but otherwise they are copied from the input file without
+modification.  For simulation, a spline approximation to the mean value
+of the balance observables as a function of the logarithm of the pt of
+the leading jet is constructed.  This is done for each trigger bin, and
+the resulting splines are stored in separate directories.
+
+The script also checks the number of events in each bin of the target
+binning and prints a warning if this number is below a threshold.
 """
 
 import argparse
@@ -84,20 +87,18 @@ if __name__ == '__main__':
         raise RuntimeError('Inclusive overflow bins are not supported.')
     
     
+    # Check alingment between given binning and trigger bins
     trigger_bins.check_alignment(binning)
     
-    
-    # Construct continuous model for mean balance observables in
-    # simulation
-    sim_fitter = SplineSimFitter(
-        args.sim, args.weights, trigger_bins,
-        diagnostic_plots_dir=args.plots + '/sim_fit', era=args.era
-    )
-    sim_fitter.fit(['PtBal', 'MPF'])
+    if trigger_bins[0].pt_range[0] != binning[0]:
+        raise RuntimeError(
+            'Left-most edge in given binning ({:g}) does not match left boundary of the first '
+            'trigger bin ({:g}).'.format(binning[0], trigger_bins[0].pt_range[0])
+        )
     
     
-    data_file = ROOT.TFile(args.data)
     out_file = ROOT.TFile(args.output, 'recreate')
+    out_file.cd()
     
     
     # Write jet pt thresholds.  For the pt balance a smooth threshold is
@@ -112,69 +113,89 @@ if __name__ == '__main__':
     pt_threshold.Write('MPFThreshold')
     
     
-    # Loop over triggers
+    # Store suggested binning for the computation of chi^2
+    binning_store = ROOT.TVectorD(len(binning))
+    
+    for i in range(len(binning)):
+        binning_store[i] = binning[i]
+    
+    binning_store.Write('Binning')
+    
+    
+    # Store data histograms. Since there is no overlap in pt of the
+    # leading jet between different trigger bins in data, corresponding
+    # histograms are combined.
+    data_file = ROOT.TFile(args.data)
+    out_file.cd()
+    
+    data_histograms = OrderedDict()
+    
+    for trigger_bin in trigger_bins:
+        for name in [
+            'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'RelPtJetSumProj'
+        ]:
+            hist = data_file.Get('{}/{}'.format(trigger_bin.name, name))
+            
+            if name not in data_histograms:
+                hist.SetDirectory(out_file)
+                data_histograms[name] = hist
+            else:
+                data_histograms[name].Add(hist)
+    
+    data_file.Close()
+    out_file.Write()
+    
+    
+    # Construct continuous model for mean balance observables in
+    # simulation
+    sim_fitter = SplineSimFitter(
+        args.sim, args.weights, trigger_bins,
+        diagnostic_plots_dir=args.plots + '/sim_fit', era=args.era
+    )
+    sim_fitter.fit(['PtBal', 'MPF'])
+    
+    
+    # Write mean balance in simulation in all trigger bins
     for trigger_bin in trigger_bins:
         out_directory = out_file.mkdir(trigger_bin.name)
         out_directory.cd()
         
+        range_store = ROOT.TVectorD(2)
         
-        # Store definition for pt bins in the current trigger bin
-        clipped_binning = [
-            edge for edge in binning if trigger_bin.pt_range[0] <= edge <= trigger_bin.pt_range[1]
-        ]
-        clipped_binning_store = ROOT.TVectorD(len(clipped_binning))
+        for i in range(2):
+            range_store[i] = trigger_bin.pt_range[i]
         
-        for i in range(len(clipped_binning)):
-            clipped_binning_store[i] = clipped_binning[i]
-        
-        clipped_binning_store.Write('Binning')
+        range_store.Write('Range')
         
         
-        # Store splines constructed for simulation after converting them
-        # to ROOT classes
         for variable in ['PtBal', 'MPF']:
             root_spline = sim_fitter.spline_to_root(
                 sim_fitter.fit_results[variable][trigger_bin.name]
             )
             root_spline.Write('Sim' + variable)
         
-        
-        # In case of data simply copy profiles and histograms
-        hist_pt_lead = data_file.Get('{}/PtLead'.format(trigger_bin.name))
-        hist_pt_lead.SetDirectory(out_directory)
-        
-        for name in [
-            'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'PtJet', 'PtJetSumProj',
-            'RelPtJetSumProj'
-        ]:
-            obj = data_file.Get('{}/{}'.format(trigger_bin.name, name))
-            obj.SetDirectory(out_directory)
-        
         out_directory.Write()
-        
-        
-        # Check if there are poorly populated bins in data.  Do not
-        # perform the same check for simulation as it is assumed to
-        # have larger effective intergrated luminosity
-        hist_pt_lead_rebinned = hist_pt_lead.Rebin(
-            len(clipped_binning) - 1, uuid4().hex, array('d', clipped_binning)
-        )
-        underpopulated_bins = []
-        
-        for bin in range(1, hist_pt_lead_rebinned.GetNbinsX() + 1):
-            if hist_pt_lead_rebinned.GetBinContent(bin) < 100:
-                underpopulated_bins.append(bin)
-        
-        if underpopulated_bins:
-            print('There were under-populated bins when producing file "{}".'.format(args.output))
-            print('  Bin in ptLead   Events in data')
-            
-            for bin in underpopulated_bins:
-                print('  {:13}   {}'.format(
-                    '({:g}, {:g})'.format(clipped_binning[bin - 1], clipped_binning[bin]),
-                    round(hist_pt_lead_rebinned.GetBinContent(bin))
-                ))
     
     
-    for f in [out_file, data_file]:
-        f.Close()
+    # Check for underpopulated bins in data
+    hist_pt_lead_rebinned = data_histograms['PtLead'].Rebin(
+        len(binning) - 1, uuid4().hex, array('d', binning)
+    )
+    hist_pt_lead_rebinned.SetDirectory(None)
+    underpopulated_bins = []
+    
+    for bin in range(1, hist_pt_lead_rebinned.GetNbinsX() + 1):
+        if hist_pt_lead_rebinned.GetBinContent(bin) < 100:
+            underpopulated_bins.append(bin)
+    
+    if underpopulated_bins:
+        print('There were under-populated bins when producing file "{}".'.format(args.output))
+        print('  Bin in ptLead   Events in data')
+        
+        for bin in underpopulated_bins:
+            print('  {:13}   {}'.format(
+                '({:g}, {:g})'.format(binning[bin - 1], binning[bin]),
+                round(hist_pt_lead_rebinned.GetBinContent(bin))
+            ))
+    
+    out_file.Close()
