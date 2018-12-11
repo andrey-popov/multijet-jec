@@ -7,6 +7,7 @@
 #include <EtaPhiFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <GenMatchFilter.hpp>
+#include <JERCJetMETUpdate.hpp>
 #include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
 #include <MPIMatchFilter.hpp>
@@ -21,7 +22,6 @@
 #include <mensura/extensions/DatasetBuilder.hpp>
 #include <mensura/extensions/JetCorrectorService.hpp>
 #include <mensura/extensions/JetFilter.hpp>
-#include <mensura/extensions/JetMETUpdate.hpp>
 #include <mensura/extensions/PileUpWeight.hpp>
 #include <mensura/extensions/TFileService.hpp>
 
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
         
         
         // Recorrect jets and apply T1 MET corrections to raw MET
-        JetMETUpdate *jetmetUpdater = new JetMETUpdate;
+        JERCJetMETUpdate *jetmetUpdater = new JERCJetMETUpdate;
         jetmetUpdater->SetJetCorrection("JetCorrFull");
         jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
         jetmetUpdater->UseRawMET();
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
         
         
         // Recorrect jets and apply T1 MET corrections to raw MET
-        JetMETUpdate *jetmetUpdater = new JetMETUpdate;
+        JERCJetMETUpdate *jetmetUpdater = new JERCJetMETUpdate;
         jetmetUpdater->SetJetCorrection("JetCorrFull");
         jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
         jetmetUpdater->UseRawMET();
