@@ -419,7 +419,7 @@ int main(int argc, char **argv)
     angularFilter->SetDPhi23Cut(0., 1.);
     manager.RegisterPlugin(angularFilter);
     
-    manager.RegisterPlugin(new BalanceCalc(30.));
+    manager.RegisterPlugin(new BalanceCalc(30., 33.));
     
     // Remove strongly imbalanced events in the high-pt region. This is a temporary solution to the
     //problem described in [1].

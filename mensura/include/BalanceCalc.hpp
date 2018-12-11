@@ -28,16 +28,15 @@ public:
      * \brief Constructor from a name and definition of threshold for pt balance
      * 
      * \param name  Name for the plugin.
-     * \param thresholdPtBal  Threshold in pt to be used in computation of the pt balance.
-     * \param relTurnOnPtBal  Length of turn-on curve for the smooth pt threshold used in
-     *     computation of the pt balance. Interpreted as a fraction with respect to the given
-     *     threshold.  The weight for jets reaches unity for pt above
-     *     thresholdPtBal * (1 + relTurnOnPtBal).
+     * \param thresholdPtBalStart  Only jets above this pt threshold contribute to the pt balance.
+     * \param thresholdPtBalEnd  If given, defines the range over which jets are included in the
+     *     pt balance with a weight less than 1.
      */
-    BalanceCalc(std::string const &name, double thresholdPtBal, double relTurnOnPtBal = 0.1);
+    BalanceCalc(std::string const &name, double thresholdPtBalStart,
+      double thresholdPtBalEnd = 0.);
     
     /// Short-cut for a construct with default name "BalanceCalc"
-    BalanceCalc(double thresholdPtBal, double relTurnOnPtBal = 0.1);
+    BalanceCalc(double thresholdPtBalStart, double thresholdPtBalEnd = 0.);
     
 public:
     /**

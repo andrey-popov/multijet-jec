@@ -3,17 +3,35 @@
 #include <mensura/core/JetMETReader.hpp>
 
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
 
 
-BalanceCalc::BalanceCalc(std::string const &name, double thresholdPtBal_, double relTurnOnPtBal):
+BalanceCalc::BalanceCalc(std::string const &name, double thresholdPtBalStart,
+  double thresholdPtBalEnd):
     AnalysisPlugin(name),
-    thresholdPtBal(thresholdPtBal_), turnOnPtBal(relTurnOnPtBal * thresholdPtBal_),
+    thresholdPtBal(thresholdPtBalStart),
     jetmetPluginName("JetMET")
-{}
+{
+    if (thresholdPtBalEnd <= 0. or thresholdPtBalStart == thresholdPtBalEnd)
+        turnOnPtBal = 0.;
+    else
+    {
+        if (thresholdPtBalEnd < thresholdPtBalStart)
+        {
+            std::ostringstream message;
+            message << "BalanceCalc::BalanceCalc[" << name << "]: Wrong ordering in range (" <<
+              thresholdPtBalStart << ", " << thresholdPtBalEnd << ").";
+            throw std::runtime_error(message.str());
+        }
+        
+        turnOnPtBal = thresholdPtBalEnd -  thresholdPtBalStart;
+    }
+}
 
 
-BalanceCalc::BalanceCalc(double thresholdPtBal, double relTurnOnPtBal):
-    BalanceCalc("BalanceCalc", thresholdPtBal, relTurnOnPtBal)
+BalanceCalc::BalanceCalc(double thresholdPtBalStart, double thresholdPtBalEnd):
+    BalanceCalc("BalanceCalc", thresholdPtBalStart, thresholdPtBalEnd)
 {}
 
 
