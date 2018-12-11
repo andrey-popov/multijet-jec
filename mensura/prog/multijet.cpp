@@ -327,10 +327,6 @@ int main(int argc, char **argv)
         
         manager.RegisterService(jetCorrFull);
         manager.RegisterService(jetCorrL1);
-        
-        
-        // Recorrect jets and apply T1 MET corrections to raw MET
-        manager.RegisterPlugin(new JERCJetMETUpdate("JetCorrFull", "JetCorrL1"));
     }
     else
     {
@@ -380,11 +376,13 @@ int main(int argc, char **argv)
         JetCorrectorService *jetCorrL1 = new JetCorrectorService("JetCorrL1");
         jetCorrL1->SetJEC({jecVersion + "_MC_L1RC_AK4PFchs.txt"});
         manager.RegisterService(jetCorrL1);
-        
-        
-        // Recorrect jets and apply T1 MET corrections to raw MET
-        manager.RegisterPlugin(new JERCJetMETUpdate("JetCorrFull", "JetCorrL1"));
     }
+    
+    
+    // Recorrect jets and apply T1 MET corrections to raw MET
+    JERCJetMETUpdate *jetmetUpdater = new JERCJetMETUpdate("JetCorrFull", "JetCorrL1");
+    jetmetUpdater->SetT1Threshold(15., 20.);
+    manager.RegisterPlugin(jetmetUpdater);
     
     
     if (optionsMap.count("wide"))

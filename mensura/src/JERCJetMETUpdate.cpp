@@ -19,7 +19,7 @@ JERCJetMETUpdate::JERCJetMETUpdate(std::string const &name, std::string const &j
     systServiceName("Systematics"),
     jetCorrFull(nullptr), jetCorrFullName(jetCorrFullName_),
     jetCorrL1(nullptr), jetCorrL1Name(jetCorrL1Name_),
-    minPt(0.), maxAbsEta(std::numeric_limits<double>::infinity()), minPtForT1(15.)
+    minPt(0.), maxAbsEta(std::numeric_limits<double>::infinity()), minPtForT1(15.), turnOnT1(0.)
 {}
 
 
@@ -98,6 +98,27 @@ void JERCJetMETUpdate::SetSelection(double minPt_, double maxAbsEta_)
 }
 
 
+void JERCJetMETUpdate::SetT1Threshold(double thresholdStart, double thresholdEnd)
+{
+    minPtForT1 = thresholdStart;
+    
+    if (thresholdEnd <= 0. or thresholdStart == thresholdEnd)
+        turnOnT1 = 0.;
+    else
+    {
+        if (thresholdEnd < thresholdStart)
+        {
+            std::ostringstream message;
+            message << "JERCJetMETUpdate[\"" << GetName() << "\"]::SetT1Threshold: Wrong ordering "
+              "in range (" << thresholdStart << ", " << thresholdEnd << ").";
+            throw std::runtime_error(message.str());
+        }
+        
+        turnOnT1 = thresholdEnd - thresholdStart;
+    }
+}
+
+
 bool JERCJetMETUpdate::ProcessEvent()
 {
     // Update IOV in jet correctors
@@ -129,7 +150,10 @@ bool JERCJetMETUpdate::ProcessEvent()
         // Evaluate type 1 correction to MET from the current jet. Systematic variations are not
         // propagated to the L1 correction.
         if (jet.Pt() > minPtForT1)
-            updatedMET -= (jet.P4() - srcJet.RawP4() * jetCorrL1->Eval(srcJet, rho));
+        {
+            double const weight = WeightJet(jet.Pt());
+            updatedMET -= (jet.P4() - srcJet.RawP4() * jetCorrL1->Eval(srcJet, rho)) * weight;
+        }
         
         
         // Store the new jet if it passes the kinematical selection
@@ -145,4 +169,25 @@ bool JERCJetMETUpdate::ProcessEvent()
     met.SetPtEtaPhiM(updatedMET.Pt(), 0., updatedMET.Phi(), 0.);
     
     return true;
+}
+
+
+double JERCJetMETUpdate::WeightJet(double pt) const
+{
+    if (turnOnT1 <= 0.)
+    {
+        if (pt >= minPtForT1)
+            return 1.;
+        else
+            return 0.;
+    }
+    
+    double const x = (pt - minPtForT1) / turnOnT1;
+    
+    if (x < 0.)
+        return 0.;
+    else if (x > 1.)
+        return 1.;
+    else
+        return -2 * std::pow(x, 3) + 3 * std::pow(x, 2);
 }

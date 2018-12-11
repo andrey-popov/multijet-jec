@@ -19,6 +19,10 @@ class PileUpReader;
  * which is computed starting from the raw MET. Note that this correction can only be evaluated
  * properly if jets down to a sufficiently low pt have been stored.
  * 
+ * It is possible to apply a version of the type 1 correction with a smooth threshold. In this case
+ * the contribution of each jet near the threshold is included with a weight that changes smoothly
+ * from 0 to 1. See documentation for method SetT1Threshold for details.
+ * 
  * If a SystService with a non-trivial name is provided (by default, the plugin looks for a service
  * with name "Systematics"), plugin checks the requested systematics and applies variations in JEC
  * or JER as needed. However, systematic variations are never applied to jets with L1 corrections
@@ -66,6 +70,16 @@ public:
     /// Specifies desired selection on jets
     void SetSelection(double minPt, double maxAbsEta);
     
+    /**
+     * \brief Sets the pt threshold used in the (smoothed) type 1 correction
+     * 
+     * Only jets with pt > thresholdStart contribute to the type 1 MET correction. If the second
+     * argument is given, a smooth threshold is used. In that case jets with pt from thresholdStart
+     * to thresholdEnd contribute with a weight that changes smoothly from 0 to 1 over the given
+     * range. Jets with pt > thresholdEnd contribute with weight 1.
+     */
+    void SetT1Threshold(double thresholdStart, double thresholdEnd = 0.);
+    
 private:
     /**
      * \brief Reads jets and MET from the source JetMETReader and recorrects them
@@ -73,6 +87,14 @@ private:
      * Reimplemented from Plugin.
      */
     virtual bool ProcessEvent() override;
+    
+    /**
+     * \brief Computes jet weight for the computation of smoothed type 1 correction
+     * 
+     * \param pt  Transverse momentum of the jet.
+     * \return  Weight in the range from 0. to 1.
+     */
+    double WeightJet(double pt) const;
     
 private:
     /// Non-owning pointer to and name of a plugin that reads jets and MET
@@ -104,8 +126,11 @@ private:
     /// Maximal allowed absolute value of pseudorapidity
     double maxAbsEta;
     
-    /// Minimal transverse momentum for jets to be considered in T1 MET corrections
+    /// Minimal transverse momentum for jets to be considered in T1 MET correction
     double minPtForT1;
+    
+    /// (Absolute) length of the turn-on part of the threshold in T1 MET correction
+    double turnOnT1;
     
     /// Type of requested systematical variation
     JetCorrectorService::SystType systType;
