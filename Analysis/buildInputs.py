@@ -101,8 +101,8 @@ if __name__ == '__main__':
     out_file.cd()
     
     
-    # Write jet pt thresholds.  For the pt balance a smooth threshold is
-    # used, and the two numbers define the range over which the
+    # Write jet pt thresholds.  For both observables smooth thresholds
+    # are used, and the two numbers define the range over which the
     # efficiency changes from 0 to 1.
     pt_threshold = ROOT.TVectorD(2)
     pt_threshold[0] = 30.
@@ -110,6 +110,7 @@ if __name__ == '__main__':
     pt_threshold.Write('PtBalThreshold')
     
     pt_threshold[0] = 15.
+    pt_threshold[1] = 20.
     pt_threshold.Write('MPFThreshold')
     
     
