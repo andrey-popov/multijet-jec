@@ -330,11 +330,7 @@ int main(int argc, char **argv)
         
         
         // Recorrect jets and apply T1 MET corrections to raw MET
-        JERCJetMETUpdate *jetmetUpdater = new JERCJetMETUpdate;
-        jetmetUpdater->SetJetCorrection("JetCorrFull");
-        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
-        jetmetUpdater->UseRawMET();
-        manager.RegisterPlugin(jetmetUpdater);
+        manager.RegisterPlugin(new JERCJetMETUpdate("JetCorrFull", "JetCorrL1"));
     }
     else
     {
@@ -387,11 +383,7 @@ int main(int argc, char **argv)
         
         
         // Recorrect jets and apply T1 MET corrections to raw MET
-        JERCJetMETUpdate *jetmetUpdater = new JERCJetMETUpdate;
-        jetmetUpdater->SetJetCorrection("JetCorrFull");
-        jetmetUpdater->SetJetCorrectionForMET("JetCorrFull", "JetCorrL1", "", "");
-        jetmetUpdater->UseRawMET();
-        manager.RegisterPlugin(jetmetUpdater);
+        manager.RegisterPlugin(new JERCJetMETUpdate("JetCorrFull", "JetCorrL1"));
     }
     
     
