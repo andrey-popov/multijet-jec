@@ -188,7 +188,7 @@ int main(int argc, char **argv)
             dataEra = dataEra.substr(3);
         
         
-        set<string> allowedEras({"2016All", "2016BCD", "2016EFearly", "2016FlateG6H"});
+        set<string> allowedEras({"2016All", "2016BCD", "2016EFearly", "2016FlateGH"});
         
         if (allowedEras.count(dataEra) == 0)
         {
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
         
         for (string const &period: {"BCD", "EF", "GH"})
         {
-            string const jecVersion = "Summer16_07Aug2017" + period + "_V16";
+            string const jecVersion = "Summer16_07Aug2017" + period + "_V20";
             
             vector<string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
               jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
@@ -348,7 +348,7 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetReader);
         
         
-        string const jecVersion("Summer16_07Aug2017_V15");
+        string const jecVersion("Summer16_07Aug2017_V20");
         
         // Corrections to be applied to jets and also to be propagated to MET. Although original
         //jets in simulation already have up-to-date corrections, they will be reapplied in order
