@@ -311,12 +311,14 @@ int main(int argc, char **argv)
                     if (systType == SystType::JER)
                     {
                         // Add closure-style L2Res corrections obtained with varied JER. Taken
-                        //from [1].
-                        //[1] https://indico.cern.ch/event/724150/#14-dijet-with-2016-legacy-data
+                        //from [1], "kFSR_Fit" versions.
+                        //[1] https://indico.cern.ch/event/759977/#33-closure-test-for-summer16_0
                         if (systDirection == SystService::VarDirection::Up)
-                            jecLevels.emplace_back("L2Res_JER-up_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+                            jecLevels.emplace_back("Summer16_07Aug2017" + period +
+                              "_V18_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs_JERUp.txt");
                         else
-                            jecLevels.emplace_back("L2Res_JER-down_180423_Summer16_07Aug2017_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs.txt");
+                            jecLevels.emplace_back("Summer16_07Aug2017" + period +
+                              "_V18_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs_JERDown.txt");
                     }
                 }
             }
