@@ -199,7 +199,15 @@ def plot_balance(
     data_y, data_yerr = np.zeros(num_bins + 1), np.zeros(num_bins + 1)
     
     for bin in range(1, num_bins + 2):
-        data_x[bin - 1] = prof_pt_data.GetBinContent(bin)
+        if prof_pt_data.GetBinEntries(bin) > 0:
+            data_x[bin - 1] = prof_pt_data.GetBinContent(bin)
+        else:
+            # This is an empty bin.  Its y value is also zero, so the
+            # point will fall outside of the plotted range, but the x
+            # coordinate must not be zero as this would a problem in
+            # plotting with the log scale.
+            data_x[bin - 1] = prof_pt_data.GetBinCenter(bin)
+        
         data_y[bin - 1] = prof_bal_data.GetBinContent(bin)
         data_yerr[bin - 1] = prof_bal_data.GetBinError(bin)
     
@@ -217,9 +225,10 @@ def plot_balance(
         sim_err_band_x[bin - 1] = prof_pt_data.GetBinLowEdge(bin)
     
     # Since the last bin is the overflow bin, there is no natural upper
-    # boundary for the error band.  Set ptMax = <pt> + |ptMin - <pt>|.
-    sim_err_band_x[-1] = 2 * prof_pt_data.GetBinContent(num_bins + 1) - \
-        prof_pt_data.GetBinLowEdge(num_bins + 1)
+    # boundary for the error band.  Set ptMax = <pt> + |ptMin - <pt>|,
+    # where <pt> is taken from simulation.
+    sim_err_band_x[-1] = 2 * prof_pt_sim.GetBinContent(num_bins + 1) - \
+        prof_pt_sim.GetBinLowEdge(num_bins + 1)
     
     sim_err_band_y_low = np.append(sim_y - sim_yerr, sim_y[-1] - sim_yerr[-1])
     sim_err_band_y_high = np.append(sim_y + sim_yerr, sim_y[-1] + sim_yerr[-1])
