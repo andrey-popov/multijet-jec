@@ -113,8 +113,10 @@ bool BalanceVars::ProcessEvent()
     
     TLorentzVector p4Recoil;
     
-    for (auto const &j: jets)
+    for (unsigned i = 1; i < jets.size(); ++i)
     {
+        auto const &j = jets[i];
+        
         if (j.Pt() < minPtRecoil)
             break;
         
