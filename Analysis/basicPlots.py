@@ -24,6 +24,8 @@ from matplotlib import pyplot as plt
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
+from utils import mpl_style
+
 
 def make_hists(binning_def):
     """Create a pair of 1D histograms from given binning."""
@@ -51,7 +53,8 @@ def make_profiles(binning):
 
 
 def plot_distribution(
-    hist_data, hist_sim, x_label='', y_label='Events', era_label='', height_ratio=3.
+    hist_data, hist_sim, x_label='', y_label='Events', era_label='', height_ratio=3.,
+    mark_underflow=False
 ):
     """Plot distributions in data and simulation.
     
@@ -105,6 +108,7 @@ def plot_distribution(
     
     # Plot the histograms
     fig = plt.figure()
+    fig.patch.set_alpha(0.)
     gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[height_ratio, 1])
     axes_upper = fig.add_subplot(gs[0, 0])
     axes_lower = fig.add_subplot(gs[1, 0])
@@ -144,11 +148,17 @@ def plot_distribution(
     axes_upper.get_yaxis().set_label_coords(-0.1, 0.5)
     axes_lower.get_yaxis().set_label_coords(-0.1, 0.5)
     
-    # Mark the overflow bin
+    # Mark the under- and overflow bins
     axes_upper.text(
         0.995, 0.5, 'Overflow', transform=axes_upper.transAxes,
         ha='right', va='center', rotation='vertical', size='xx-small', color='gray'
     )
+    
+    if mark_underflow:
+        axes_upper.text(
+            0.005, 0.5, 'Underflow', transform=axes_upper.transAxes,
+            ha='left', va='center', rotation='vertical', size='xx-small', color='gray'
+        )
     
     
     # Build legend ensuring desired ordering of the entries
@@ -170,7 +180,8 @@ def plot_distribution(
 
 def plot_balance(
     prof_pt_data, prof_pt_sim, prof_bal_data, prof_bal_sim,
-    x_label=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', y_label='', era_label='', height_ratio=2.
+    x_label=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', y_label='', era_label='', height_ratio=2.,
+    balance_range=(0.9, 1.)
 ):
     """Plot mean balance in data and simulation.
     
@@ -222,6 +233,7 @@ def plot_balance(
     
     # Plot the graphs
     fig = plt.figure()
+    fig.patch.set_alpha(0.)
     gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[height_ratio, 1])
     axes_upper = fig.add_subplot(gs[0, 0])
     axes_lower = fig.add_subplot(gs[1, 0])
@@ -261,7 +273,7 @@ def plot_balance(
     
     axes_upper.set_xlim(sim_err_band_x[0], sim_err_band_x[-1])
     axes_lower.set_xlim(sim_err_band_x[0], sim_err_band_x[-1])
-    axes_upper.set_ylim(0.9, 1.)
+    axes_upper.set_ylim(*balance_range)
     axes_lower.set_ylim(-0.02, 0.028)
     axes_lower.grid(axis='y', color='black', ls='dotted')
     
@@ -333,20 +345,8 @@ if __name__ == '__main__':
         args.era = os.path.splitext(os.path.basename(args.data))[0]
     
     
-    # Customization
     ROOT.gROOT.SetBatch(True)
-    
-    mpl.rc('figure', figsize=(6.0, 4.8))
-    
-    mpl.rc('xtick', top=True, direction='in')
-    mpl.rc('ytick', right=True, direction='in')
-    mpl.rc(['xtick.minor', 'ytick.minor'], visible=True)
-    
-    mpl.rc('lines', linewidth=1., markersize=2.)
-    mpl.rc('errorbar', capsize=1.)
-    
-    mpl.rc('axes.formatter', limits=[-3, 4], use_mathtext=True)
-    mpl.rc('axes', labelsize='large')
+    plt.style.use(mpl_style)
     
     
     with open(args.config) as f:
@@ -379,10 +379,6 @@ if __name__ == '__main__':
         tree_sim = sim_file.Get(trigger + '/BalanceVars')
         tree_weight = weight_file.Get(trigger + '/Weights')
         tree_sim.AddFriend(tree_weight)
-        
-        for tree in [tree_data, tree_sim]:
-            tree.SetBranchStatus('A', False)
-            tree.SetBranchStatus('Alpha', False)
         
         tree_sim.SetBranchStatus('WeightDataset', False)
         
@@ -441,7 +437,7 @@ if __name__ == '__main__':
     
     fig, axes_upper, axes_lower = plot_distribution(
         hist_pt_recoil['data'], hist_pt_recoil['sim'],
-        x_label=r'$p_\mathrm{T}^\mathrm{recoil}$ [GeV]', era_label=era_label
+        x_label=r'$p_\mathrm{T}^\mathrm{recoil}$ [GeV]', era_label=era_label, mark_underflow=True
     )
     fig.savefig(os.path.join(args.fig_dir, 'PtRecoil.pdf'))
     plt.close(fig)
@@ -458,7 +454,7 @@ if __name__ == '__main__':
     fig, axes_upper, axes_lower = plot_balance(
         prof_pt_lead['data'], prof_pt_lead['sim'],
         prof_pt_bal['data'], prof_pt_bal['sim'],
-        y_label=r'Mean $p_\mathrm{T}$ balance', era_label=era_label
+        y_label=r'Mean $p_\mathrm{T}$ balance', era_label=era_label, balance_range=(0.85, 1.)
     )
     fig.savefig(os.path.join(args.fig_dir, 'PtBal.pdf'))
     plt.close(fig)

@@ -91,11 +91,11 @@ class Hist1D:
 
 
 mpl_style = {
-    'figure.figsize': (6.4, 4.8),
+    'figure.figsize': (6.0, 4.8),
     
     'axes.labelsize':              'large',
     'axes.formatter.use_mathtext': True,
-    'axes.formatter.limits':       (-2, 4),
+    'axes.formatter.limits':       (-3, 4),
     
     'xtick.top':          True,
     'xtick.direction':    'in',

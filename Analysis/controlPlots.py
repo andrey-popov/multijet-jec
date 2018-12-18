@@ -18,6 +18,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 
 from basicPlots import plot_distribution
+from utils import mpl_style
 
 
 if __name__ == '__main__':
@@ -55,20 +56,8 @@ if __name__ == '__main__':
         args.era = os.path.splitext(os.path.basename(args.data))[0]
     
     
-    # Customization
     ROOT.gROOT.SetBatch(True)
-    
-    mpl.rc('figure', figsize=(6.0, 4.8))
-    
-    mpl.rc('xtick', top=True, direction='in')
-    mpl.rc('ytick', right=True, direction='in')
-    mpl.rc(['xtick.minor', 'ytick.minor'], visible=True)
-    
-    mpl.rc('lines', linewidth=1., markersize=2.)
-    mpl.rc('errorbar', capsize=1.)
-    
-    mpl.rc('axes.formatter', limits=[-3, 4], use_mathtext=True)
-    mpl.rc('axes', labelsize='large')
+    plt.style.use(mpl_style)
     
     
     with open(args.config) as f:
@@ -157,7 +146,7 @@ if __name__ == '__main__':
     
     
     # Plot distributions of balance observables
-    for hist_bal, label, xLabel in [
+    for hist_bal, label, x_label in [
         (hist_pt_bal, 'PtBal', r'$p_\mathrm{T}$ balance'),
         (hist_mpf, 'MPF', 'MPF')
     ]:
@@ -168,7 +157,7 @@ if __name__ == '__main__':
             hist_sim = hist_bal['sim'].ProjectionX(uuid4().hex, pt_bin, pt_bin, 'e')
             
             fig, axes_upper, axes_lower = plot_distribution(
-                hist_data, hist_sim, xLabel=xLabel, era_label=era_label
+                hist_data, hist_sim, x_label=x_label, era_label=era_label
             )
             
             if pt_bin == num_bins_pt + 1:
