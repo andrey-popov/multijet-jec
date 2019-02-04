@@ -53,7 +53,9 @@ class TriggerBins:
         Arguments:
             path:  Path to JSON file with the configuration.
             clip:  Upper boundaries of trigger bins in pt (without the
-                margin) will be clipped using this value.
+                margin) will be clipped using this value.  Trigger bins
+                whose pt range without the margin is fully above this
+                value, will be skipped.
         """
         
         # Attempt to resolve the path with respect to a standard
@@ -70,9 +72,12 @@ class TriggerBins:
                 path = try_path
         
         
-        # Read the configuration
+        # Read the configuration.  Skip trigger bins whose pt range
+        # (without the margin) is fully above the clip value.
         with open(path) as f:
             self.bins = list(TriggerBin(k, v) for k, v in json.load(f).items())
+
+        self.bins = list(filter(lambda bin: bin.pt_range[0] < clip, self.bins))
         
         
         # Make sure the bins are sorted in pt
