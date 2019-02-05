@@ -30,7 +30,7 @@ class Hist1D:
                     # Assume under- and overflows are missing
                     self.contents[1:-1] = contents
                 else:
-                    raise RuntimeError('Unexpected length of array of bin contentss.')
+                    raise RuntimeError('Unexpected length of array of bin contents.')
             
             if errors is not None:
                 if len(errors) == len(self.errors):
@@ -42,7 +42,7 @@ class Hist1D:
                     raise RuntimeError('Unexpected length of array of bin errors.')
                 
                 if contents is not None and len(errors) != len(contents):
-                    raise RuntimeError('Inconsistent arrays of bin contentss and errors.')
+                    raise RuntimeError('Inconsistent arrays of bin contents and errors.')
             
             elif contents is not None:
                 self.errors = np.sqrt(self.contents)
@@ -95,7 +95,7 @@ mpl_style = {
     
     'axes.labelsize':              'large',
     'axes.formatter.use_mathtext': True,
-    'axes.formatter.limits':       (-3, 4),
+    'axes.formatter.limits':       (-2, 4),
     
     'xtick.top':          True,
     'xtick.direction':    'in',
