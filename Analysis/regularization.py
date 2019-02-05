@@ -1,4 +1,5 @@
 import itertools
+import math
 import os
 from uuid import uuid4
 
@@ -11,7 +12,130 @@ from matplotlib import pyplot as plt
 
 import ROOT
 
+from triggerbins import TriggerBins
 from utils import Hist1D, mpl_style
+
+
+class SimHistBuilder:
+    """A class to construct profiles vs tau1 in simulation.
+    
+    It takes care of iterating over trigger bins.  All trigger bins are
+    merged together (while eliminating the overlap) when the profiles
+    are filled.
+    """
+
+    def __init__(self, trigger_bins, max_pt=math.inf):
+        """Initialize from a TriggerBins object.
+
+        Arguments:
+            trigger_bins:  TriggerBins object.
+            max_pt:  Trigger bins whose pt range (without the margin)
+                lies fully above this value, are skipped.
+        """
+
+        self.trigger_bins = TriggerBins.from_bins(
+            filter(lambda b: b.pt_range[0] < max_pt, trigger_bins.bins)
+        )
+        self.pt_binning = None
+
+
+    def construct_binning(self, max_pt, num_bins):
+        """Construct logarithmic binning in pt of the leading jet.
+
+        Arguments:
+            max_pt:  Cut-off for pt of the leading jet.
+            num_bins:  Number of bins in pt of the leading jet.
+
+        Return value:
+            NumPy array representing the constructed binning.  It is
+            also saved as self.pt_binning.
+        """
+        
+        self.pt_binning = np.geomspace(
+            self.trigger_bins[0].pt_range_margined[0], max_pt, num=num_bins + 1
+        )
+        return self.pt_binning
+
+
+    def fill(self, sim_path, weight_path, variables):
+        """Fill profiles from a simulation file.
+
+        Construct profiles of given variables versus pt of the leading
+        jet.  Use binning defined in self.pt_binning.
+
+        Arguments:
+            sim_path, weight_path:  Paths to ROOT files with balance
+                observables for simulation and event weights.
+            variables:  An iterable with a list of variables whose
+                profiles are to be filled.  Each variable must be
+                represented by a single branch of the input tree.
+
+        Return value:
+            Dictionary that maps names of the variables into their
+            profiles represented by utils.Hist1D.
+        """
+        
+        if self.pt_binning is None:
+            raise RuntimeError('Binning is not defined.')
+
+        # All trigger bins will be processed together.  Find pt ranges
+        # for each bin that eliminate the overlap.  This means including
+        # the margin only for the first and the last bins.
+        trigger_pt_ranges = {}
+        
+        b = self.trigger_bins[0]
+        trigger_pt_ranges[b.name] = (b.pt_range_margined[0], b.pt_range[1])
+        
+        b = self.trigger_bins[-1]
+        trigger_pt_ranges[b.name] = (b.pt_range[0], b.pt_range_margined[1])
+        
+        for b in self.trigger_bins[1:-1]:
+            trigger_pt_ranges[b.name] = b.pt_range
+        
+        
+        # Construct and fill profiles for all requested variables
+        profiles = {
+            variable: ROOT.TProfile(
+                uuid4().hex, '', len(self.pt_binning) - 1, self.pt_binning
+            )
+            for variable in variables
+        }
+        
+        for profile in profiles.values(): 
+            profile.SetDirectory(ROOT.gROOT)
+        
+
+        sim_file = ROOT.TFile(sim_path)
+        weight_file = ROOT.TFile(weight_path)
+        ROOT.gROOT.cd()
+        
+        for trigger_name in trigger_pt_ranges:
+            tree = sim_file.Get(trigger_name + '/BalanceVars')
+            tree.AddFriend(weight_file.Get(trigger_name + '/Weights'))
+            tree.SetBranchStatus('*', False)
+            
+            for branch in itertools.chain(['TotalWeight'], variables):
+                tree.SetBranchStatus(branch, True)
+            
+            weight_expression = \
+                'TotalWeight[0] * (PtJ1 > {} && PtJ1 < {})'.format(
+                    *trigger_pt_ranges[trigger_name]
+                )
+            
+            for variable in variables:
+                tree.Draw(
+                    '{} : PtJ1 >>+ {}'.format(
+                        variable, profiles[variable].GetName()
+                    ),
+                    weight_expression, 'goff'
+                )
+        
+        
+        # Convert all profiles into a NumPy representation
+        for variable in variables:
+            profiles[variable] = Hist1D(profiles[variable])
+
+        return profiles
 
 
 class SplineSimFitter:
@@ -28,7 +152,10 @@ class SplineSimFitter:
     every trigger bin.
     """
     
-    def __init__(self, sim_path, weight_path, trigger_bins, diagnostic_plots_dir=None, era=None):
+    def __init__(
+        self, sim_path, weight_path, trigger_bins,
+        diagnostic_plots_dir=None, era=None
+    ):
         """Initialize from paths to input files and trigger bins.
         
         Arguments:
@@ -41,8 +168,8 @@ class SplineSimFitter:
             era:  Era label for diagnostic plots.
         """
         
-        self.sim_file = ROOT.TFile(sim_path)
-        self.weight_file = ROOT.TFile(weight_path)
+        self.sim_path = sim_path
+        self.weight_path = weight_path
         self.trigger_bins = trigger_bins
         
         self.diagnostic_plots_dir = diagnostic_plots_dir
@@ -74,108 +201,45 @@ class SplineSimFitter:
         """
         
         # The fit will be done for all trigger bins simultaneously.
-        # Find pt ranges for each bin that eliminate the overlap.  This
-        # means including the margin only for the first and the last
-        # bins.  In addition, respect the upper cut on pt.
-        trigger_pt_ranges = {}
-        last_bin_index = len(self.trigger_bins) - 1
-        
-        while self.trigger_bins[last_bin_index].pt_range[0] > max_pt:
-            last_bin_index -= 1
-        
-        bin = self.trigger_bins[0]
-        trigger_pt_ranges[bin.name] = (bin.pt_range_margined[0], bin.pt_range[1])
-        
-        bin = self.trigger_bins[last_bin_index]
-        trigger_pt_ranges[bin.name] = (bin.pt_range[0], min(bin.pt_range_margined[1], max_pt))
-        
-        for bin in self.trigger_bins[1:last_bin_index]:
-            trigger_pt_ranges[bin.name] = bin.pt_range
-        
-        
-        # Construct and fill profiles of pt and all requested variables
-        pt_binning = np.geomspace(
-            self.trigger_bins[0].pt_range_margined[0], max_pt, num=num_bins + 1
+        # Construct required profiles.
+        hist_builder = SimHistBuilder(self.trigger_bins)
+        hist_builder.construct_binning(max_pt, num_bins)
+        profiles = hist_builder.fill(
+            self.sim_path, self.weight_path, ['PtJ1'] + variables
         )
-        profile_pt = ROOT.TProfile(uuid4().hex, '', num_bins, pt_binning)
-        profiles_bal = {variable: profile_pt.Clone(uuid4().hex) for variable in variables}
-        
-        for profile in itertools.chain([profile_pt], profiles_bal.values()):
-            profile.SetDirectory(ROOT.gROOT)
-        
-        
-        ROOT.gROOT.cd()
-        
-        for trigger_name in trigger_pt_ranges:
-            tree = self.sim_file.Get(trigger_name + '/BalanceVars')
-            tree.AddFriend(self.weight_file.Get(trigger_name + '/Weights'))
-            tree.SetBranchStatus('*', False)
-            
-            for branch in itertools.chain(['PtJ1', 'TotalWeight'], variables):
-                tree.SetBranchStatus(branch, True)
-            
-            weight_expression = 'TotalWeight[0] * (PtJ1 > {} && PtJ1 < {})'.format(
-                *trigger_pt_ranges[trigger_name]
-            )
-            tree.Draw('PtJ1 : PtJ1 >>+' + profile_pt.GetName(), weight_expression, 'goff')
-            
-            for variable in variables:
-                tree.Draw(
-                    '{} : PtJ1 >>+ {}'.format(variable, profiles_bal[variable].GetName()),
-                    weight_expression, 'goff'
-                )
-        
-        
-        # Convert all profiles into a NumPy representation
-        profile_pt = Hist1D(profile_pt)
-        
-        for variable in variables:
-            profiles_bal[variable] = Hist1D(profiles_bal[variable])
         
         
         # Build a smoothing spline for each variable.  Currently the
         # same spline is used for all trigger bins.
         cur_fit_results = {}
         
-        for variable, profile_bal in profiles_bal.items():
+        for variable in variables:
             spline = UnivariateSpline(
-                np.log(profile_pt.contents[1:-1]), profile_bal.contents[1:-1],
-                w=1 / profile_bal.errors[1:-1]
+                np.log(profiles['PtJ1'].contents[1:-1]),
+                profiles[variable].contents[1:-1],
+                w=1 / profiles[variable].errors[1:-1]
             )
             cur_fit_results[variable] = {
-                trigger_name: spline for trigger_name in trigger_pt_ranges
+                trigger_name: spline
+                for trigger_name in hist_builder.trigger_bins.names
             }
         
         self.fit_results.update(cur_fit_results)
         
         
         if self.diagnostic_plots_dir:
-            for variable, profile_bal in profiles_bal.items():
+            for variable in variables:
                 self._plot_diagnostics(
-                    variable, profile_pt, profile_bal,
+                    variable, profiles['PtJ1'], profiles[variable],
                     next(iter(cur_fit_results[variable].values()))
                 )
         
         return cur_fit_results
     
     
-    @staticmethod
-    def spline_to_root(spline):
-        """Convert a SciPy spline into ROOT.TSpline3."""
-        
-        # Force the ROOT spline to pass through all knots and provide
-        # boundary conditions for second derivatives.
-        knots = spline.get_knots()
-        boundaries_der2 = spline.derivative(2)(knots[[0, -1]])
-        root_spline = ROOT.TSpline3(
-            '', knots, spline(knots), len(knots),
-            'b2 e2', boundaries_der2[0], boundaries_der2[-1]
-        )
-        
-        return root_spline
-    
-    
-    def _plot_diagnostics(self, variable, profile_pt, profile_bal, fit_spline):
+    def _plot_diagnostics(
+        self, variable, profile_pt, profile_bal, fit_spline
+    ):
         """Produce a diagnostic plot.
         
         The plot shows the input profile of the balance observable and
@@ -214,20 +278,28 @@ class SplineSimFitter:
                 yerr=profile_bal.errors[1:-1],
                 marker='o', color='black', lw=0., elinewidth=0.8
             )
-            pt_values = np.geomspace(profile_pt.binning[0], profile_pt.binning[-1], num=500)
+            pt_values = np.geomspace(
+                profile_pt.binning[0], profile_pt.binning[-1], num=500
+            )
             axes.plot(pt_values, fit_spline(np.log(pt_values)))
             
             axes.set_xscale('log')
             axes.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
-            axes.xaxis.set_minor_formatter(mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4)))
+            axes.xaxis.set_minor_formatter(
+                mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4))
+            )
             
             axes.set_xlabel('$\\tau_1$ [GeV]')
             axes.set_ylabel(ylabel)
             
             if self.era_label:
                 axes.text(
-                    1., 1.002, self.era_label, ha='right', va='bottom', transform=axes.transAxes
+                    1., 1.002, self.era_label,
+                    ha='right', va='bottom', transform=axes.transAxes
                 )
             
-            fig.savefig(os.path.join(self.diagnostic_plots_dir, variable + '.pdf'))
+            fig.savefig(os.path.join(
+                self.diagnostic_plots_dir, variable + '.pdf')
+            )
             plt.close(fig)
+

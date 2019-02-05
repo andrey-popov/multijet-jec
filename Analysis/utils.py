@@ -89,6 +89,28 @@ class Hist1D:
         return self.contents[index], self.errors[index]
 
 
+def spline_to_root(spline):
+    """Convert a SciPy spline into ROOT.TSpline3.
+    
+    Arguments:
+        spline:  SciPy one-dimensional spline such as
+            scipy.interpolate.UnivariateSpline.
+
+    Return value:
+        Equivalent ROOT.TSpline3.
+    """
+    
+    # Force the ROOT spline to pass through all knots and provide
+    # boundary conditions for second derivatives.
+    knots = spline.get_knots()
+    boundaries_der2 = spline.derivative(2)(knots[[0, -1]])
+    root_spline = ROOT.TSpline3(
+        '', knots, spline(knots), len(knots),
+        'b2 e2', boundaries_der2[0], boundaries_der2[-1]
+    )
+    
+    return root_spline
+
 
 mpl_style = {
     'figure.figsize': (6.0, 4.8),

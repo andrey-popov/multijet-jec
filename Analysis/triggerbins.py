@@ -15,6 +15,32 @@ class TriggerBin:
         self.filter_name = config['filter']
         self.pt_range = tuple(config['ptRange'])
         self.pt_range_margined = tuple(config['ptRangeMargined'])
+
+        # Sanity checks
+        for field in ['ptRange', 'ptRangeMargined']:
+            r = config[field]
+
+            if len(r) != 2:
+                raise RuntimeError(
+                    'Range "{}" for trigger "{}" consists of {} elements,'
+                    'while 2 are expected.'.format(field, trigger_name, len(r))
+                )
+
+            if r[0] >= r[1]:
+                raise RuntimeError(
+                    'Range "{}" for trigger "{}" is not ordered.'.format(
+                        field, trigger_name
+                    )
+                )
+
+            if (
+                self.pt_range[0] < self.pt_range_margined[0] or
+                self.pt_range[1] > self.pt_range_margined[1]
+            ):
+                raise RuntimeError(
+                    'In trigger "{}" range "ptRange" is not contained within '
+                    '"ptRangeMargined".'.format(trigger_name)
+                )
     
     
     def __getitem__(self, field_name):
@@ -43,65 +69,54 @@ class TriggerBins:
     file.
     """
     
-    def __init__(self, path, clip=math.inf):
-        """Initialize from a file path.
+    def __init__(self, arg, clip=math.inf, _from_bins=False):
+        """Initialize.
         
-        Read trigger bins configuration from the given path.  If the
-        file does not exist, try to resolve the path with respect to a
-        standard location.
+        Multiple modes are supported, but user is only expected to call
+        this method explicitly to initialize the object with a
+        configuration file.  If the file does not exist, try to resolve
+        the path with respect to a standard location.
         
         Arguments:
-            path:  Path to JSON file with the configuration.
+            arg:  Path to JSON file with the configuration.
             clip:  Upper boundaries of trigger bins in pt (without the
                 margin) will be clipped using this value.  Trigger bins
                 whose pt range without the margin is fully above this
                 value, will be skipped.
         """
         
-        # Attempt to resolve the path with respect to a standard
-        # location if it does not match any file
-        if not os.path.exists(path):
-            try_path = None
-            
-            if 'MULTIJET_JEC_INSTALL' in os.environ:
-                try_path = os.path.join(os.environ['MULTIJET_JEC_INSTALL'], 'config', path)
-            
-            if try_path is None or not os.path.exists(try_path):
-                raise RuntimeError('Failed to find file "{}".'.format(path))
-            else:
-                path = try_path
-        
-        
-        # Read the configuration.  Skip trigger bins whose pt range
-        # (without the margin) is fully above the clip value.
-        with open(path) as f:
-            self.bins = list(TriggerBin(k, v) for k, v in json.load(f).items())
+        if _from_bins:
+            # The only argument is an iterable with individual trigger
+            # bins
+            self.bins = list(arg)
+        else:
+            # The only argument is a path to the configuration file
+            self.bins = TriggerBins._parse_config(arg)
 
-        self.bins = list(filter(lambda bin: bin.pt_range[0] < clip, self.bins))
-        
+        # Apply the clipping in pt.  If there are bins that lie fully
+        # above the clipping value, drop them.
+        self.bins = list(filter(lambda b: b.pt_range[0] < clip, self.bins))
+
+        for b in self.bins:
+            if b.pt_range[1] > clip:
+                b.pt_range = (b.pt_range[0], clip)
         
         # Make sure the bins are sorted in pt
         self.bins.sort(key=lambda b: b.pt_range[0])
         
-        
-        # One of the trigger bins normally extends to very large pt (but
-        # the value is finite as infinities are not supported in other
-        # code that uses that file).  Clip it.
-        for bin in self.bins:
-            r = bin.pt_range
-            
-            if r[1] > clip:
-                r = (r[0], clip)
-                bin.pt_range = r
-            
-            if r[0] >= r[1]:
-                raise RuntimeError('Illegal pt range for trigger "{}": {}.'.format(
-                    trigger_name, r
-                ))
-        
-        
         self.names = [b.name for b in self.bins]
         self._lookup_by_name = {b.name: b for b in self.bins}
+
+
+    @classmethod
+    def from_bins(cls, trigger_bins):
+        """Construct from individual trigger bins.
+        
+        Arguments:
+            trigger_bins:  Iterable containing TriggerBin objects.
+        """
+        
+        return cls(trigger_bins, _from_bins=True)
     
     
     def __getitem__(self, index):
@@ -151,9 +166,8 @@ class TriggerBins:
                 return False
             else:
                 raise RuntimeError(
-                    'Following boundaries of trigger bins are not aligned with the binning: {}.'.format(
-                        mismatched_edges
-                    )
+                    'Following boundaries of trigger bins are not aligned '
+                    'with the binning: {}.'.format(mismatched_edges)
                 )
         else:
             return True
@@ -163,3 +177,37 @@ class TriggerBins:
         """Access trigger bin by trigger name."""
         
         return self._lookup_by_name[name]
+
+
+    @staticmethod
+    def _parse_config(path):
+        """Parse JSON configuration file and construct individual bins.
+
+        Arguments:
+            path:  Path to JSON file with the configuration.
+        
+        Return value:
+            List of TriggerBin objects.  The order is arbitrary.
+        """
+
+        # Attempt to resolve the path with respect to a standard
+        # location if it does not match any file
+        if not os.path.exists(path):
+            try_path = None
+            
+            if 'MULTIJET_JEC_INSTALL' in os.environ:
+                try_path = os.path.join(
+                    os.environ['MULTIJET_JEC_INSTALL'], 'config', path
+                )
+            
+            if try_path is None or not os.path.exists(try_path):
+                raise RuntimeError('Failed to find file "{}".'.format(path))
+            else:
+                path = try_path
+        
+        
+        with open(path) as f:
+            bins = list(TriggerBin(k, v) for k, v in json.load(f).items())
+
+        return bins
+

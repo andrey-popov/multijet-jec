@@ -28,6 +28,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 from regularization import SplineSimFitter
 from triggerbins import TriggerBins
+import utils
 
 
 if __name__ == '__main__':
@@ -170,7 +171,7 @@ if __name__ == '__main__':
         
         
         for variable in ['PtBal', 'MPF']:
-            root_spline = sim_fitter.spline_to_root(
+            root_spline = utils.spline_to_root(
                 sim_fitter.fit_results[variable][trigger_bin.name]
             )
             root_spline.Write('Sim' + variable)
