@@ -114,7 +114,7 @@ class SimHistBuilder:
             tree.AddFriend(weight_file.Get(trigger_name + '/Weights'))
             tree.SetBranchStatus('*', False)
             
-            for branch in itertools.chain(['TotalWeight'], variables):
+            for branch in itertools.chain(['PtJ1', 'TotalWeight'], variables):
                 tree.SetBranchStatus(branch, True)
             
             weight_expression = \
@@ -303,3 +303,225 @@ class SplineSimFitter:
             )
             plt.close(fig)
 
+
+
+class SimVariationFitter:
+    """Class to construct systematic variations in simulation.
+
+    Relative deviations in the mean values of the balance observables
+    as functions of the logarithm of pt of the leading jet are fitted
+    with splines.
+
+    In the current implementation all trigger bins are merged for the
+    construction of the spline, and the same spline is returned for
+    every trigger bin.
+    """
+
+    def __init__(
+        self, syst_config, trigger_bins,
+        variables, max_pt=1700., num_bins=50,
+        diagnostic_plots_dir=None, era=None
+    ):
+        """Initialize from a configuration object.
+        
+        Arguments:
+            syst_config:  Configuration object of type
+                systconfig.SystConfigEra.
+            trigger_bins:  TriggerBins object.
+            variables:  Iterable with names of variables that represent
+                balance observables.
+            max_pt:  Cut-off in pt of the leading jet.  Events with
+                larger pt will not be used in the fit.
+            num_bins:  Number of bins in pt of the leading jet to be
+                used in internal histograms for the fit.
+            diagnostic_plots_dir:  Directory in which figures with
+                diagnostic plots are to be stored.  If None, the plots
+                will not be produced.
+            era:  Era label for diagnostic plots.
+        """
+        
+        self.syst_config = syst_config
+
+        self.variables = list(variables)
+        self.max_pt = max_pt
+        self.num_bins = num_bins
+
+        self.era_label = era
+        self.diagnostic_plots_dir = diagnostic_plots_dir
+
+
+        # Fill nominal profiles, for all trigger bins simultaneously
+        self.hist_builder = SimHistBuilder(trigger_bins, max_pt=max_pt)
+        self.hist_builder.construct_binning(self.max_pt, self.num_bins)
+        profiles = self.hist_builder.fill(
+            self.syst_config.nominal.sim, self.syst_config.nominal.weights,
+            ['PtJ1'] + self.variables
+        )
+
+        self.mean_pt_values = profiles['PtJ1'].contents[1:-1]
+        self.nominal_profiles = {
+            variable: profiles[variable] for variable in self.variables
+        }
+
+
+    def fit(self, syst_label):
+        """Fit relative deviations for given uncertainty.
+        
+        Construct relative deviations in mean values of the balance
+        observables, in bins of pt of the leading jet.  Fit the up and
+        down deviations independently with smoothing splines, which
+        depend on the logarithm of the pt of the leading jet.  While
+        doing this, the statistical uncertainties in the relative
+        deviations are set according to the numerator, as if the nominal
+        histograms had no uncertainties.
+        
+        Arguments:
+            syst_label:  Label of one of the systematic uncertainties
+                defined in the configuration object provided at the
+                initialization.
+
+        Return value:
+            Embedded dictionaries with constucted SciPy splines.  A
+            specific spline can be accessed with
+                result[variable][trigger][direction]
+            where the direction of the variation is a string that takes
+            values 'up' and 'down'.
+        
+        In the current implementation the same spline is returned for
+        all trigger bins.
+        """
+
+        # Construct raw relative deviations
+        deviations = {variable: {} for variable in self.variables}
+
+        for direction in ['up', 'down']:
+            samples = self.syst_config.variations[syst_label][direction]
+
+            profiles = self.hist_builder.fill(
+                samples.sim, samples.weights, self.variables
+            )
+
+            for variable in self.variables:
+                # Construct relative deviation from the nominal.  Ignore
+                # under- and overflow bins, which will not be used.
+                nominal_values = self.nominal_profiles[variable].contents[1:-1]
+                deviation = profiles[variable]
+                
+                deviation.contents[1:-1] /= nominal_values
+                deviation.errors[1:-1] /= nominal_values
+                deviation.contents[1:-1] -= 1
+
+                deviations[variable][direction] = deviation
+
+
+        # Regularize the relative deviations using smoothing splines
+        smoothing_splines = {variable: {} for variable in self.variables}
+
+        for variable, direction in itertools.product(
+            self.variables, ['up', 'down']
+        ):
+            deviation = deviations[variable][direction]
+            spline = UnivariateSpline(
+                np.log(self.mean_pt_values), deviation.contents[1:-1],
+                w=1 / deviation.errors[1:-1]
+            )
+            smoothing_splines[variable][direction] = spline
+
+        if self.diagnostic_plots_dir:
+            for variable in self.variables:
+                self._plot_diagnostics(
+                    variable, syst_label,
+                    deviations[variable], smoothing_splines[variable]
+                )
+        
+        
+        cur_fit_results = {
+            variable: {
+                trigger: smoothing_splines[variable]
+                for trigger in self.hist_builder.trigger_bins.names
+            }
+            for variable in self.variables
+        }
+        
+        return cur_fit_results
+
+    
+    def _plot_diagnostics(
+        self, variable, syst_label, raw_deviations, fit_splines
+    ):
+        """Produce a diagnostic plot.
+        
+        The plots shows the input relative deviations in the profile of
+        the balance observable and the constructed smoothing splines.
+        
+        Arguments:
+            variable:  Name of variable representing balance observable.
+            raw_deviations:  Dictionaries with Hist1D that represent raw
+                deviations from the nominal <B>.
+            fit_splines:  Fitted splines for the deviations.
+        
+        Return value:
+            None.
+        """
+        
+        try:
+            os.makedirs(self.diagnostic_plots_dir)
+        except FileExistsError:
+            pass
+        
+        var_template = r'$\langle B_\mathrm{{{}}}^\mathrm{{Sim}}\rangle$'
+
+        if variable == 'PtBal':
+            var_label = var_template.format('jet')
+        elif variable == 'MPF':
+            var_label = var_template.format('MPF')
+        else:
+            var_label = 'mean ' + variable
+
+        ylabel = 'Rel. deviation in ' + var_label
+        
+        
+        with mpl.style.context(mpl_style):
+            fig = plt.figure()
+            fig.patch.set_alpha(0.)
+            axes = fig.add_subplot(111)
+            
+            for direction, colour in [('up', 'C1'), ('down', 'C0')]:
+                deviation = raw_deviations[direction]
+                axes.errorbar(
+                    self.mean_pt_values, deviation.contents[1:-1],
+                    yerr=deviation.errors[1:-1],
+                    marker='o', color=colour, lw=0., elinewidth=0.8,
+                    label='{}, {}'.format(syst_label, direction)
+                )
+                pt_values = np.geomspace(
+                    deviation.binning[0], deviation.binning[-1], num=500
+                )
+                axes.plot(
+                    pt_values, fit_splines[direction](np.log(pt_values)),
+                    color=colour
+                )
+            
+            axes.set_xscale('log')
+            axes.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
+            axes.xaxis.set_minor_formatter(
+                mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4))
+            )
+
+            axes.axhline(0., color='black', ls='dashed', lw=0.8)
+            
+            axes.set_xlabel('$\\tau_1$ [GeV]')
+            axes.set_ylabel(ylabel)
+            axes.legend(loc='upper right')
+
+            if self.era_label:
+                axes.text(
+                    1., 1.002, self.era_label,
+                    ha='right', va='bottom', transform=axes.transAxes
+                )
+            
+            fig.savefig(os.path.join(
+                self.diagnostic_plots_dir,
+                '{}_{}.pdf'.format(syst_label, variable))
+            )
+            plt.close(fig)
