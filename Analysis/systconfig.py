@@ -95,6 +95,36 @@ class SystConfigEra:
             }
 
 
+    def iter_group(self, group='all'):
+        """Return an iterator for uncertainties in a given group.
+
+        Construct an iterator over labels of systematic uncertainties in
+        a given group.
+
+        Arguments:
+            group:  Requested group of uncertainties.  Allowed values
+                are 'data', 'sim', or 'all' (default).
+
+        Return value:
+            Iterator over labels of selected uncertainties.
+        """
+
+        if group == 'data':
+            return filter(
+                lambda label: self.variations[label]['up'].data is not None,
+                self.variations
+            )
+        elif group == 'sim':
+            return filter(
+                lambda label: self.variations[label]['up'].sim is not None,
+                self.variations
+            )
+        elif group == 'all':
+            return iter(self.variations)
+        else:
+            raise RuntimeError('Unknown group "{}".'.format(group))
+
+
 
 class SystConfig:
     """Configuration for systematic variations in multiple eras.

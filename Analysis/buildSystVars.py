@@ -15,7 +15,7 @@ import math
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-from regularization import SimVariationFitter
+from regularization import DataVariationFitter, SimVariationFitter
 from systconfig import SystConfig
 from triggerbins import TriggerBins
 import utils
@@ -56,6 +56,8 @@ if __name__ == '__main__':
     else:
         syst_config = SystConfig(args.config)
 
+    syst_config = syst_config[args.era]  # Only keep one era
+
     with open(args.binning) as f:
         binning = json.load(f)
         binning.sort()
@@ -91,13 +93,35 @@ if __name__ == '__main__':
     variables = ['PtBal', 'MPF']
     prevent_garbage_collection = []
 
+
+    # Construct smoothed relative deviations in data
+    data_fitter = DataVariationFitter(
+        syst_config, trigger_bins, variables, binning,
+        era=args.era, diagnostic_plots_dir=args.plots + '/data_syst'
+    )
+
+    for syst_label in syst_config.iter_group('data'):
+        fit_results = data_fitter.fit(syst_label)
+        
+        for variable, direction in itertools.product(
+            variables, ['up', 'down']
+        ):
+            hist = fit_results[variable][direction].to_root(
+                'RelVar_{}_{}{}'.format(
+                    variable, syst_label, direction.capitalize()
+                )
+            )
+            hist.SetDirectory(output_file)
+            prevent_garbage_collection.append(hist)
+
+
     # Construct smoothed relative variations in simulation
     sim_fitter = SimVariationFitter(
-        syst_config[args.era], trigger_bins, variables,
+        syst_config, trigger_bins, variables,
         era=args.era, diagnostic_plots_dir=args.plots + '/sim_syst'
     )
 
-    for syst_label in syst_config[args.era].variations:
+    for syst_label in syst_config.iter_group('sim'):
         fit_results = sim_fitter.fit(syst_label)
 
         for trigger_name in trigger_bins.names:

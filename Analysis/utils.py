@@ -1,3 +1,4 @@
+from uuid import uuid4
 import numpy as np
 import ROOT
 
@@ -18,6 +19,11 @@ class Hist1D:
                 
                 if binning is not None:
                     raise RuntimeError('Conflicting definitions of binning.')
+            else:
+                if binning is None:
+                    raise RuntimeError('Binning must be provided.')
+
+                self.binning = np.asarray(binning, dtype=np.float64)
             
             # With the binning specified, set bin contents and errors
             self.contents = np.zeros(len(self.binning) + 1, dtype=np.float64)
@@ -78,6 +84,32 @@ class Hist1D:
         """
         
         return len(self.binning) - 1
+
+
+    def to_root(self, name=None):
+        """Convert to a ROOT histogram.
+
+        Create a new ROOT.TH1D with the same content as self.  It is not
+        associtated with any ROOT directory.
+
+        Arguments:
+            name:  Name for the ROOT histogram.  If not given, use a
+                unique random name.
+
+        Return value:
+            Instance of ROOT.TH1D.
+        """
+
+        if not name:
+            name = uuid4().hex
+
+        hist = ROOT.TH1D(name, '', len(self.binning) - 1, self.binning)
+
+        for b in range(self.numbins + 2):
+            hist.SetBinContent(b, self.contents[b])
+            hist.SetBinError(b, self.errors[b])
+
+        return hist
     
     
     def __getitem__(self, index):
