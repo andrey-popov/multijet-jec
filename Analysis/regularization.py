@@ -262,9 +262,9 @@ class SplineSimFitter:
             pass
         
         if variable == 'PtBal':
-            ylabel = r'$\langle B_\mathrm{jet}\rangle$'
+            ylabel = r'$\langle B_\mathrm{jet}^\mathrm{Sim}\rangle$'
         elif variable == 'MPF':
-            ylabel = r'$\langle B_\mathrm{MPF}\rangle$'
+            ylabel = r'$\langle B_\mathrm{MPF}^\mathrm{Sim}\rangle$'
         else:
             ylabel = 'Mean ' + variable
         
@@ -272,31 +272,58 @@ class SplineSimFitter:
         with mpl.style.context(mpl_style):
             fig = plt.figure()
             fig.patch.set_alpha(0.)
-            axes = fig.add_subplot(111)
+            gs = mpl.gridspec.GridSpec(2, 1, hspace=0., height_ratios=[2, 1])
+            axes_upper = fig.add_subplot(gs[0, 0])
+            axes_lower = fig.add_subplot(gs[1, 0])
             
-            axes.errorbar(
-                profile_pt.contents[1:-1], profile_bal.contents[1:-1],
+            # Plot input points and the fitted spline in the upper panel
+            binning = profile_pt.binning
+            mean_pt_values = profile_pt.contents[1:-1]
+            axes_upper.errorbar(
+                mean_pt_values, profile_bal.contents[1:-1],
                 yerr=profile_bal.errors[1:-1],
                 marker='o', color='black', lw=0., elinewidth=0.8
             )
-            pt_values = np.geomspace(
-                profile_pt.binning[0], profile_pt.binning[-1], num=500
+            pt_values = np.geomspace(binning[0], binning[-1], num=500)
+            axes_upper.plot(pt_values, fit_spline(np.log(pt_values)))
+
+            # Plot residuals in the lower panel
+            smoothed_bal = fit_spline(np.log(mean_pt_values))
+            residuals = profile_bal.contents[1:-1] / smoothed_bal - 1
+            residuals_errors = profile_bal.errors[1:-1] / smoothed_bal
+            residuals *= 100         # Per cent
+            residuals_errors *= 100  #
+
+            axes_lower.errorbar(
+                mean_pt_values, residuals, yerr=residuals_errors,
+                marker='o', color='black', lw=0., elinewidth=0.8
             )
-            axes.plot(pt_values, fit_spline(np.log(pt_values)))
+
+
+            for axes in [axes_upper, axes_lower]:
+                axes.set_xlim(binning[0], binning[-1])
+                axes.set_xscale('log')
+
+            axes_lower.grid(axis='y', color='gray', ls='dotted')
             
-            axes.set_xscale('log')
-            axes.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
-            axes.xaxis.set_minor_formatter(
+            # Remove tick labels on the x axis of the upper axes and
+            # adjust tick labels on the lower axes
+            axes_upper.set_xticklabels(
+                [''] * len(axes_upper.get_xticklabels())
+            )
+            axes_lower.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
+            axes_lower.xaxis.set_minor_formatter(
                 mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4))
             )
             
-            axes.set_xlabel('$\\tau_1$ [GeV]')
-            axes.set_ylabel(ylabel)
+            axes_upper.set_ylabel(ylabel)
+            axes_lower.set_xlabel('$\\tau_1$ [GeV]')
+            axes_lower.set_ylabel('Rel. deviation [%]')
             
             if self.era_label:
-                axes.text(
+                axes_upper.text(
                     1., 1.002, self.era_label,
-                    ha='right', va='bottom', transform=axes.transAxes
+                    ha='right', va='bottom', transform=axes_upper.transAxes
                 )
             
             fig.savefig(os.path.join(
