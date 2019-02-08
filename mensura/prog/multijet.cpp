@@ -100,7 +100,8 @@ int main(int argc, char **argv)
       ("l3-res", "Enables L3 residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4")
       ("output", po::value<string>()->default_value("output"),
-        "Name for output directory");
+        "Name for output directory")
+      ("threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel");
     //^ This is some severe abuse of C++ syntax...
     
     po::positional_options_description positionalOptions;
@@ -462,7 +463,7 @@ int main(int argc, char **argv)
     
     
     // Process the datasets
-    manager.Process(16);
+    manager.Process(optionsMap["threads"].as<int>());
     
     std::cout << '\n';
     manager.PrintSummary();
