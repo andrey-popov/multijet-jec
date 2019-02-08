@@ -311,14 +311,15 @@ int main(int argc, char **argv)
                     if (systType == SystType::JER)
                     {
                         // Add closure-style L2Res corrections obtained with varied JER. Taken
-                        //from [1], "kFSR_Fit" versions.
-                        //[1] https://indico.cern.ch/event/759977/#33-closure-test-for-summer16_0
+                        //from [1], "kFSR_Fit" versions.  Use the variant obtained with the pt
+                        //balance because the variations for MPF are one-sided in some cases.
+                        //[1] https://indico.cern.ch/event/770859/#11-l2rec-closure-and-jer-updow
                         if (systDirection == SystService::VarDirection::Up)
                             jecLevels.emplace_back("Summer16_07Aug2017" + period +
-                              "_V18_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs_JERUp.txt");
+                              "_V18_pT_LOGLIN_L2Residual_pythia8_AK4PFchs_JERUp.txt");
                         else
                             jecLevels.emplace_back("Summer16_07Aug2017" + period +
-                              "_V18_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs_JERDown.txt");
+                              "_V18_pT_LOGLIN_L2Residual_pythia8_AK4PFchs_JERDown.txt");
                     }
                 }
             }
