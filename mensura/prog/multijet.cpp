@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     
     // Input datasets
     list<Dataset> datasets;
-    DatasetBuilder datasetBuilder("/gridgroup/cms/popov/Analyses/JetMET/"
+    DatasetBuilder datasetBuilder("/pnfs/iihe/cms/store/user/aapopov/storage/JERC/"
       "2017.10.19_Grid-campaign-07Aug17/Results/samples_v1.json");
     
     if (dataGroup == DatasetGroup::Data)
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
     }
     
     FileInPath::AddLocation(string(installPath) + "/config/");
-    FileInPath::AddLocation("/gridgroup/cms/popov/Analyses/JetMET/JERC/");
+    FileInPath::AddLocation("/user/aapopov/Analyses/JetMET/JERC/");
     
     
     // Construct the run manager
