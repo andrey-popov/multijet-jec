@@ -15,9 +15,10 @@ if it contains a loosely defined muon, electron, or photon.
 import random
 import string
 
+import FWCore.ParameterSet.Config as cms
+
 
 # Create a process
-import FWCore.ParameterSet.Config as cms
 process = cms.Process('Analysis')
 
 
@@ -28,8 +29,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 # Ask to print a summary in the log
 process.options = cms.untracked.PSet(
-    wantSummary = cms.untracked.bool(True),
-    allowUnscheduled = cms.untracked.bool(True)
+    wantSummary = cms.untracked.bool(True)
 )
 
 
@@ -45,6 +45,10 @@ options.register(
 options.register(
     'runOnData', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
     'Indicates whether the job processes data or simulation'
+)
+options.register(
+    'period', '2016', VarParsing.multiplicity.singleton,
+    VarParsing.varType.string, 'Data-taking period'
 )
 options.register(
     'isPromptReco', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
@@ -71,20 +75,34 @@ options.setDefault('outputFile', 'sample.root')
 options.parseArguments()
 
 
+# Check provided data-taking period
+if options.period not in ['2016', '2017']:
+    raise RuntimeError(
+        'Data-taking period "{}" is not supported.'.format(options.period)
+    )
+
 # Make shortcuts to access some of the configuration options easily
 runOnData = options.runOnData
 
 
 # Provide a default global tag if user has not given any.  Chosen
-# following recommendations of the JERC group [1].
-# [1] https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECDataMC?rev=119
-if len(options.globalTag) == 0:
-    if runOnData:
-        options.globalTag = '80X_dataRun2_Prompt_ICHEP16JEC_v0'
-    else:
-        options.globalTag = '80X_mcRun2_asymptotic_2016_miniAODv2_v1'
+# according to [1].
+# [1] https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVAnalysisSummaryTable?rev=10
+if not options.globalTag:
+    if options.period == '2016':
+        if runOnData:
+            options.globalTag = '94X_dataRun2_v10'
+        else:
+            options.globalTag = '94X_mcRun2_asymptotic_v3'
+    elif options.period == '2017':
+        if runOnData:
+            options.globalTag = '94X_dataRun2_v11'
+        else:
+            options.globalTag = '94X_mc2017_realistic_v17'
     
-    print 'WARNING: No global tag provided. Will use the default one (' + options.globalTag + ')'
+    print 'WARNING: No global tag provided. Will use the default one: {}.'.format(
+        options.globalTag
+    )
 
 # Set the global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
@@ -99,13 +117,24 @@ if len(options.inputFiles) > 0:
     process.source.fileNames = cms.untracked.vstring(options.inputFiles)
 else:
     # Default input files for testing
-    if runOnData:
-        if options.isLegacy2016:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016H/JetHT/MINIAOD/07Aug17-v1/110000/00C26D2B-397D-E711-9D65-0CC47AD98CF0.root')
+    test_file = None
+
+    if options.period == '2016':
+        if runOnData:
+            # A file from era 2016H, which contains multiple certified
+            # runs, including 283885.
+            test_file = '/store/data/Run2016H/JetHT/MINIAOD/17Jul2018-v1/50000/F2DFE866-0E90-E811-B8FC-0025905C5430.root'
         else:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016G/JetHT/MINIAOD/03Feb2017-v1/100000/006E7AF2-AEEC-E611-A88D-7845C4FC3B00.root')
-    else:
-        process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/70000/000316AF-9FBE-E611-9761-0CC47A7C35F8.root')
+            test_file = '/store/mc/RunIISummer16MiniAODv3/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3-v2/110000/42BEEC72-02EA-E811-94ED-003048CB7DA2.root'
+    elif options.period == '2017':
+        if runOnData:
+            # A file from era 2017F, which contains lumi sections from
+            # multiple certified runs, including 305064.
+            test_file = '/store/data/Run2017F/JetHT/MINIAOD/31Mar2018-v1/80000/A4BA7F54-0137-E811-819B-B496910A9A2C.root'
+        else:
+            test_file = '/store/mc/RunIIFall17MiniAODv2/QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/48B9B41E-D197-E811-949E-A4BF0112BD6A.root'
+
+    process.source.fileNames = cms.untracked.vstring(test_file)
 
 # process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
@@ -139,19 +168,9 @@ process.load('Configuration.StandardSequences.MagneticField_cff')
 # Create the processing path.  It is wrapped in a manager that
 # simplifies working with multiple paths (and also provides the
 # interface expected by python tools in the PEC-tuples package).
-class PathManager:
-    
-    def __init__(self, *paths):
-        self.paths = []
-        for p in paths:
-            self.paths.append(p)
-    
-    def append(self, *modules):
-        for p in self.paths:
-            for m in modules:
-                p += m
-
 process.p = cms.Path()
+
+from Analysis.PECTuples.Utils_cff import PathManager
 paths = PathManager(process.p)
 
 
@@ -160,7 +179,8 @@ paths = PathManager(process.p)
 if not runOnData:
     process.eventCounter = cms.EDAnalyzer('EventCounter',
         generator = cms.InputTag('generator'),
-        saveAltLHEWeights = cms.bool(False)
+        saveAltLHEWeights = cms.bool(False),
+        puInfo = cms.InputTag('slimmedAddPileupInfo')
     )
     paths.append(process.eventCounter)
 
@@ -175,24 +195,29 @@ paths.append(process.goodOfflinePrimaryVertices)
 
 
 # Define and customize basic reconstructed objects
-from Analysis.Multijet.ObjectsDefinitions_cff import (define_photons, define_jets, define_METs)
+from Analysis.Multijet.ObjectsDefinitions_cff import (
+    setup_egamma_preconditions, define_jets, define_METs
+)
+process.analysisTask = cms.Task()
 
-phoQualityCuts, phoCutBasedIDMaps = define_photons(process)
-recorrectedJetsLabel, jetQualityCuts = \
-    define_jets(process, reapplyJEC=True, runOnData=runOnData)
-metTag = define_METs(process, runOnData=runOnData, legacy2016=options.isLegacy2016)
+setup_egamma_preconditions(process, process.analysisTask, options.period)
+recorrectedJetsLabel, jetQualityCuts = define_jets(
+    process, process.analysisTask, reapplyJEC=True, runOnData=runOnData
+)
+metTag = define_METs(
+    process, process.analysisTask, runOnData=runOnData,
+    legacy2016=options.isLegacy2016
+)
 
 process.analysisPatJets.minPt = 0
 process.analysisPatJets.preselection = ''
-
-process.analysisPatPhotons.cut = 'pt > 20. & abs(superCluster.eta) < 2.5'
 
 
 # Apply event filters recommended for analyses involving MET
 from Analysis.PECTuples.EventFilters_cff import apply_event_filters
 apply_event_filters(
-    process, paths, runOnData=runOnData, isPromptReco=options.isPromptReco,
-    processName='RECO' if runOnData and options.isLegacy2016 else 'PAT'
+    process, paths, options.period, runOnData=runOnData,
+    processName='RECO' if runOnData else 'PAT'
 )
 
 
@@ -205,13 +230,20 @@ process.looseMuons = cms.EDFilter('PATMuonSelector',
         '0.5 * pfIsolationR04.sumPUPt)) / pt < 0.25'
     )
 )
+
+if options.period == '2016':
+    electron_id = 'cutBasedElectronID-Summer16-80X-V1-veto'
+elif options.period == '2017':
+    electron_id = 'cutBasedElectronID-Fall17-94X-V2-veto'
+
 process.looseElectrons = cms.EDFilter('PATElectronSelector',
     src = cms.InputTag('slimmedElectrons'),
     cut = cms.string(
         'pt > 20. & abs(superCluster.eta) < 2.5 & ' \
-        'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")'
+        'electronID("{}") > 0.5'.format(electron_id)
     )
 )
+process.analysisTask.add(process.looseMuons, process.looseElectrons)
 
 process.vetoMuons = cms.EDFilter('PATCandViewCountFilter',
     src = cms.InputTag('looseMuons'),
@@ -225,9 +257,16 @@ paths.append(process.vetoMuons, process.vetoElectrons)
 
 
 # Apply photon veto
-process.vetoPhotons = cms.EDFilter('CandMapCountFilter',
-    src = cms.InputTag('analysisPatPhotons'),
-    acceptMap = cms.InputTag(phoCutBasedIDMaps[0]),
+process.loosePhotons = cms.EDFilter('PATPhotonSelector',
+    src = cms.InputTag('slimmedPhotons'),
+    cut = cms.string(
+        'pt > 20. & abs(superCluster.eta) < 2.5 & ' \
+        'photonID("cutBasedPhotonID-Fall17-94X-V2-loose") > 0.5'
+    )
+)
+process.analysisTask.add(process.loosePhotons)
+process.vetoPhotons = cms.EDFilter('PATCandViewCountFilter',
+    src = cms.InputTag('loosePhotons'),
     minNumber = cms.uint32(0), maxNumber = cms.uint32(0)
 )
 paths.append(process.vetoPhotons)
@@ -239,13 +278,16 @@ paths.append(process.vetoPhotons)
 triggerNames = [
     'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500'
 ]
+trigger_results_tag = cms.InputTag(
+    'TriggerResults', processName=options.triggerProcessName
+)
 
 if runOnData:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(triggerNames),
         filter = cms.bool(True),
         savePrescales = cms.bool(True),
-        triggerBits = cms.InputTag('TriggerResults', processName=options.triggerProcessName),
+        triggerBits = trigger_results_tag,
         hltPrescales = cms.InputTag('patTrigger'),
         l1tPrescales = cms.InputTag('patTrigger', 'l1min')
     )
@@ -254,7 +296,7 @@ else:
         triggers = cms.vstring(triggerNames),
         filter = cms.bool(True),
         savePrescales = cms.bool(False),
-        triggerBits = cms.InputTag('TriggerResults', processName=options.triggerProcessName)
+        triggerBits = trigger_results_tag
     )
 
 paths.append(process.pecTrigger)
@@ -262,7 +304,8 @@ paths.append(process.pecTrigger)
 
 # Save trigger objects that pass last filters in the single-jet triggers
 process.pecTriggerObjects = cms.EDAnalyzer('PECTriggerObjects',
-    triggerObjects = cms.InputTag('selectedPatTrigger'),
+    triggerResults = trigger_results_tag,
+    triggerObjects = cms.InputTag('slimmedPatTrigger'),
     filters = cms.vstring(
         'hltSinglePFJet140', 'hltSinglePFJet200', 'hltSinglePFJet260', 'hltSinglePFJet320',
         'hltSinglePFJet400', 'hltSinglePFJet450', 'hltSinglePFJet500'
@@ -279,6 +322,7 @@ process.pecJetMET = cms.EDAnalyzer('PECJetMET',
     runOnData = cms.bool(runOnData),
     jets = cms.InputTag('analysisPatJets'),
     jetSelection = jetQualityCuts,
+    jetIDVersion = cms.string(options.period),
     met = metTag
 )
 
@@ -317,6 +361,14 @@ if not runOnData and options.saveGenJets:
         met = metTag
     )
     paths.append(process.pecGenJetMET)
+
+
+# Associate with the paths the analysis-specific task and the task
+# filled by PAT tools automatically
+paths.associate(process.analysisTask)
+
+from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
+paths.associate(getPatAlgosToolsTask(process))
 
 
 # The output file for the analyzers
