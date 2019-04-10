@@ -180,7 +180,7 @@ paths = PathManager(process.p)
 if not runOnData:
     process.eventCounter = cms.EDAnalyzer('EventCounter',
         generator = cms.InputTag('generator'),
-        saveAltLHEWeights = cms.bool(False),
+        saveAltLHEWeights = cms.bool(True),
         puInfo = cms.InputTag('slimmedAddPileupInfo')
     )
     paths.append(process.eventCounter)
@@ -349,8 +349,9 @@ paths.append(process.pecEventID, process.basicJetMET, process.pecPileUp)
 if not runOnData:
     process.pecGenerator = cms.EDAnalyzer('PECGenerator',
         generator = cms.InputTag('generator'),
-        saveAltLHEWeights = cms.bool(False),
-        lheEventProduct = cms.InputTag('')
+        saveAltLHEWeights = cms.bool(True),
+        lheEventProduct = cms.InputTag('externalLHEProducer'),
+        savePSWeights = cms.string('main')
     )
     paths.append(process.pecGenerator)
     
