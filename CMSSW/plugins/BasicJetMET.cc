@@ -65,7 +65,7 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
     // Read the jet collection
     edm::Handle<edm::View<pat::Jet>> srcJets;
     event.getByToken(jetToken, srcJets);
-    
+
     
     // Loop through the collection and store relevant properties of jets
     storeJets->clear();
@@ -94,6 +94,10 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
         // Pileup ID
         //[1] https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID?rev=29#Information_for_13_TeV_data_anal
         storeJet.pileupDiscr = j.userFloat("pileupJetId:fullDiscriminant");
+
+        // Quark-gluon discriminator
+        // https://twiki.cern.ch/twiki/bin/view/CMS/QuarkGluonLikelihood
+        storeJet.quarkGluonDiscr = j.userFloat("QGTagger:qgLikelihood");
         
         
         if (not runOnData)
