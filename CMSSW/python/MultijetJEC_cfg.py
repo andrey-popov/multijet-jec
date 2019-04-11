@@ -13,6 +13,7 @@ if it contains a loosely defined muon, electron, or photon.
 [1] https://github.com/andrey-popov/PEC-tuples
 """
 
+from __future__ import print_function
 import random
 import string
 
@@ -40,11 +41,12 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing('analysis')
 
 options.register(
-    'globalTag', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
-    'Global tag to be used'
+    'globalTag', '', VarParsing.multiplicity.singleton,
+    VarParsing.varType.string, 'Global tag to be used'
 )
 options.register(
-    'runOnData', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
+    'runOnData', False, VarParsing.multiplicity.singleton,
+    VarParsing.varType.bool,
     'Indicates whether the job processes data or simulation'
 )
 options.register(
@@ -52,26 +54,15 @@ options.register(
     VarParsing.varType.string, 'Data-taking period'
 )
 options.register(
-    'isPromptReco', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'In case of data, distinguishes PromptReco and ReReco. Ignored for simulation'
-)
-options.register(
-    'isLegacy2016', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'Flags legacy ReReco fo 2016 data. Ignored for simulation'
-)
-options.register(
     'triggerProcessName', 'HLT', VarParsing.multiplicity.singleton,
-    VarParsing.varType.string, 'Name of the process that evaluated trigger decisions'
-)
-options.register(
-    'saveGenJets', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
-    'Save information about generator-level jets'
+    VarParsing.varType.string,
+    'Name of the process that evaluated trigger decisions'
 )
 
 # Override defaults for automatically defined options
 options.setDefault('maxEvents', 100)
 options.setType('outputFile', VarParsing.varType.string)
-options.setDefault('outputFile', 'sample.root')
+options.setDefault('outputFile', '')
 
 options.parseArguments()
 
@@ -83,7 +74,7 @@ if options.period not in ['2016', '2017']:
     )
 
 # Make shortcuts to access some of the configuration options easily
-runOnData = options.runOnData
+is_data = options.runOnData
 
 
 # Provide a default global tag if user has not given any.  Chosen
@@ -91,18 +82,20 @@ runOnData = options.runOnData
 # [1] https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVAnalysisSummaryTable?rev=10
 if not options.globalTag:
     if options.period == '2016':
-        if runOnData:
+        if is_data:
             options.globalTag = '94X_dataRun2_v10'
         else:
             options.globalTag = '94X_mcRun2_asymptotic_v3'
     elif options.period == '2017':
-        if runOnData:
+        if is_data:
             options.globalTag = '94X_dataRun2_v11'
         else:
             options.globalTag = '94X_mc2017_realistic_v17'
     
-    print 'WARNING: No global tag provided. Will use the default one: {}.'.format(
-        options.globalTag
+    print(
+        'No global tag provided. Will use the default one: "{}".'.format(
+            options.globalTag
+        )
     )
 
 # Set the global tag
@@ -121,14 +114,14 @@ else:
     test_file = None
 
     if options.period == '2016':
-        if runOnData:
+        if is_data:
             # A file from era 2016H, which contains multiple certified
             # runs, including 283885.
             test_file = '/store/data/Run2016H/JetHT/MINIAOD/17Jul2018-v1/50000/F2DFE866-0E90-E811-B8FC-0025905C5430.root'
         else:
             test_file = '/store/mc/RunIISummer16MiniAODv3/QCD_HT500to700_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3-v2/110000/42BEEC72-02EA-E811-94ED-003048CB7DA2.root'
     elif options.period == '2017':
-        if runOnData:
+        if is_data:
             # A file from era 2017F, which contains lumi sections from
             # multiple certified runs, including 305064.
             test_file = '/store/data/Run2017F/JetHT/MINIAOD/31Mar2018-v1/80000/A4BA7F54-0137-E811-819B-B496910A9A2C.root'
@@ -136,8 +129,6 @@ else:
             test_file = '/store/mc/RunIIFall17MiniAODv2/QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/48B9B41E-D197-E811-949E-A4BF0112BD6A.root'
 
     process.source.fileNames = cms.untracked.vstring(test_file)
-
-# process.source.fileNames = cms.untracked.vstring('/store/relval/...')
 
 # Set a specific event range here (useful for debugging)
 # process.source.eventsToProcess = cms.untracked.VEventRange('1:5')
@@ -148,7 +139,7 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEv
 
 # Set indices of alternative generator-level weights to be stored.
 # The vector is parsed with C++ class IndexIntervals.
-if not runOnData:
+if not is_data:
     # Alternative LHE weights for scale variations [1]
     # [1] https://github.com/andrey-popov/PEC-tuples/issues/86#issuecomment-481698177
     alt_lhe_weight_indices = cms.vint32(1, 8)
@@ -159,24 +150,21 @@ if not runOnData:
     alt_ps_weight_indices = cms.vint32(6, 9)
 
 
-# Information about geometry and magnetic field is needed to run DeepCSV
-# b-tagging.  Geometry is also needed to evaluate electron ID.
+# Information about geometry is also needed to evaluate egamma ID
 process.load('Configuration.Geometry.GeometryRecoDB_cff')
-process.load('Configuration.StandardSequences.MagneticField_cff')
 
 
 # Create the processing path.  It is wrapped in a manager that
 # simplifies working with multiple paths (and also provides the
-# interface expected by python tools in the PEC-tuples package).
-process.p = cms.Path()
-
+# interface expected by Python tools in the PEC-tuples package).
 from Analysis.PECTuples.Utils_cff import PathManager
+process.p = cms.Path()
 paths = PathManager(process.p)
 
 
 # Include an event counter before any selection is applied.  It is only
 # needed for simulation.
-if not runOnData:
+if not is_data:
     process.eventCounter = cms.EDAnalyzer('EventCounter',
         generator = cms.InputTag('generator'),
         saveAltLHEWeights = alt_lhe_weight_indices,
@@ -191,27 +179,22 @@ process.goodOfflinePrimaryVertices = cms.EDFilter('FirstVertexFilter',
     src = cms.InputTag('offlineSlimmedPrimaryVertices'),
     cut = cms.string('!isFake & ndof > 4. & abs(z) < 24. & position.rho < 2.')
 )
-
 paths.append(process.goodOfflinePrimaryVertices)
 
 
-# Define and customize basic reconstructed objects
+# Customization of physics objects
 process.analysisTask = cms.Task()
 from Analysis.Multijet.ObjectsDefinitions_cff import (
     setup_egamma_preconditions
 )
 setup_egamma_preconditions(process, process.analysisTask, options.period)
 
-# Only interested in raw CHS ptmiss, which does not need to be adjusted
-# in any way.  Simply read from from MiniAOD.
-met_tag = cms.InputTag('slimmedMETs')
-
 
 # Apply event filters recommended for analyses involving MET
 from Analysis.PECTuples.EventFilters_cff import apply_event_filters
 apply_event_filters(
-    process, paths, options.period, runOnData=runOnData,
-    processName='RECO' if runOnData else 'PAT'
+    process, paths, options.period, runOnData=is_data,
+    processName='RECO' if is_data else 'PAT'
 )
 
 
@@ -270,13 +253,14 @@ paths.append(process.vetoPhotons)
 # which was used in the re-HLT campaign with RunIISpring16MiniAODv2.
 # [1] /frozen/2016/25ns10e33/v2.1/HLT/V3
 triggerNames = [
-    'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450', 'PFJet500'
+    'PFJet140', 'PFJet200', 'PFJet260', 'PFJet320', 'PFJet400', 'PFJet450',
+    'PFJet500'
 ]
 trigger_results_tag = cms.InputTag(
     'TriggerResults', processName=options.triggerProcessName
 )
 
-if runOnData:
+if is_data:
     process.pecTrigger = cms.EDFilter('SlimTriggerResults',
         triggers = cms.vstring(triggerNames),
         filter = cms.bool(True),
@@ -297,9 +281,10 @@ paths.append(process.pecTrigger)
 
 
 # Save trigger objects that pass last filters in the single-jet triggers
-process.unpackedPatTrigger = cms.EDProducer('PATTriggerObjectStandAloneUnpacker',
+process.unpackedPatTrigger = cms.EDProducer(
+    'PATTriggerObjectStandAloneUnpacker',
     patTriggerObjectsStandAlone = cms.InputTag('slimmedPatTrigger'),
-    triggerResults = cms.InputTag('TriggerResults', processName=options.triggerProcessName),
+    triggerResults = trigger_results_tag,
     unpackFilterLabels = cms.bool(True)
 )
 process.analysisTask.add(process.unpackedPatTrigger)
@@ -308,11 +293,11 @@ process.pecTriggerObjects = cms.EDAnalyzer('PECTriggerObjects',
     triggerResults = trigger_results_tag,
     triggerObjects = cms.InputTag('unpackedPatTrigger'),
     filters = cms.vstring(
-        'hltSinglePFJet140', 'hltSinglePFJet200', 'hltSinglePFJet260', 'hltSinglePFJet320',
-        'hltSinglePFJet400', 'hltSinglePFJet450', 'hltSinglePFJet500'
+        'hltSinglePFJet140', 'hltSinglePFJet200', 'hltSinglePFJet260',
+        'hltSinglePFJet320', 'hltSinglePFJet400', 'hltSinglePFJet450',
+        'hltSinglePFJet500'
     )
 )
-
 paths.append(process.pecTriggerObjects)
 
 
@@ -320,16 +305,16 @@ paths.append(process.pecTriggerObjects)
 process.pecEventID = cms.EDAnalyzer('PECEventID')
 
 process.basicJetMET = cms.EDAnalyzer('BasicJetMET',
-    runOnData = cms.bool(runOnData),
+    runOnData = cms.bool(is_data),
     jets = cms.InputTag('slimmedJets'),
     jetIDVersion = cms.string(options.period),
-    met = met_tag
+    met = cms.InputTag('slimmedMETs')
 )
 
 process.pecPileUp = cms.EDAnalyzer('PECPileUp',
     primaryVertices = cms.InputTag('goodOfflinePrimaryVertices'),
     rho = cms.InputTag('fixedGridRhoFastjetAll'),
-    runOnData = cms.bool(runOnData),
+    runOnData = cms.bool(is_data),
     puInfo = cms.InputTag('slimmedAddPileupInfo'),
     saveMaxPtHat = cms.bool(True)
 )
@@ -338,7 +323,7 @@ paths.append(process.pecEventID, process.basicJetMET, process.pecPileUp)
 
 
 # Save global generator information
-if not runOnData:
+if not is_data:
     process.pecGenerator = cms.EDAnalyzer('PECGenerator',
         generator = cms.InputTag('generator'),
         saveAltLHEWeights = alt_lhe_weight_indices,
@@ -354,12 +339,12 @@ if not runOnData:
 
 
 # Save information on generator-level jets and MET
-if not runOnData and options.saveGenJets:
+if not is_data:
     process.pecGenJetMET = cms.EDAnalyzer('PECGenJetMET',
         jets = cms.InputTag('slimmedGenJets'),
         cut = cms.string(''),
         saveFlavourCounters = cms.bool(True),
-        met = met_tag
+        met = cms.InputTag('slimmedMETs')
     )
     paths.append(process.pecGenJetMET)
 
@@ -373,12 +358,19 @@ paths.associate(getPatAlgosToolsTask(process))
 
 
 # The output file for the analyzers
-postfix = '_' + string.join([random.choice(string.letters) for i in range(3)], '')
+if options.outputFile:
+    output_file_name = options.outputFile
 
-if options.outputFile.endswith('.root'):
-    outputBaseName = options.outputFile[:-5] 
+    if not output_file_name.endswith('.root'):
+        output_file_name += '.root'
 else:
-    outputBaseName = options.outputFile
+    output_file_name = 'multijet_{}_{}_{}.root'.format(
+        'data' if is_data else 'sim', options.period,
+        ''.join(random.choice(string.letters) for i in range(5))
+    )
+
+print('Output file: "{}".'.format(output_file_name))
 
 process.TFileService = cms.Service('TFileService',
-    fileName = cms.string(outputBaseName + postfix + '.root'))
+    fileName = cms.string(output_file_name))
+
