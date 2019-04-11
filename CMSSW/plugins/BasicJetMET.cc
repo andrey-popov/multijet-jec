@@ -80,10 +80,6 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
         storeJet.phiRaw = rawP4.phi();
         storeJet.massRaw = rawP4.mass();
         
-        storeJet.jecFactor = 1. / j.jecFactor("Uncorrected");
-        //^ Here jecFactor("Uncorrected") returns the factor to get raw momentum starting from the
-        //corrected one. Since in fact the raw momentum is stored, the factor is inverted.
-        
         storeJet.area = j.jetArea();
         
         
@@ -104,13 +100,11 @@ void BasicJetMET::analyze(edm::Event const &event, edm::EventSetup const &)
         {
             storeJet.flavourHadron = j.hadronFlavour();
             storeJet.flavourParton = j.partonFlavour();
-            storeJet.hasGenMatch = bool(j.userInt("hasGenMatch"));
         }
         else
         {
             storeJet.flavourHadron = 0;
             storeJet.flavourParton = 0;
-            storeJet.hasGenMatch = false;
         }
         
         

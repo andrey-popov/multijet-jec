@@ -8,6 +8,6 @@ package PEC-tuples.
 import FWCore.ParameterSet.Config as cms
 
 from Analysis.PECTuples.ObjectsDefinitions_cff import (
-    setup_egamma_preconditions, define_jets
+    setup_egamma_preconditions
 )
 

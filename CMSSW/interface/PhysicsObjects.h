@@ -14,9 +14,6 @@ struct Jet
     /// Raw four-momentum
     Float_t ptRaw, etaRaw, phiRaw, massRaw;
     
-    /// Value of nominal jet correction
-    Float_t jecFactor;
-    
     /// Jet area
     Float_t area;
     
@@ -38,9 +35,6 @@ struct Jet
     
     /// Jet flavours according to hadron- and parton-based definitions
     Char_t flavourHadron, flavourParton;
-    
-    /// Indicates whether there is a matching generator-level jet
-    Bool_t hasGenMatch;
 };
 
 

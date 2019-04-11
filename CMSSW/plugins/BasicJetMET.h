@@ -25,12 +25,8 @@
  * \class BasicJetMET
  * \brief Stores reconstructed jets and MET.
  * 
- * This plugin stores basic properties of jets (four-momenta, b-tagging discriminators, IDs, etc.)
- * and MET. Fields with generator-level information are not filled when processing data.
- * 
- * The input collection of jets must have been created by an instance of plugin JERCJetSelector
- * as the plugin reads some userData from it, such as matching to generator-level jets. Raw jet
- * momenta are stored.
+ * This plugin stores basic properties of jets (raw four-momenta, b-tagging discriminators, IDs,
+ * etc.) and MET. Fields with generator-level information are not filled when processing data.
  * 
  * Raw CHS missing pt is stored.
  */

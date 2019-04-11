@@ -159,20 +159,6 @@ if not runOnData:
     alt_ps_weight_indices = cms.vint32(6, 9)
 
 
-# Set up random-number service.  CRAB overwrites the seeds
-# automatically.
-process.RandomNumberGeneratorService = cms.Service('RandomNumberGeneratorService',
-    analysisPatJets = cms.PSet(
-        initialSeed = cms.untracked.uint32(372),
-        engineName = cms.untracked.string('TRandom3')
-    ),
-    countGoodJets = cms.PSet(
-        initialSeed = cms.untracked.uint32(3631),
-        engineName = cms.untracked.string('TRandom3')
-    )
-)
-
-
 # Information about geometry and magnetic field is needed to run DeepCSV
 # b-tagging.  Geometry is also needed to evaluate electron ID.
 process.load('Configuration.Geometry.GeometryRecoDB_cff')
@@ -212,17 +198,9 @@ paths.append(process.goodOfflinePrimaryVertices)
 # Define and customize basic reconstructed objects
 process.analysisTask = cms.Task()
 from Analysis.Multijet.ObjectsDefinitions_cff import (
-    setup_egamma_preconditions, define_jets
+    setup_egamma_preconditions
 )
 setup_egamma_preconditions(process, process.analysisTask, options.period)
-
-# All jets will be saved.  Apply the current calibration and add some
-# user data.
-define_jets(
-    process, process.analysisTask, reapplyJEC=True, runOnData=runOnData
-)
-process.analysisPatJets.minPt = 0
-process.analysisPatJets.preselection = ''
 
 # Only interested in raw CHS ptmiss, which does not need to be adjusted
 # in any way.  Simply read from from MiniAOD.
@@ -343,7 +321,7 @@ process.pecEventID = cms.EDAnalyzer('PECEventID')
 
 process.basicJetMET = cms.EDAnalyzer('BasicJetMET',
     runOnData = cms.bool(runOnData),
-    jets = cms.InputTag('analysisPatJets'),
+    jets = cms.InputTag('slimmedJets'),
     jetIDVersion = cms.string(options.period),
     met = met_tag
 )
