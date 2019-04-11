@@ -301,6 +301,28 @@ process.pecTriggerObjects = cms.EDAnalyzer('PECTriggerObjects',
 paths.append(process.pecTriggerObjects)
 
 
+# L1 ECAL pre-firing weights
+# https://twiki.cern.ch/twiki/bin/viewauth/CMS/L1ECALPrefiringWeightRecipe?rev=11
+if not is_data and options.period in ['2016', '2017']:
+    from PhysicsTools.PatUtils.l1ECALPrefiringWeightProducer_cfi import \
+        l1ECALPrefiringWeightProducer
+    process.prefiringWeight = l1ECALPrefiringWeightProducer.clone(
+        DataEra = '2016BtoH' if options.period == '2016' else '2017BtoF',
+        SkipWarnings = False
+    )
+    process.eventWeights = cms.EDAnalyzer('EventWeights',
+        sources = cms.VInputTag(
+            'prefiringWeight:nonPrefiringProb',
+            'prefiringWeight:nonPrefiringProbUp',
+            'prefiringWeight:nonPrefiringProbDown'
+        ),
+        storeNames = cms.vstring(
+            'prefiring_nominal', 'prefiring_up', 'prefiring_down'
+        )
+    )
+    paths.append(process.prefiringWeight, process.eventWeights)
+
+
 # Save event ID and relevant objects
 process.pecEventID = cms.EDAnalyzer('PECEventID')
 
