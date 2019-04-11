@@ -202,7 +202,7 @@ apply_event_filters(
 process.looseMuons = cms.EDFilter('PATMuonSelector',
     src = cms.InputTag('slimmedMuons'),
     cut = cms.string(
-        'pt > 10. & abs(eta) < 2.4 & isLooseMuon & (pfIsolationR04.sumChargedHadronPt + ' \
+        'pt > 10. & isLooseMuon & (pfIsolationR04.sumChargedHadronPt + ' \
         'max(0., pfIsolationR04.sumNeutralHadronEt + pfIsolationR04.sumPhotonEt - ' \
         '0.5 * pfIsolationR04.sumPUPt)) / pt < 0.25'
     )
@@ -216,7 +216,7 @@ elif options.period == '2017':
 process.looseElectrons = cms.EDFilter('PATElectronSelector',
     src = cms.InputTag('slimmedElectrons'),
     cut = cms.string(
-        'pt > 20. & abs(superCluster.eta) < 2.5 & ' \
+        'pt > 10. & ' \
         'electronID("{}") > 0.5'.format(electron_id)
     )
 )
@@ -237,7 +237,7 @@ paths.append(process.vetoMuons, process.vetoElectrons)
 process.loosePhotons = cms.EDFilter('PATPhotonSelector',
     src = cms.InputTag('slimmedPhotons'),
     cut = cms.string(
-        'pt > 20. & abs(superCluster.eta) < 2.5 & ' \
+        'pt > 10. & ' \
         'photonID("cutBasedPhotonID-Fall17-94X-V2-loose") > 0.5'
     )
 )
