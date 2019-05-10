@@ -19,7 +19,7 @@ It is recommended to use [LCG_95apython3](http://lcginfo.cern.ch/release/95apyth
 . /cvmfs/sft.cern.ch/lcg/views/setupViews.sh LCG_95apython3 x86_64-slc6-gcc8-opt
 ```
 
-Build mensura as explained in [its README]((https://github.com/andrey-popov/mensura)). Then, in the same environment, navigate into subdirectory `mensura` and execute
+Build mensura as explained in [its README]((https://github.com/andrey-popov/mensura)). Then, in the same environment, navigate into subdirectory `events` and execute
 
 ```sh
 . ./env.sh
