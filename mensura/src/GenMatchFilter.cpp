@@ -1,7 +1,7 @@
 #include <GenMatchFilter.hpp>
 
-#include <mensura/core/GenJetMETReader.hpp>
-#include <mensura/core/JetMETReader.hpp>
+#include <mensura/GenJetMETReader.hpp>
+#include <mensura/JetMETReader.hpp>
 
 #include <TVector2.h>
 

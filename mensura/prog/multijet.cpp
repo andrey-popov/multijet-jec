@@ -14,16 +14,15 @@
 #include <PileUpVars.hpp>
 #include <RunFilter.hpp>
 
-#include <mensura/core/Dataset.hpp>
-#include <mensura/core/FileInPath.hpp>
-#include <mensura/core/RunManager.hpp>
-#include <mensura/core/SystService.hpp>
-
-#include <mensura/extensions/DatasetBuilder.hpp>
-#include <mensura/extensions/JetCorrectorService.hpp>
-#include <mensura/extensions/JetFilter.hpp>
-#include <mensura/extensions/PileUpWeight.hpp>
-#include <mensura/extensions/TFileService.hpp>
+#include <mensura/Dataset.hpp>
+#include <mensura/DatasetBuilder.hpp>
+#include <mensura/FileInPath.hpp>
+#include <mensura/JetCorrectorService.hpp>
+#include <mensura/JetFilter.hpp>
+#include <mensura/PileUpWeight.hpp>
+#include <mensura/RunManager.hpp>
+#include <mensura/SystService.hpp>
+#include <mensura/TFileService.hpp>
 
 #include <mensura/PECReader/PECGenJetMETReader.hpp>
 #include <mensura/PECReader/PECGenParticleReader.hpp>

@@ -20,7 +20,7 @@
  * the input file a string "_weights{postfix}" with an optional {postfix} given by the user.
  */
 
-#include <mensura/core/FileInPath.hpp>
+#include <mensura/FileInPath.hpp>
 #include <mensura/external/JsonCpp/json.hpp>
 
 #include <TFile.h>

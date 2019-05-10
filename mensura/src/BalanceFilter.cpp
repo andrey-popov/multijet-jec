@@ -2,8 +2,8 @@
 
 #include <BalanceCalc.hpp>
 
-#include <mensura/core/JetMETReader.hpp>
-#include <mensura/core/Processor.hpp>
+#include <mensura/JetMETReader.hpp>
+#include <mensura/Processor.hpp>
 
 #include <cmath>
 

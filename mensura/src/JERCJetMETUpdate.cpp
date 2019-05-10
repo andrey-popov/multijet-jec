@@ -1,8 +1,8 @@
 #include <JERCJetMETUpdate.hpp>
 
-#include <mensura/core/EventIDReader.hpp>
-#include <mensura/core/PileUpReader.hpp>
-#include <mensura/core/Processor.hpp>
+#include <mensura/EventIDReader.hpp>
+#include <mensura/PileUpReader.hpp>
+#include <mensura/Processor.hpp>
 
 #include <algorithm>
 #include <cmath>

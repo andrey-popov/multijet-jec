@@ -2,10 +2,9 @@
 
 #include <BalanceCalc.hpp>
 
-#include <mensura/core/JetMETReader.hpp>
-#include <mensura/core/Processor.hpp>
-
-#include <mensura/extensions/TFileService.hpp>
+#include <mensura/JetMETReader.hpp>
+#include <mensura/Processor.hpp>
+#include <mensura/TFileService.hpp>
 
 #include <cmath>
 

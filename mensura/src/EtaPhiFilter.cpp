@@ -1,8 +1,8 @@
 #include <EtaPhiFilter.hpp>
 
-#include <mensura/core/EventIDReader.hpp>
-#include <mensura/core/FileInPath.hpp>
-#include <mensura/core/JetMETReader.hpp>
+#include <mensura/EventIDReader.hpp>
+#include <mensura/FileInPath.hpp>
+#include <mensura/JetMETReader.hpp>
 
 #include <TFile.h>
 

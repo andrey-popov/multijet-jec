@@ -1,8 +1,8 @@
 #include <LeadJetTriggerFilter.hpp>
 
-#include <mensura/core/FileInPath.hpp>
-#include <mensura/core/JetMETReader.hpp>
-#include <mensura/core/Processor.hpp>
+#include <mensura/FileInPath.hpp>
+#include <mensura/JetMETReader.hpp>
+#include <mensura/Processor.hpp>
 
 #include <mensura/external/JsonCpp/json.hpp>
 

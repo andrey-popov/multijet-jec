@@ -1,6 +1,6 @@
 #include <FirstJetFilter.hpp>
 
-#include <mensura/core/JetMETReader.hpp>
+#include <mensura/JetMETReader.hpp>
 
 #include <cmath>
 

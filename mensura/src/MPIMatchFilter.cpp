@@ -1,7 +1,7 @@
 #include <MPIMatchFilter.hpp>
 
-#include <mensura/core/GenJetMETReader.hpp>
-#include <mensura/core/GenParticleReader.hpp>
+#include <mensura/GenJetMETReader.hpp>
+#include <mensura/GenParticleReader.hpp>
 
 #include <TVector2.h>
 

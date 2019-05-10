@@ -1,6 +1,6 @@
 #include <AngularFilter.hpp>
 
-#include <mensura/core/JetMETReader.hpp>
+#include <mensura/JetMETReader.hpp>
 
 #include <TVector2.h>
 

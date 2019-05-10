@@ -1,8 +1,8 @@
 #pragma once
 
-#include <mensura/core/AnalysisPlugin.hpp>
+#include <mensura/AnalysisPlugin.hpp>
 
-#include <mensura/core/EventID.hpp>
+#include <mensura/EventID.hpp>
 
 #include <istream>
 #include <map>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mensura/core/AnalysisPlugin.hpp>
+#include <mensura/AnalysisPlugin.hpp>
 
 #include <TH1D.h>
 #include <TH2D.h>

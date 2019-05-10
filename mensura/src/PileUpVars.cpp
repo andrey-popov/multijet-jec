@@ -1,10 +1,9 @@
 #include <PileUpVars.hpp>
 
-#include <mensura/core/PileUpReader.hpp>
-#include <mensura/core/Processor.hpp>
-#include <mensura/core/ROOTLock.hpp>
-
-#include <mensura/extensions/TFileService.hpp>
+#include <mensura/PileUpReader.hpp>
+#include <mensura/Processor.hpp>
+#include <mensura/ROOTLock.hpp>
+#include <mensura/TFileService.hpp>
 
 
 PileUpVars::PileUpVars(std::string const name /*= "PileUpVars"*/):

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <mensura/core/JetMETReader.hpp>
+#include <mensura/JetMETReader.hpp>
 
-#include <mensura/core/SystService.hpp>
-#include <mensura/extensions/JetCorrectorService.hpp>
+#include <mensura/SystService.hpp>
+#include <mensura/JetCorrectorService.hpp>
 
 
 class EventIDReader;
