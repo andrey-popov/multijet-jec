@@ -1,0 +1,6 @@
+<lcgdict>
+    <class name="jec::Jet" />
+    <class name="jec::MET" />
+    
+    <class name="std::vector<jec::Jet>" />
+</lcgdict>

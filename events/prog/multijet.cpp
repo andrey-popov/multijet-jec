@@ -7,6 +7,7 @@
 #include <EtaPhiFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <GenMatchFilter.hpp>
+#include <JERCJetMETReader.hpp>
 #include <JERCJetMETUpdate.hpp>
 #include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
@@ -27,7 +28,6 @@
 #include <mensura/PECReader/PECGenJetMETReader.hpp>
 #include <mensura/PECReader/PECGenParticleReader.hpp>
 #include <mensura/PECReader/PECInputData.hpp>
-#include <mensura/PECReader/PECJetMETReader.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
 #include <mensura/PECReader/PECTriggerObjectReader.hpp>
 
@@ -270,10 +270,9 @@ int main(int argc, char **argv)
     if (dataGroup == DatasetGroup::Data)
     {
         // Read original jets and MET, which have outdated corrections
-        PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
         jetmetReader->SetSelection(0., 5.);
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
-        jetmetReader->ReadRawMET();
         jetmetReader->SetApplyJetID(false);
         manager.RegisterPlugin(jetmetReader);
         
@@ -342,9 +341,8 @@ int main(int argc, char **argv)
         
         
         // Read original jets and MET
-        PECJetMETReader *jetmetReader = new PECJetMETReader("OrigJetMET");
+        JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
         jetmetReader->SetSelection(0., 5.);
-        jetmetReader->ReadRawMET();
         jetmetReader->ConfigureLeptonCleaning("");  // Disabled
         jetmetReader->SetGenJetReader();  // Default one
         jetmetReader->SetApplyJetID(false);

@@ -16,7 +16,14 @@ find_package(ROOT 6 REQUIRED)
 find_package(mensura REQUIRED)
 
 
-# Main library
+# Main library and ROOT dictionary needed to read input files
+include("${ROOT_USE_FILE}/../modules/RootNewMacros.cmake")
+set(CMAKE_INSTALL_LIBDIR "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+root_generate_dictionary(multijet-plugins_dict
+    src/classes.h LINKDEF src/classes_def.xml
+    MODULE multijet-plugins
+    OPTIONS "-I${CMAKE_SOURCE_DIR}/include"
+)
 add_library(multijet-plugins SHARED
     src/AngularFilter.cpp
     src/BalanceCalc.cpp
@@ -29,12 +36,14 @@ add_library(multijet-plugins SHARED
     src/EtaPhiFilter.cpp
     src/FirstJetFilter.cpp
     src/GenMatchFilter.cpp
+    src/JERCJetMETReader.cpp
     src/JERCJetMETUpdate.cpp
     src/JetIDFilter.cpp
     src/LeadJetTriggerFilter.cpp
     src/MPIMatchFilter.cpp
     src/PileUpVars.cpp
     src/RunFilter.cpp
+    "${CMAKE_BINARY_DIR}/multijet-plugins_dict.cxx"
 )
 target_include_directories(multijet-plugins PUBLIC include)
 target_link_libraries(multijet-plugins
