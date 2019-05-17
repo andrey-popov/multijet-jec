@@ -1,0 +1,19 @@
+{
+  "samples": {
+    "definition_file": "/pnfs/iihe/cms/store/user/aapopov/storage/JERC/2019-04-12/samples.json",
+    "groups": {
+      "2016BCD": ["JetHT-Run2016B", "JetHT-Run2016C", "JetHT-Run2016D"],
+      "2016EFearly": ["JetHT-Run2016E", "JetHT-Run2016F"],
+      "2016FlateGH": ["JetHT-Run2016F", "JetHT-Run2016G", "JetHT-Run2016H"],
+      "2016All": [
+        "JetHT-Run2016B", "JetHT-Run2016C", "JetHT-Run2016D", "JetHT-Run2016E", "JetHT-Run2016F",
+        "JetHT-Run2016G", "JetHT-Run2016H"
+      ],
+      "sim": [
+        "QCD-Ht-100-200-mg", "QCD-Ht-200-300-mg", "QCD-Ht-300-500-mg", "QCD-Ht-500-700-mg",
+        "QCD-Ht-700-1000-mg", "QCD-Ht-1000-1500-mg", "QCD-Ht-1500-2000-mg", "QCD-Ht-2000-inf-mg"
+      ]
+    }
+  }
+}
+

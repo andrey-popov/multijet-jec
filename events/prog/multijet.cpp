@@ -15,6 +15,7 @@
 #include <PileUpVars.hpp>
 #include <RunFilter.hpp>
 
+#include <mensura/Config.hpp>
 #include <mensura/Dataset.hpp>
 #include <mensura/DatasetBuilder.hpp>
 #include <mensura/FileInPath.hpp>
@@ -93,15 +94,14 @@ int main(int argc, char **argv)
     options.add_options()
       ("help,h", "Prints help message")
       ("datasetGroup", po::value<string>(), "Dataset group (required)")
+      ("config,c", po::value<string>()->default_value("main.json"), "Configuration file")
       ("syst,s", po::value<string>(), "Systematic shift")
       ("era,e", po::value<string>(), "Data-taking era")
-      // ("jec-version", po::value<string>(), "Optional explicit JEC version")
       ("l3-res", "Enables L3 residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4")
       ("output", po::value<string>()->default_value("output"),
         "Name for output directory")
       ("threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel");
-    //^ This is some severe abuse of C++ syntax...
     
     po::positional_options_description positionalOptions;
     positionalOptions.add("datasetGroup", 1);
@@ -128,7 +128,6 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-    
     string dataGroupText(optionsMap["datasetGroup"].as<string>());
     DatasetGroup dataGroup;
     
@@ -141,6 +140,19 @@ int main(int argc, char **argv)
         cerr << "Cannot recognize dataset group \"" << dataGroupText << "\".\n";
         return EXIT_FAILURE;
     }
+
+
+    // Add additional locations to seach for files and parse configuration
+    char const *installPath = getenv("MULTIJET_JEC_INSTALL");
+    
+    if (not installPath)
+    {
+        cerr << "Mandatory environmental variable MULTIJET_JEC_INSTALL is not defined.\n";
+        return EXIT_FAILURE;
+    }
+    
+    FileInPath::AddLocation(string(installPath) + "/config/");
+    Config config(optionsMap["config"].as<string>());
     
     
     // Parse requested systematic uncertainty
@@ -200,41 +212,16 @@ int main(int argc, char **argv)
     
     // Input datasets
     list<Dataset> datasets;
-    DatasetBuilder datasetBuilder("/pnfs/iihe/cms/store/user/aapopov/storage/JERC/"
-      "2017.10.19_Grid-campaign-07Aug17/Results/samples_v1.json");
+    DatasetBuilder datasetBuilder(config.Get({"samples", "definition_file"}).asString());
     
-    if (dataGroup == DatasetGroup::Data)
+    string const groupName = (dataGroup == DatasetGroup::Data) ? dataEra : "sim";
+    auto const &datasetsNode = config.Get({"samples", "groups", groupName});
+
+    for (unsigned i = 0; i < datasetsNode.size(); ++i)
     {
-        if (dataEra == "2016BCD")
-            datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
-              "JetHT-Run2016D_cgp"});
-        else if (dataEra == "2016EFearly")
-            datasets = datasetBuilder({"JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ"});
-        else if (dataEra == "2016FlateGH")
-            datasets = datasetBuilder({"JetHT-Run2016F_JAZ", "JetHT-Run2016G_fJQ",
-              "JetHT-Run2016H_xOF"});
-        else if (dataEra == "2016All")
-            datasets = datasetBuilder({"JetHT-Run2016B_Ykc", "JetHT-Run2016C_gvU",
-              "JetHT-Run2016D_cgp", "JetHT-Run2016E_FVw", "JetHT-Run2016F_JAZ",
-              "JetHT-Run2016G_fJQ", "JetHT-Run2016H_xOF"});
+        string const datasetId = datasetsNode[i].asString();
+        datasets.splice(datasets.end(), datasetBuilder(datasetId));
     }
-    else
-        datasets = datasetBuilder({"QCD-Ht-100-200-mg_fRs", "QCD-Ht-200-300-mg_all",
-          "QCD-Ht-300-500-mg_all", "QCD-Ht-500-700-mg_all", "QCD-Ht-700-1000-mg_all",
-          "QCD-Ht-1000-1500-mg_all", "QCD-Ht-1500-2000-mg_all", "QCD-Ht-2000-inf-mg_all"});
-    
-    
-    // Add an additional locations to seach for data files
-    char const *installPath = getenv("MULTIJET_JEC_INSTALL");
-    
-    if (not installPath)
-    {
-        cerr << "Mandatory environmental variable MULTIJET_JEC_INSTALL is not defined.\n";
-        return EXIT_FAILURE;
-    }
-    
-    FileInPath::AddLocation(string(installPath) + "/config/");
-    FileInPath::AddLocation("/user/aapopov/Analyses/JetMET/JERC/");
     
     
     // Construct the run manager
