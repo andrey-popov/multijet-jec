@@ -1,10 +1,8 @@
 #include <LeadJetTriggerFilter.hpp>
 
-#include <mensura/FileInPath.hpp>
+#include <mensura/Config.hpp>
 #include <mensura/JetMETReader.hpp>
 #include <mensura/Processor.hpp>
-
-#include <mensura/external/JsonCpp/json.hpp>
 
 #include <mensura/PECReader/PECTriggerObjectReader.hpp>
 
@@ -23,25 +21,8 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
     triggerObjectsPluginName("TriggerObjects"), triggerObjectsPlugin(nullptr),
     maxDR2(0.3 * 0.3)
 {
-    // Read JSON file with trigger selection
-    std::string const resolvedPath(FileInPath::Resolve(configFileName));
-    std::ifstream dbFile(resolvedPath, std::ifstream::binary);
-    Json::Value root;
-    
-    try
-    {
-        dbFile >> root;
-    }
-    catch (Json::Exception const &)
-    {
-        std::ostringstream message;
-        message << "LeadJetTriggerFilter[\"" << GetName() << "\"]::LeadJetTriggerFilter: " <<
-          "Failed to parse file \"" << resolvedPath << "\". It is not a valid JSON file, or the "
-          "file is corrupted.";
-        throw std::runtime_error(message.str());
-    }
-    
-    dbFile.close();
+    Config config(configFileName);
+    auto const &root = config.Get();
     
     
     // Extract information about the requested trigger
@@ -51,7 +32,7 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
         std::ostringstream message;
         message << "LeadJetTriggerFilter[\"" << GetName() << "\"]::LeadJetTriggerFilter: " <<
           "Top-level structure in the data file must be a dictionary. This is not true for " <<
-          "file \"" << resolvedPath << "\".";
+          "file " << config.FilePath() << ".";
         throw std::runtime_error(message.str());
     }
     
@@ -59,7 +40,7 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
     {
         std::ostringstream message;
         message << "LeadJetTriggerFilter[\"" << GetName() << "\"]::LeadJetTriggerFilter: " <<
-          "File \"" << resolvedPath << "\" does not contain entry for trigger \"" <<
+          "File " << config.FilePath() << " does not contain entry for trigger \"" <<
           triggerName << "\".";
         throw std::runtime_error(message.str());
     }
@@ -71,8 +52,8 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
     {
         std::ostringstream message;
         message << "LeadJetTriggerFilter[\"" << GetName() << "\"]::LeadJetTriggerFilter: " <<
-          "Entry \"" << triggerName << "\" in file \"" << resolvedPath <<
-          "\" does not contain required field \"filter\" or \"" << ptRangeLabel << "\".";
+          "Entry \"" << triggerName << "\" in file " << config.FilePath() <<
+          " does not contain required field \"filter\" or \"" << ptRangeLabel << "\".";
         throw std::runtime_error(message.str());
     }
     
@@ -83,8 +64,8 @@ LeadJetTriggerFilter::LeadJetTriggerFilter(std::string const &name, std::string 
     {
         std::ostringstream message;
         message << "LeadJetTriggerFilter[\"" << GetName() << "\"]::LeadJetTriggerFilter: " <<
-          "Field \"" << ptRangeLabel << "\" in entry \"" << triggerName << "\" in file \"" <<
-          resolvedPath << "\" is not an array of two elements.";
+          "Field \"" << ptRangeLabel << "\" in entry \"" << triggerName << "\" in file " <<
+          config.FilePath() << " is not an array of two elements.";
         throw std::runtime_error(message.str());
     }
     
