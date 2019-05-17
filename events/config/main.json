@@ -15,6 +15,9 @@
       ]
     }
   },
-  "trigger_config": "triggerBins.json"
+  "trigger_config": "triggerBins.json",
+
+  // Additional locations for FileInPath
+  "add_locations": ["/user/aapopov/Analyses/JetMET/JERC/"]
 }
 

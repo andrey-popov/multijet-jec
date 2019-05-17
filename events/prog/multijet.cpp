@@ -143,7 +143,7 @@ int main(int argc, char **argv)
     }
 
 
-    // Add additional locations to seach for files and parse configuration
+    // Load the main configuration and include additional locations to search for files
     char const *installPath = getenv("MULTIJET_JEC_INSTALL");
     
     if (not installPath)
@@ -153,7 +153,13 @@ int main(int argc, char **argv)
     }
     
     FileInPath::AddLocation(string(installPath) + "/config/");
+
     Config config(optionsMap["config"].as<string>());
+
+    auto const &addLocationsNode = config.Get({"add_locations"});
+
+    for (unsigned i = 0; i < addLocationsNode.size(); ++i)
+        FileInPath::AddLocation(addLocationsNode[i].asString());
     
     
     // Parse requested systematic uncertainty
