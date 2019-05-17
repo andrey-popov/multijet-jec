@@ -57,6 +57,7 @@ target_link_libraries(multijet-plugins
 add_executable(multijet prog/multijet.cpp)
 target_link_libraries(multijet
     PRIVATE
+        stdc++fs
         multijet-plugins
     PRIVATE
         Boost::boost Boost::program_options

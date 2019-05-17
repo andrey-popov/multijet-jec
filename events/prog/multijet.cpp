@@ -36,6 +36,7 @@
 #include <boost/program_options.hpp>
 
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <list>
 #include <set>
@@ -415,15 +416,23 @@ int main(int argc, char **argv)
     BalanceFilter *balanceFilter = new BalanceFilter(0.5, 1.5);
     balanceFilter->SetMinPtLead(1000.);
     manager.RegisterPlugin(balanceFilter);
+
+
+    // Find requested trigger bins
+    std::filesystem::path const triggerConfigPath = config.Get({"trigger_config"}).asString();
+    Config triggerConfig(triggerConfigPath);
+    std::vector<std::string> triggerNames;
+
+    for (auto const &trigger: triggerConfig.Get().getMemberNames())
+        triggerNames.emplace_back(trigger);
     
     
     manager.RegisterPlugin(new PECTriggerObjectReader);
     
-    for (string const &trigger:
-      {"PFJet140", "PFJet200", "PFJet260", "PFJet320", "PFJet400", "PFJet450"})
+    for (auto const &trigger: triggerNames)
     {
         manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
-          "triggerBins.json", (dataGroup != DatasetGroup::Data)), {"BalanceFilter"});
+          triggerConfigPath, (dataGroup != DatasetGroup::Data)), {"BalanceFilter"});
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVars"s + trigger, 30.);
         balanceVars->SetTreeName(trigger + "/BalanceVars");
