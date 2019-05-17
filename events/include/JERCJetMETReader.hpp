@@ -9,6 +9,7 @@
 #include <mensura/LeptonReader.hpp>
 #include <mensura/SystService.hpp>
 
+#include <functional>
 #include <memory>
 
 
@@ -126,8 +127,22 @@ public:
      */
     void SetGenPtMatching(std::string const &jerFile, double jerPtFactor = 3.);
     
-    /// Specifies desired selection on jets
+    /**
+     * \brief Specifies desired selection on jet momentum
+     * 
+     * Jet pt is corrected using the correction read from the input file. Can be used together with
+     * the version with a generic selector.
+     */
     void SetSelection(double minPt, double maxAbsEta);
+    
+    /**
+     * \brief Specifies desired generic selection on jets
+     * 
+     * Provided selector is applied to fully constructed jets. If it returns false, the jet is
+     * dropped from the collection. Can be used together with the version with rectangular cut on
+     * jet pt and eta.
+     */
+    void SetSelection(std::function<bool(Jet const &)> jetSelector);
     
 private:
     /**
@@ -158,6 +173,9 @@ private:
     
     /// Maximal allowed absolute value of pseudorapidity
     double maxAbsEta;
+    
+    /// Generic jet selector
+    std::function<bool(Jet const &)> jetSelector;
     
     /// Specifies whether selection on jet ID should be applied
     bool applyJetID;

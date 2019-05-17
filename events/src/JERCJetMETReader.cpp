@@ -34,7 +34,7 @@ JERCJetMETReader::JERCJetMETReader(JERCJetMETReader const &src) noexcept:
     JetMETReader(src),
     inputDataPluginName(src.inputDataPluginName), inputDataPlugin(src.inputDataPlugin),
     treeName(src.treeName),
-    minPt(src.minPt), maxAbsEta(src.maxAbsEta),
+    minPt(src.minPt), maxAbsEta(src.maxAbsEta), jetSelector(src.jetSelector),
     applyJetID(src.applyJetID),
     leptonPluginName(src.leptonPluginName), leptonPlugin(src.leptonPlugin),
     leptonDR2(src.leptonDR2),
@@ -133,6 +133,12 @@ void JERCJetMETReader::SetSelection(double minPt_, double maxAbsEta_)
 {
     minPt = minPt_;
     maxAbsEta = maxAbsEta_;
+}
+
+
+void JERCJetMETReader::SetSelection(std::function<bool(Jet const &)> jetSelector_)
+{
+    jetSelector = jetSelector_;
 }
 
 
@@ -289,6 +295,11 @@ bool JERCJetMETReader::ProcessEvent()
         
         std::cout << '\n';
         #endif
+        
+        
+        // Generic selection on the jet
+        if (jetSelector and not jetSelector(jet))
+            continue;
         
         
         jets.push_back(jet);
