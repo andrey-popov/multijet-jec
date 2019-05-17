@@ -66,7 +66,7 @@ void JERCJetMETReader::BeginRun(Dataset const &)
     ROOTLock::Lock();
     
     for (std::string const &propertyName: {"bTagCMVA", "bTagDeepCSV[4]", "pileupDiscr",
-      "flavourHadron", "flavourParton", "hasGenMatch"})
+      "flavourHadron", "flavourParton"})
         tree->SetBranchStatus(("jets." + propertyName).c_str(), false);
     
     bfJets = nullptr;
@@ -171,11 +171,6 @@ bool JERCJetMETReader::ProcessEvent()
         TLorentzVector p4;
         p4.SetPtEtaPhiM(j.ptRaw, j.etaRaw, j.phiRaw, j.massRaw);
         
-        double const corrFactor = j.jecFactor;
-        
-        if (corrFactor != 0.)
-            p4 *= corrFactor;
-        
         
         #ifdef DEBUG
         ++curJetNumber;
@@ -227,11 +222,7 @@ bool JERCJetMETReader::ProcessEvent()
         
         // Build the jet object. At this point jet momentum must be fully corrected
         Jet jet;
-        
-        if (corrFactor != 0.)
-            jet.SetCorrectedP4(p4, 1. / corrFactor);
-        else
-            jet.SetCorrectedP4(p4, 1.);
+        jet.SetCorrectedP4(p4, 1.);
         
         jet.SetArea(j.area);
         
