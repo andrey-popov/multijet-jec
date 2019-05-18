@@ -13,7 +13,6 @@
 #include <LeadJetTriggerFilter.hpp>
 #include <MPIMatchFilter.hpp>
 #include <PileUpVars.hpp>
-#include <RunFilter.hpp>
 
 #include <mensura/Config.hpp>
 #include <mensura/Dataset.hpp>
@@ -207,7 +206,7 @@ int main(int argc, char **argv)
             dataEra = dataEra.substr(3);
         
         
-        set<string> allowedEras({"2016All", "2016BCD", "2016EFearly", "2016FlateGH"});
+        set<string> allowedEras({"2016All", "2016BCD", "2016EF1", "2016F2GH"});
         
         if (allowedEras.count(dataEra) == 0)
         {
@@ -250,14 +249,6 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new PECInputData);
     manager.RegisterPlugin(new PECPileUpReader);
-    
-    if (dataGroup == DatasetGroup::Data)
-    {
-        if (dataEra == "2016EFearly")
-            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::Less, 278802));
-        else if (dataEra == "2016FlateGH")
-            manager.RegisterPlugin(new RunFilter(RunFilter::Mode::GreaterEq, 278802));
-    }
     
     
     // Jet corrections

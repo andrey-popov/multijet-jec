@@ -20,6 +20,14 @@
     "isData": true
   },
   {
+    "datasetId": "JetHT-Run2016F1",
+    "isData": true
+  },
+  {
+    "datasetId": "JetHT-Run2016F2",
+    "isData": true
+  },
+  {
     "datasetId": "JetHT-Run2016G",
     "isData": true
   },

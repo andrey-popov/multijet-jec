@@ -71,3 +71,14 @@ target_link_libraries(add_weights
         Boost::boost Boost::program_options
 )
 
+add_executable(partition_runs prog/partition_runs.cpp)
+target_include_directories(partition_runs
+    PRIVATE "$ENV{MENSURA_INSTALL}/src/PECReader"
+)
+target_link_libraries(partition_runs
+    PRIVATE
+        stdc++fs
+        multijet-plugins
+        Boost::boost Boost::program_options
+)
+
