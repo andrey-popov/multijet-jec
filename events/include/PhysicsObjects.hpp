@@ -32,6 +32,9 @@ struct Jet
     
     /// Value of pileup discriminator
     Float_t pileupDiscr;
+
+    /// Value of quark-gluon discriminator
+    Float_t quarkGluonDiscr;
     
     /// Jet flavours according to hadron- and parton-based definitions
     Char_t flavourHadron, flavourParton;

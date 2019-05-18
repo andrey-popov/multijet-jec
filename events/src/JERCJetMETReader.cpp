@@ -66,7 +66,7 @@ void JERCJetMETReader::BeginRun(Dataset const &)
     ROOTLock::Lock();
     
     for (std::string const &propertyName: {"bTagCMVA", "bTagDeepCSV[4]", "pileupDiscr",
-      "flavourHadron", "flavourParton"})
+      "quarkGluonDiscr", "flavourHadron", "flavourParton"})
         tree->SetBranchStatus(("jets." + propertyName).c_str(), false);
     
     bfJets = nullptr;
