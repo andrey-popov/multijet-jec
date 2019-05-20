@@ -48,13 +48,6 @@ using namespace std;
 namespace po = boost::program_options;
 
 
-enum class DatasetGroup
-{
-    Data,
-    MC
-};
-
-
 /// Supported systematic uncertainties
 enum class SystType
 {
@@ -93,10 +86,9 @@ int main(int argc, char **argv)
     po::options_description options("Allowed options");
     options.add_options()
       ("help,h", "Prints help message")
-      ("datasetGroup", po::value<string>(), "Dataset group (required)")
+      ("sample_group", po::value<string>(), "Dataset group (required)")
       ("config,c", po::value<string>()->default_value("main.json"), "Configuration file")
       ("syst,s", po::value<string>(), "Systematic shift")
-      ("era,e", po::value<string>(), "Data-taking era")
       ("l3-res", "Enables L3 residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4")
       ("output", po::value<string>()->default_value("output"),
@@ -104,7 +96,7 @@ int main(int argc, char **argv)
       ("threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel");
     
     po::positional_options_description positionalOptions;
-    positionalOptions.add("datasetGroup", 1);
+    positionalOptions.add("sample_group", 1);
     
     po::variables_map optionsMap;
     
@@ -116,31 +108,17 @@ int main(int argc, char **argv)
     if (optionsMap.count("help"))
     {
         cerr << "Produces tuples with observables for the multijet method.\n";
-        cerr << "Usage: multijet datasetGroup [options]\n";
+        cerr << "Usage: multijet sample_group [options]\n";
         cerr << options << endl;
         return EXIT_FAILURE;
     }
     
-    
-    if (not optionsMap.count("datasetGroup"))
+    if (not optionsMap.count("sample_group"))
     {
-        cerr << "Required argument datasetGroup is missing.\n";
+        cerr << "Required argument sample_group is missing.\n";
         return EXIT_FAILURE;
     }
     
-    string dataGroupText(optionsMap["datasetGroup"].as<string>());
-    DatasetGroup dataGroup;
-    
-    if (dataGroupText == "data")
-        dataGroup = DatasetGroup::Data;
-    else if (dataGroupText == "mc" or dataGroupText == "sim")
-        dataGroup = DatasetGroup::MC;
-    else
-    {
-        cerr << "Cannot recognize dataset group \"" << dataGroupText << "\".\n";
-        return EXIT_FAILURE;
-    }
-
 
     // Load the main configuration and include additional locations to search for files
     char const *installPath = getenv("MULTIJET_JEC_INSTALL");
@@ -195,39 +173,31 @@ int main(int argc, char **argv)
     }
     
     
-    // Parse data-taking era
-    string dataEra("None");
-    
-    if (optionsMap.count("era"))
-    {
-        dataEra = optionsMap["era"].as<string>();
-        
-        if (boost::starts_with(dataEra, "Run"))
-            dataEra = dataEra.substr(3);
-        
-        
-        set<string> allowedEras({"2016All", "2016BCD", "2016EF1", "2016F2GH"});
-        
-        if (allowedEras.count(dataEra) == 0)
-        {
-            cerr << "Unsupported data-taking era \"" << dataEra << "\".\n";
-            return EXIT_FAILURE;
-        }
-    }
-    
-    
     // Input datasets
     list<Dataset> datasets;
     DatasetBuilder datasetBuilder(config.Get({"samples", "definition_file"}).asString());
-    
-    string const groupName = (dataGroup == DatasetGroup::Data) ? dataEra : "sim";
-    auto const &datasetsNode = config.Get({"samples", "groups", groupName});
 
-    for (unsigned i = 0; i < datasetsNode.size(); ++i)
+    string const sampleGroup = optionsMap["sample_group"].as<string>();
+    auto const &sampleGroupsNode = config.Get({"samples", "groups"});
+
+    if (not sampleGroupsNode.isMember(sampleGroup))
     {
-        string const datasetId = datasetsNode[i].asString();
+        cerr << "Unrecognized sample group \"" << sampleGroup << "\".\n";
+        return EXIT_FAILURE;
+    }
+
+    auto const &sampleGroupNode = sampleGroupsNode[sampleGroup];
+
+    for (unsigned i = 0; i < sampleGroupNode.size(); ++i)
+    {
+        string const datasetId = sampleGroupNode[i].asString();
         datasets.splice(datasets.end(), datasetBuilder(datasetId));
     }
+
+
+    // Use the first data set to determine whether real data or simulation is being processed. All
+    // other data sets must be the same.
+    bool const isSim = datasets.front().IsMC();
     
     
     // Construct the run manager
@@ -236,8 +206,7 @@ int main(int argc, char **argv)
     
     // Register services and plugins
     ostringstream outputNameStream;
-    outputNameStream << optionsMap["output"].as<string>() << "/" <<
-      ((dataGroup == DatasetGroup::Data) ? dataEra : "sim");
+    outputNameStream << optionsMap["output"].as<string>();
     
     if (systType != SystType::None)
         outputNameStream << "_" << systTypeToString(systType) << "_" <<
@@ -252,7 +221,7 @@ int main(int argc, char **argv)
     
     
     // Jet corrections
-    if (dataGroup == DatasetGroup::Data)
+    if (not isSim)
     {
         // Read original jets and MET, which have outdated corrections
         JERCJetMETReader *jetmetReader = new JERCJetMETReader("OrigJetMET");
@@ -378,7 +347,7 @@ int main(int argc, char **argv)
     
     manager.RegisterPlugin(new JetIDFilter("JetIDFilter", 15.));
     
-    if (dataGroup == DatasetGroup::Data and dataEra == "2016BCD")
+    if (not isSim)
     {
         EtaPhiFilter *etaPhiFilter = new EtaPhiFilter(15.);
         
@@ -389,8 +358,7 @@ int main(int argc, char **argv)
         
         manager.RegisterPlugin(etaPhiFilter);
     }
-    
-    if (dataGroup == DatasetGroup::MC)
+    else
     {
         manager.RegisterPlugin(new PECGenParticleReader);
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
@@ -429,7 +397,7 @@ int main(int argc, char **argv)
     for (auto const &trigger: triggerNames)
     {
         manager.RegisterPlugin(new LeadJetTriggerFilter("TriggerFilter"s + trigger, trigger,
-          triggerConfigPath, (dataGroup != DatasetGroup::Data)), {"BalanceFilter"});
+          triggerConfigPath, isSim), {"BalanceFilter"});
         
         BalanceVars *balanceVars = new BalanceVars("BalanceVars"s + trigger, 30.);
         balanceVars->SetTreeName(trigger + "/BalanceVars");
@@ -439,7 +407,7 @@ int main(int argc, char **argv)
         puVars->SetTreeName(trigger + "/PileUpVars");
         manager.RegisterPlugin(puVars);
         
-        if (dataGroup == DatasetGroup::Data)
+        if (not isSim)
         {
             DumpEventID *eventID = new DumpEventID("EventID"s + trigger);
             eventID->SetTreeName(trigger + "/EventID");
