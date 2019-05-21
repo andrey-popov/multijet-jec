@@ -21,10 +21,7 @@ void BasicJetVars::BeginRun(Dataset const &dataset)
     isMC = dataset.IsMC();
     
     if (isMC)
-    {
-        auto const &firstFile = dataset.GetFiles().front();
-        bfWeightDataset = firstFile.GetWeight();
-    }
+        bfWeightDataset = dataset.GetWeight();
     
     
     // Save pointers to required services and plugins

@@ -1,3 +1,13 @@
+/**
+ * \file multijet.cpp
+ *
+ * The main application. Runs over input files with events, applies the event selection, fills trees
+ * and histograms for subsequent high-level analysis.
+ *
+ * Command-line arguments (as opposed to options) define input files. They can be interpreted in two
+ * different ways, see the documentation for \ref BuildDatasets.
+ */
+
 #include <AngularFilter.hpp>
 #include <BalanceCalc.hpp>
 #include <BalanceFilter.hpp>
@@ -44,8 +54,9 @@
 #include <regex>
 
 
-using namespace std;
+namespace fs = std::filesystem;
 namespace po = boost::program_options;
+using namespace std;
 
 
 /// Supported systematic uncertainties
@@ -56,6 +67,19 @@ enum class SystType
     L2Res,  ///< Combined uncertainty in L2Res
     JER     ///< Variation due to JER
 };
+
+
+/**
+ * \brief Constructs input data sets
+ *
+ * \param[in] inputs  A non-empty vector of inputs. Its interpetation depends on the number of
+ *     elements. If there is only one, it is interpreted as the label identifying a sample group
+ *     defined in the configuration file. Otherwise the first element is interpreted as the data set
+ *     ID and all the following ones as paths to input files. Relative paths are resolved with
+ *     respect to the base directory of the underlying DatasetBuilder.
+ * \param[in] config  Object that provides an access to the configuration.
+ */
+std::list<Dataset> BuildDatasets(std::vector<std::string> const &inputs, Config const &config);
 
 
 std::string systTypeToString(SystType systType)
@@ -86,7 +110,7 @@ int main(int argc, char **argv)
     po::options_description options("Allowed options");
     options.add_options()
       ("help,h", "Prints help message")
-      ("sample_group", po::value<string>(), "Dataset group (required)")
+      ("sample_def", po::value<vector<string>>(), "Definition of input samples (required)")
       ("config,c", po::value<string>()->default_value("main.json"), "Configuration file")
       ("syst,s", po::value<string>(), "Systematic shift")
       ("l3-res", "Enables L3 residual corrections")
@@ -96,7 +120,7 @@ int main(int argc, char **argv)
       ("threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel");
     
     po::positional_options_description positionalOptions;
-    positionalOptions.add("sample_group", 1);
+    positionalOptions.add("sample_def", -1);
     
     po::variables_map optionsMap;
     
@@ -113,9 +137,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-    if (not optionsMap.count("sample_group"))
+    if (not optionsMap.count("sample_def"))
     {
-        cerr << "Required argument sample_group is missing.\n";
+        cerr << "Required argument sample_def is missing.\n";
         return EXIT_FAILURE;
     }
     
@@ -174,31 +198,12 @@ int main(int argc, char **argv)
     
     
     // Input datasets
-    list<Dataset> datasets;
-    DatasetBuilder datasetBuilder(config.Get({"samples", "definition_file"}).asString());
-
-    string const sampleGroup = optionsMap["sample_group"].as<string>();
-    auto const &sampleGroupsNode = config.Get({"samples", "groups"});
-
-    if (not sampleGroupsNode.isMember(sampleGroup))
-    {
-        cerr << "Unrecognized sample group \"" << sampleGroup << "\".\n";
-        return EXIT_FAILURE;
-    }
-
-    auto const &sampleGroupNode = sampleGroupsNode[sampleGroup];
-
-    for (unsigned i = 0; i < sampleGroupNode.size(); ++i)
-    {
-        string const datasetId = sampleGroupNode[i].asString();
-        datasets.splice(datasets.end(), datasetBuilder(datasetId));
-    }
-
+    std::list<Dataset> const datasets = BuildDatasets(
+      optionsMap["sample_def"].as<std::vector<std::string>>(), config);
 
     // Use the first data set to determine whether real data or simulation is being processed. All
     // other data sets must be the same.
     bool const isSim = datasets.front().IsMC();
-    
     
     // Construct the run manager
     RunManager manager(datasets.begin(), datasets.end());
@@ -384,7 +389,7 @@ int main(int argc, char **argv)
 
 
     // Find requested trigger bins
-    std::filesystem::path const triggerConfigPath = config.Get({"trigger_config"}).asString();
+    fs::path const triggerConfigPath = config.Get({"trigger_config"}).asString();
     Config triggerConfig(triggerConfigPath);
     std::vector<std::string> triggerNames;
 
@@ -429,3 +434,56 @@ int main(int argc, char **argv)
     
     return EXIT_SUCCESS;
 }
+
+
+std::list<Dataset> BuildDatasets(std::vector<std::string> const &inputs, Config const &config)
+{
+    std::list<Dataset> datasets;
+    DatasetBuilder datasetBuilder(config.Get({"samples", "definition_file"}).asString());
+
+    if (inputs.size() == 1)
+    {
+        // The only input is interpreted as the name of a sample group
+        std::string const &sampleGroup = inputs[0];
+        auto const &sampleGroupsNode = config.Get({"samples", "groups"});
+
+        if (not sampleGroupsNode.isMember(sampleGroup))
+        {
+            cerr << "Unrecognized sample group \"" << sampleGroup << "\".\n";
+            std::exit(EXIT_FAILURE);
+        }
+
+        auto const &sampleGroupNode = sampleGroupsNode[sampleGroup];
+
+        for (unsigned i = 0; i < sampleGroupNode.size(); ++i)
+        {
+            std::string const datasetId = sampleGroupNode[i].asString();
+            datasets.splice(datasets.end(), datasetBuilder(datasetId));
+        }
+    }
+    else
+    {
+        // The first input is interpreted as a data set ID. All the rest are assumed to be paths
+        // of input files.
+        Dataset dataset = datasetBuilder.BuildEmpty(inputs[0]);
+
+        for (unsigned i = 1; i < inputs.size(); ++i)
+        {
+            fs::path const path{inputs[i]};
+
+            if (path.is_absolute())
+                dataset.AddFile(path);
+            else
+            {
+                // Relative paths are interpreted with respect to the base directory of the
+                // DatasetBuilder
+                dataset.AddFile(datasetBuilder.GetBaseDirectory() / path);
+            }
+        }
+
+        datasets.emplace_back(std::move(dataset));
+    }
+
+    return datasets;
+}
+

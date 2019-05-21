@@ -81,8 +81,7 @@ void DumpWeights::BeginRun(Dataset const &dataset)
     
     
     // Common event weight in this dataset
-    auto const &firstFile = dataset.GetFiles().front();
-    weightDataset = firstFile.GetWeight();
+    weightDataset = dataset.GetWeight();
 }
 
 
