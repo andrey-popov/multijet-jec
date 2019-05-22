@@ -22,6 +22,7 @@
 #include <JetIDFilter.hpp>
 #include <LeadJetTriggerFilter.hpp>
 #include <MPIMatchFilter.hpp>
+#include <PeriodWeights.hpp>
 #include <PileUpVars.hpp>
 #include <Weights.hpp>
 
@@ -31,7 +32,6 @@
 #include <mensura/FileInPath.hpp>
 #include <mensura/JetCorrectorService.hpp>
 #include <mensura/JetFilter.hpp>
-#include <mensura/PileUpWeight.hpp>
 #include <mensura/RunManager.hpp>
 #include <mensura/SystService.hpp>
 #include <mensura/TFileService.hpp>
@@ -418,6 +418,11 @@ int main(int argc, char **argv)
             Weights *weights = new Weights("Weights" + trigger);
             weights->SetTreeName(trigger + "/Weights");
             manager.RegisterPlugin(weights);
+
+            PeriodWeights *periodWeights = new PeriodWeights("PeriodWeights" + trigger,
+              config.Get({"period_weight_config"}).asString(), trigger);
+            periodWeights->SetTreeName(trigger + "/PeriodWeights");
+            manager.RegisterPlugin(periodWeights);
         }
         else
         {

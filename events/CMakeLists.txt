@@ -41,6 +41,7 @@ add_library(multijet-plugins SHARED
     src/JetIDFilter.cpp
     src/LeadJetTriggerFilter.cpp
     src/MPIMatchFilter.cpp
+    src/PeriodWeights.cpp
     src/PileUpVars.cpp
     src/RunFilter.cpp
     src/Weights.cpp
