@@ -43,6 +43,7 @@ add_library(multijet-plugins SHARED
     src/MPIMatchFilter.cpp
     src/PileUpVars.cpp
     src/RunFilter.cpp
+    src/Weights.cpp
     "${CMAKE_BINARY_DIR}/multijet-plugins_dict.cxx"
 )
 target_include_directories(multijet-plugins PUBLIC include)

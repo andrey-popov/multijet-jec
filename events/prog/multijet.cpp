@@ -23,6 +23,7 @@
 #include <LeadJetTriggerFilter.hpp>
 #include <MPIMatchFilter.hpp>
 #include <PileUpVars.hpp>
+#include <Weights.hpp>
 
 #include <mensura/Config.hpp>
 #include <mensura/Dataset.hpp>
@@ -412,7 +413,13 @@ int main(int argc, char **argv)
         puVars->SetTreeName(trigger + "/PileUpVars");
         manager.RegisterPlugin(puVars);
         
-        if (not isSim)
+        if (isSim)
+        {
+            Weights *weights = new Weights("Weights" + trigger);
+            weights->SetTreeName(trigger + "/Weights");
+            manager.RegisterPlugin(weights);
+        }
+        else
         {
             DumpEventID *eventID = new DumpEventID("EventID"s + trigger);
             eventID->SetTreeName(trigger + "/EventID");

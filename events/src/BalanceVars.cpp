@@ -28,15 +28,8 @@ BalanceVars::BalanceVars(double minPtRecoil):
 {}
 
 
-void BalanceVars::BeginRun(Dataset const &dataset)
+void BalanceVars::BeginRun(Dataset const &)
 {
-    // Save dataset type and its common weight
-    isMC = dataset.IsMC();
-    
-    if (isMC)
-        bfWeightDataset = dataset.GetWeight();
-    
-    
     // Save pointers to required services and plugins
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
     jetmetPlugin = dynamic_cast<JetMETReader const *>(GetDependencyPlugin(jetmetPluginName));
@@ -61,9 +54,6 @@ void BalanceVars::BeginRun(Dataset const &dataset)
     
     tree->Branch("PtBal", &bfPtBal);
     tree->Branch("MPF", &bfMPF);
-    
-    if (isMC)
-        tree->Branch("WeightDataset", &bfWeightDataset);
     
     ROOTLock::Unlock();
 }

@@ -32,7 +32,7 @@ public:
      * 
      * Reimplemented from Plugin.
      */
-    virtual void BeginRun(Dataset const &dataset) override;
+    virtual void BeginRun(Dataset const &) override;
     
     /**
      * \brief Creates a newly configured clone
@@ -81,9 +81,6 @@ private:
     /// Name of the output tree and in-file directory
     std::string treeName, directoryName;
     
-    /// Flag indicating whether current dataset is data or simulation
-    bool isMC;
-    
     /// Non-owning pointer to output tree
     TTree *tree;
     
@@ -93,5 +90,4 @@ private:
     Float_t bfMET;
     Float_t bfDPhi12;
     Float_t bfPtBal, bfMPF;
-    Float_t bfWeightDataset;
 };
