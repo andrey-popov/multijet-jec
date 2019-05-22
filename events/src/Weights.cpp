@@ -7,6 +7,7 @@
 Weights::Weights(std::string const &name):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
+    generatorPluginName(""), generatorPlugin(nullptr),
     treeName(name)
 {}
 
@@ -15,6 +16,10 @@ void Weights::BeginRun(Dataset const &dataset)
 {
     // Save pointers to required services and plugins
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
+
+    if (not generatorPluginName.empty())
+        generatorPlugin = dynamic_cast<PECGeneratorReader const *>(
+          GetDependencyPlugin(generatorPluginName));
     
     
     // Create output tree
@@ -22,13 +27,14 @@ void Weights::BeginRun(Dataset const &dataset)
     
     ROOTLock::Lock();
     
-    tree->Branch("WeightSample", &bfWeightSample);
+    tree->Branch("WeightGen", &bfWeightGen)->SetTitle(
+      "Full generator-level weight: sigma * w_i / sum_j(w_j)");
     
     ROOTLock::Unlock();
 
 
-    // The sample weight is identical for all events in the data set. Set it here.
-    bfWeightSample = dataset.GetWeight();
+    // Save the data set weight, which is the same for all events in the data set
+    weightDataset = dataset.GetWeight();
 }
 
 
@@ -57,6 +63,11 @@ void Weights::SetTreeName(std::string const &name)
 
 bool Weights::ProcessEvent()
 {
+    bfWeightGen = weightDataset;
+
+    if (generatorPlugin)
+        bfWeightGen *= generatorPlugin->GetNominalWeight();
+
     tree->Fill();
     return true;
 }

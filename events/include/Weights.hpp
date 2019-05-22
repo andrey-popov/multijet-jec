@@ -4,12 +4,17 @@
 
 #include <mensura/Dataset.hpp>
 #include <mensura/TFileService.hpp>
+#include <mensura/PECReader/PECGeneratorReader.hpp>
 
 #include <TTree.h>
 
 
 /**
  * \brief Stores event weights
+ *
+ * If a generator reader is provided (with method \ref SetGeneratorReader), the full generator
+ * weight includes the nominal raw generator-level weight. Otherwise this raw weight is assumed to
+ * be 1. In any case the full weight includes the data set weight (Dataset::GetWeight).
  *
  * This plugin must only be run on simulation.
  */
@@ -33,6 +38,12 @@ public:
      * Implemented from Plugin.
      */
     virtual Weights *Clone() const override;
+
+    /// Specifies the name of a PECGeneratorReader plugin
+    void SetGeneratorReader(std::string const &name)
+    {
+        generatorPluginName = name;
+    }
     
     /**
      * \brief Specifies the name for the output tree
@@ -57,13 +68,22 @@ private:
     /// Non-owning pointer to TFileService
     TFileService const *fileService;
     
+    /// Name of plugin that provides generator-level weight
+    std::string generatorPluginName;
+    
+    /// Non-owning pointer to plugin that provides generator-level weight
+    PECGeneratorReader const *generatorPlugin;
+    
     /// Name of the output tree and its in-file directory
     std::string treeName, directoryName;
+
+    /// Common weight from the data set
+    double weightDataset;
     
     /// Non-owning pointer to output tree
     TTree *tree;
     
     // Output buffers
-    Float_t bfWeightSample;
+    Float_t bfWeightGen;
 };
 
