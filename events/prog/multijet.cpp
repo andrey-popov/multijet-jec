@@ -420,8 +420,8 @@ int main(int argc, char **argv)
         
         if (isSim)
         {
-            Weights *weights = new Weights("Weights" + trigger);
-            weights->SetTreeName(trigger + "/Weights");
+            auto *weights = new GenWeights("GenWeights" + trigger);
+            weights->SetTreeName(trigger + "/GenWeights");
             weights->SetGeneratorReader("Generator");
             manager.RegisterPlugin(weights);
 

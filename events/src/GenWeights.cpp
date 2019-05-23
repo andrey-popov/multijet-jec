@@ -4,7 +4,7 @@
 #include <mensura/ROOTLock.hpp>
 
 
-Weights::Weights(std::string const &name):
+GenWeights::GenWeights(std::string const &name):
     AnalysisPlugin(name),
     fileServiceName("TFileService"), fileService(nullptr),
     generatorPluginName(""), generatorPlugin(nullptr),
@@ -12,7 +12,7 @@ Weights::Weights(std::string const &name):
 {}
 
 
-void Weights::BeginRun(Dataset const &dataset)
+void GenWeights::BeginRun(Dataset const &dataset)
 {
     // Save pointers to required services and plugins
     fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
@@ -46,13 +46,13 @@ void Weights::BeginRun(Dataset const &dataset)
 }
 
 
-Weights *Weights::Clone() const
+GenWeights *GenWeights::Clone() const
 {
-    return new Weights(*this);
+    return new GenWeights(*this);
 }
 
 
-void Weights::SetTreeName(std::string const &name)
+void GenWeights::SetTreeName(std::string const &name)
 {
     auto const pos = name.rfind('/');
     
@@ -69,7 +69,7 @@ void Weights::SetTreeName(std::string const &name)
 }
 
 
-bool Weights::ProcessEvent()
+bool GenWeights::ProcessEvent()
 {
     bfWeightGen = weightDataset;
 

@@ -10,7 +10,7 @@
 
 
 /**
- * \brief Stores event weights
+ * \brief Stores generator-level event weights
  *
  * If a generator reader is provided (with method \ref SetGeneratorReader), the full generator
  * weight includes the nominal raw generator-level weight. Otherwise this raw weight is assumed to
@@ -26,11 +26,11 @@
  *
  * This plugin must only be run on simulation.
  */
-class Weights: public AnalysisPlugin
+class GenWeights: public AnalysisPlugin
 {
 public:
     /// Constructs a plugin with the given name
-    Weights(std::string const &name);
+    GenWeights(std::string const &name);
     
 public:
     /**
@@ -45,7 +45,7 @@ public:
      * 
      * Implemented from Plugin.
      */
-    virtual Weights *Clone() const override;
+    virtual GenWeights *Clone() const override;
 
     /// Specifies the name of a PECGeneratorReader plugin
     void SetGeneratorReader(std::string const &name)
