@@ -17,6 +17,7 @@
 #include <EtaPhiFilter.hpp>
 #include <FirstJetFilter.hpp>
 #include <GenMatchFilter.hpp>
+#include <GenWeights.hpp>
 #include <JERCJetMETReader.hpp>
 #include <JERCJetMETUpdate.hpp>
 #include <JetIDFilter.hpp>
@@ -24,7 +25,6 @@
 #include <MPIMatchFilter.hpp>
 #include <PeriodWeights.hpp>
 #include <PileUpVars.hpp>
-#include <Weights.hpp>
 
 #include <mensura/Config.hpp>
 #include <mensura/Dataset.hpp>

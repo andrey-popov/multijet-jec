@@ -36,6 +36,7 @@ add_library(multijet-plugins SHARED
     src/EtaPhiFilter.cpp
     src/FirstJetFilter.cpp
     src/GenMatchFilter.cpp
+    src/GenWeights.cpp
     src/JERCJetMETReader.cpp
     src/JERCJetMETUpdate.cpp
     src/JetIDFilter.cpp
@@ -44,7 +45,6 @@ add_library(multijet-plugins SHARED
     src/PeriodWeights.cpp
     src/PileUpVars.cpp
     src/RunFilter.cpp
-    src/Weights.cpp
     "${CMAKE_BINARY_DIR}/multijet-plugins_dict.cxx"
 )
 target_include_directories(multijet-plugins PUBLIC include)

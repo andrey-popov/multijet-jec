@@ -1,4 +1,4 @@
-#include <Weights.hpp>
+#include <GenWeights.hpp>
 
 #include <mensura/Processor.hpp>
 #include <mensura/ROOTLock.hpp>
