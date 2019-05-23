@@ -16,6 +16,14 @@
  * weight includes the nominal raw generator-level weight. Otherwise this raw weight is assumed to
  * be 1. In any case the full weight includes the data set weight (Dataset::GetWeight).
  *
+ * If a generator reader is provided, the weights for the variations in the renormalization and
+ * factorization scales in the matrix element are also saved.
+ *
+ * The nominal weight, "WeightGen" must always be applied. Any other weights stored by this plugin
+ * must be applied on top of this nominal weight. Whenever a branch represents a variation, the
+ * corresponding weights are stored in an array of length 2, first the weight for the "up"
+ * variation, then for the "down" one.
+ *
  * This plugin must only be run on simulation.
  */
 class Weights: public AnalysisPlugin
@@ -85,5 +93,7 @@ private:
     
     // Output buffers
     Float_t bfWeightGen;
+
+    Float_t bfWeightMERenorm[2], bfWeightMEFact[2];
 };
 

@@ -37,6 +37,7 @@
 #include <mensura/TFileService.hpp>
 
 #include <mensura/PECReader/PECGenJetMETReader.hpp>
+#include <mensura/PECReader/PECGeneratorReader.hpp>
 #include <mensura/PECReader/PECGenParticleReader.hpp>
 #include <mensura/PECReader/PECInputData.hpp>
 #include <mensura/PECReader/PECPileUpReader.hpp>
@@ -369,6 +370,10 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new PECGenParticleReader);
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
         manager.RegisterPlugin(new MPIMatchFilter(0.4));
+
+        auto *generatorReader = new PECGeneratorReader;
+        generatorReader->RequestAltWeights();
+        manager.RegisterPlugin(generatorReader);
     }
     
     // Set angular selection based on [1-3]
@@ -417,6 +422,7 @@ int main(int argc, char **argv)
         {
             Weights *weights = new Weights("Weights" + trigger);
             weights->SetTreeName(trigger + "/Weights");
+            weights->SetGeneratorReader("Generator");
             manager.RegisterPlugin(weights);
 
             PeriodWeights *periodWeights = new PeriodWeights("PeriodWeights" + trigger,

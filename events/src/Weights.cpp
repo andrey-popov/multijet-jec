@@ -29,6 +29,14 @@ void Weights::BeginRun(Dataset const &dataset)
     
     tree->Branch("WeightGen", &bfWeightGen)->SetTitle(
       "Full generator-level weight: sigma * w_i / sum_j(w_j)");
+
+    if (not generatorPluginName.empty())
+    {
+        tree->Branch("WeightMERenorm", bfWeightMERenorm, "WeightMERenorm[2]/F")->SetTitle(
+          "Up and down variations in renormalization scale in ME");
+        tree->Branch("WeightMEFact", bfWeightMEFact, "WeightMEFact[2]/F")->SetTitle(
+          "Up and down variations in factorization scale in ME");
+    }
     
     ROOTLock::Unlock();
 
@@ -66,7 +74,17 @@ bool Weights::ProcessEvent()
     bfWeightGen = weightDataset;
 
     if (generatorPlugin)
-        bfWeightGen *= generatorPlugin->GetNominalWeight();
+    {
+        double const nominal = generatorPlugin->GetNominalWeight();
+        bfWeightGen *= nominal;
+
+        // Indices of weights for scales variations in ME are taken from [1]
+        // [1] https://github.com/andrey-popov/PEC-tuples/issues/86#issuecomment-481698177
+        bfWeightMERenorm[0] = generatorPlugin->GetAltWeight(3) / nominal;
+        bfWeightMERenorm[1] = generatorPlugin->GetAltWeight(6) / nominal;
+        bfWeightMEFact[0] = generatorPlugin->GetAltWeight(1) / nominal;
+        bfWeightMEFact[1] = generatorPlugin->GetAltWeight(2) / nominal;
+    }
 
     tree->Fill();
     return true;
