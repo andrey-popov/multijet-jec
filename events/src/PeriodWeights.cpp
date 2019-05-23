@@ -17,12 +17,22 @@ PeriodWeights::PeriodWeights(std::string const &name, std::string const &configP
     triggerName(triggerName_),
     fileServiceName("TFileService"), fileService(nullptr),
     puPluginName("PileUp"), puPlugin(nullptr),
+    prefiringPluginName(""), prefiringPlugin(nullptr),
     treeName(name)
 {}
 
 
 void PeriodWeights::BeginRun(Dataset const &dataset)
 {
+    // Save pointers to required services and plugins
+    fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
+    puPlugin = dynamic_cast<PileUpReader const *>(GetDependencyPlugin(puPluginName));
+
+    if (not prefiringPluginName.empty())
+        prefiringPlugin = dynamic_cast<L1TPrefiringWeights const *>(
+          GetDependencyPlugin(prefiringPluginName));
+
+
     // Construct pileup profile for the given data set. First try to find a dedicated profile file;
     // if it does not exist, use the default profile.
     fs::path profilePath("pileup_" + dataset.GetSourceDatasetID() + ".root");
@@ -36,18 +46,24 @@ void PeriodWeights::BeginRun(Dataset const &dataset)
     ConstructPeriods();
 
 
-    // Save pointers to required services and plugins
-    fileService = dynamic_cast<TFileService const *>(GetMaster().GetService(fileServiceName));
-    puPlugin = dynamic_cast<PileUpReader const *>(GetDependencyPlugin(puPluginName));
-
-    
     // Create output tree
     tree = fileService->Create<TTree>(directoryName.c_str(), treeName.c_str(), "Event weights");
     
     ROOTLock::Lock();
 
     for (auto const &[periodLabel, period]: periods)
+    {
         tree->Branch(("Weight_" + periodLabel).c_str(), &period.weight);
+
+        if (prefiringPlugin)
+        {
+            tree->Branch(("Weight_" + periodLabel + "_L1TPrefiring").c_str(),
+              &period.prefiringWeightNominal)->SetTitle("Nominal prefiring weight");
+            tree->Branch(("Weight_" + periodLabel + "_L1TPrefiringSyst").c_str(),
+              period.prefiringWeightSyst)->SetTitle(
+              "Relative up and down variations for prefiring weight");
+        }
+    }
     
     ROOTLock::Unlock();
 }
@@ -56,6 +72,12 @@ void PeriodWeights::BeginRun(Dataset const &dataset)
 PeriodWeights *PeriodWeights::Clone() const
 {
     return new PeriodWeights(GetName(), config.FilePath(), triggerName);
+}
+
+
+void PeriodWeights::SetPrefiringWeightPlugin(std::string const &name)
+{
+    prefiringPluginName = name;
 }
 
 
@@ -90,6 +112,9 @@ void PeriodWeights::ConstructPeriods()
         period.dataPileupProfile.reset(ReadProfile(
           Config::Get(periodTriggerConfig, {"pileup_profile"}).asString()));
 
+        if (prefiringPlugin)
+            period.index = prefiringPlugin->FindPeriodIndex(periodLabel);
+
         periods.emplace(std::make_pair(periodLabel, std::move(period)));
     }
 }
@@ -121,6 +146,18 @@ bool PeriodWeights::ProcessEvent()
         }
 
         period.weight = period.luminosity * puWeight;
+
+
+        // Save prefiring weights. Systematic variations are stored as relative variations with
+        // respect to the nominal prefiring weight.
+        if (prefiringPlugin)
+        {
+            auto const srcPrefiringWeights = prefiringPlugin->GetWeights(period.index);
+
+            period.prefiringWeightNominal = srcPrefiringWeights[0];
+            period.prefiringWeightSyst[0] = srcPrefiringWeights[1] / srcPrefiringWeights[0];
+            period.prefiringWeightSyst[1] = srcPrefiringWeights[2] / srcPrefiringWeights[0];
+        }
     }
 
 

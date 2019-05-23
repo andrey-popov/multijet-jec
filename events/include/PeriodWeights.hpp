@@ -2,6 +2,8 @@
 
 #include <mensura/AnalysisPlugin.hpp>
 
+#include <L1TPrefiringWeights.hpp>
+
 #include <mensura/Config.hpp>
 #include <mensura/Dataset.hpp>
 #include <mensura/PileUpReader.hpp>
@@ -20,7 +22,8 @@
  *
  * The following weights are included:
  *  - integrated luminosity (in 1/pb),
- *  - pileup profile.
+ *  - pileup profile,
+ *  - L1T prefiring weights (if a plugin that computes them is specified).
  * 
  * When computing the pileup weight, this plugin first tries to find the simulation profile for the
  * current data set, based on its ID, within the directory specified in the configuration file. Only
@@ -42,11 +45,21 @@ private:
         std::unique_ptr<TH1> dataPileupProfile;
 
         /**
-         * \brief Weight for the current period
+         * \brief Main weight for the current period
          *
          * This is used as a buffer for the output tree.
          */
         mutable Float_t weight;
+
+        /// Period index used to access prefiring weights
+        unsigned index;
+
+        /**
+         * \brief Prefiring weights for the current period
+         *
+         * Used as buffers for the output tree.
+         */
+        mutable Float_t prefiringWeightNominal, prefiringWeightSyst[2];
     };
 
 public:
@@ -74,6 +87,9 @@ public:
      * Implemented from Plugin.
      */
     virtual PeriodWeights *Clone() const override;
+
+    /// Specifies name of L1TPrefiringWeights plugin
+    void SetPrefiringWeightPlugin(std::string const &name);
 
     /**
      * \brief Specifies the name for the output tree
@@ -130,6 +146,12 @@ private:
     
     /// Non-owning pointer to a plugin that reads information about pile-up
     PileUpReader const *puPlugin;
+
+    /// Name of a plugin that computes L1T prefiring weights
+    std::string prefiringPluginName;
+
+    /// Non-owning pointer to a plugin that computes L1T prefiring weights
+    L1TPrefiringWeights const *prefiringPlugin;
     
     /// Name of the output tree and its in-file directory
     std::string treeName, directoryName;

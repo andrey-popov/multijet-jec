@@ -40,6 +40,7 @@ add_library(multijet-plugins SHARED
     src/JERCJetMETReader.cpp
     src/JERCJetMETUpdate.cpp
     src/JetIDFilter.cpp
+    src/L1TPrefiringWeights.cpp
     src/LeadJetTriggerFilter.cpp
     src/MPIMatchFilter.cpp
     src/PeriodWeights.cpp

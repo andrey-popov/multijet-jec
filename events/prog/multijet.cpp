@@ -21,6 +21,7 @@
 #include <JERCJetMETReader.hpp>
 #include <JERCJetMETUpdate.hpp>
 #include <JetIDFilter.hpp>
+#include <L1TPrefiringWeights.hpp>
 #include <LeadJetTriggerFilter.hpp>
 #include <MPIMatchFilter.hpp>
 #include <PeriodWeights.hpp>
@@ -156,6 +157,7 @@ int main(int argc, char **argv)
     }
     
     FileInPath::AddLocation(string(installPath) + "/config/");
+    FileInPath::AddLocation(string(installPath) + "/data/");
 
     Config config(optionsMap["config"].as<string>());
 
@@ -370,10 +372,6 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(new PECGenParticleReader);
         manager.RegisterPlugin(new GenMatchFilter(0.2, 0.5));
         manager.RegisterPlugin(new MPIMatchFilter(0.4));
-
-        auto *generatorReader = new PECGeneratorReader;
-        generatorReader->RequestAltWeights();
-        manager.RegisterPlugin(generatorReader);
     }
     
     // Set angular selection based on [1-3]
@@ -392,6 +390,17 @@ int main(int argc, char **argv)
     BalanceFilter *balanceFilter = new BalanceFilter(0.5, 1.5);
     balanceFilter->SetMinPtLead(1000.);
     manager.RegisterPlugin(balanceFilter);
+
+
+    if (isSim)
+    {
+        auto *generatorReader = new PECGeneratorReader;
+        generatorReader->RequestAltWeights();
+        manager.RegisterPlugin(generatorReader);
+
+        manager.RegisterPlugin(new L1TPrefiringWeights(
+          config.Get({"period_weight_config"}).asString()));
+    }
 
 
     // Find requested trigger bins
@@ -427,6 +436,7 @@ int main(int argc, char **argv)
 
             PeriodWeights *periodWeights = new PeriodWeights("PeriodWeights" + trigger,
               config.Get({"period_weight_config"}).asString(), trigger);
+            periodWeights->SetPrefiringWeightPlugin("L1TPrefiringWeights");
             periodWeights->SetTreeName(trigger + "/PeriodWeights");
             manager.RegisterPlugin(periodWeights);
         }
