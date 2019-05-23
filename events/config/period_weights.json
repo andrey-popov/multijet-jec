@@ -1,109 +1,117 @@
 {
-  "location": "/pnfs/iihe/cms/store/user/aapopov/storage/JERC/2019-04-12/PileUp",
-  "default_sim_profile": "pileup_RunIISummer16.root",
+  "pileup_profiles_location": "/pnfs/iihe/cms/store/user/aapopov/storage/JERC/2019-04-12/PileUp",
+  "default_sim_pileup_profile": "pileup_RunIISummer16.root",
   "periods": {
     "2016BCD": {
-      "PFJet140": {
-        "lumi": 11.997,
-        "pileup_profile": "pileup_2016BCD_PFJet140_finebin.root"
-      },
-      "PFJet200": {
-        "lumi": 58.086,
-        "pileup_profile": "pileup_2016BCD_PFJet200_finebin.root"
-      },
-      "PFJet260": {
-        "lumi": 262.249,
-        "pileup_profile": "pileup_2016BCD_PFJet260_finebin.root"
-      },
-      "PFJet320": {
-        "lumi": 780.927,
-        "pileup_profile": "pileup_2016BCD_PFJet320_finebin.root"
-      },
-      "PFJet400": {
-        "lumi": 2244.932,
-        "pileup_profile": "pileup_2016BCD_PFJet400_finebin.root"
-      },
-      "PFJet450": {
-        "lumi": 12561.665,
-        "pileup_profile": "pileup_2016BCD_PFJet450_finebin.root"
+      "triggers": {
+        "PFJet140": {
+          "lumi": 11.997,
+          "pileup_profile": "pileup_2016BCD_PFJet140_finebin.root"
+        },
+        "PFJet200": {
+          "lumi": 58.086,
+          "pileup_profile": "pileup_2016BCD_PFJet200_finebin.root"
+        },
+        "PFJet260": {
+          "lumi": 262.249,
+          "pileup_profile": "pileup_2016BCD_PFJet260_finebin.root"
+        },
+        "PFJet320": {
+          "lumi": 780.927,
+          "pileup_profile": "pileup_2016BCD_PFJet320_finebin.root"
+        },
+        "PFJet400": {
+          "lumi": 2244.932,
+          "pileup_profile": "pileup_2016BCD_PFJet400_finebin.root"
+        },
+        "PFJet450": {
+          "lumi": 12561.665,
+          "pileup_profile": "pileup_2016BCD_PFJet450_finebin.root"
+        }
       }
     },
     "2016EF1": {
-      "PFJet140": {
-        "lumi": 4.251,
-        "pileup_profile": "pileup_2016EF1_PFJet140_finebin.root"
-      },
-      "PFJet200": {
-        "lumi": 19.092,
-        "pileup_profile": "pileup_2016EF1_PFJet200_finebin.root"
-      },
-      "PFJet260": {
-        "lumi": 103.976,
-        "pileup_profile": "pileup_2016EF1_PFJet260_finebin.root"
-      },
-      "PFJet320": {
-        "lumi": 307.586,
-        "pileup_profile": "pileup_2016EF1_PFJet320_finebin.root"
-      },
-      "PFJet400": {
-        "lumi": 930.521,
-        "pileup_profile": "pileup_2016EF1_PFJet400_finebin.root"
-      },
-      "PFJet450": {
-        "lumi": 6730.291,
-        "pileup_profile": "pileup_2016EF1_PFJet450_finebin.root"
+      "triggers": {
+        "PFJet140": {
+          "lumi": 4.251,
+          "pileup_profile": "pileup_2016EF1_PFJet140_finebin.root"
+        },
+        "PFJet200": {
+          "lumi": 19.092,
+          "pileup_profile": "pileup_2016EF1_PFJet200_finebin.root"
+        },
+        "PFJet260": {
+          "lumi": 103.976,
+          "pileup_profile": "pileup_2016EF1_PFJet260_finebin.root"
+        },
+        "PFJet320": {
+          "lumi": 307.586,
+          "pileup_profile": "pileup_2016EF1_PFJet320_finebin.root"
+        },
+        "PFJet400": {
+          "lumi": 930.521,
+          "pileup_profile": "pileup_2016EF1_PFJet400_finebin.root"
+        },
+        "PFJet450": {
+          "lumi": 6730.291,
+          "pileup_profile": "pileup_2016EF1_PFJet450_finebin.root"
+        }
       }
     },
     "2016F2GH": {
-      "PFJet140": {
-        "lumi": 7.701,
-        "pileup_profile": "pileup_2016F2GH_PFJet140_finebin.root"
-      },
-      "PFJet200": {
-        "lumi": 25.491,
-        "pileup_profile": "pileup_2016F2GH_PFJet200_finebin.root"
-      },
-      "PFJet260": {
-        "lumi": 221.297,
-        "pileup_profile": "pileup_2016F2GH_PFJet260_finebin.root"
-      },
-      "PFJet320": {
-        "lumi": 665.332,
-        "pileup_profile": "pileup_2016F2GH_PFJet320_finebin.root"
-      },
-      "PFJet400": {
-        "lumi": 1964.037,
-        "pileup_profile": "pileup_2016F2GH_PFJet400_finebin.root"
-      },
-      "PFJet450": {
-        "lumi": 16625.425,
-        "pileup_profile": "pileup_2016F2GH_PFJet450_finebin.root"
+      "triggers": {
+        "PFJet140": {
+          "lumi": 7.701,
+          "pileup_profile": "pileup_2016F2GH_PFJet140_finebin.root"
+        },
+        "PFJet200": {
+          "lumi": 25.491,
+          "pileup_profile": "pileup_2016F2GH_PFJet200_finebin.root"
+        },
+        "PFJet260": {
+          "lumi": 221.297,
+          "pileup_profile": "pileup_2016F2GH_PFJet260_finebin.root"
+        },
+        "PFJet320": {
+          "lumi": 665.332,
+          "pileup_profile": "pileup_2016F2GH_PFJet320_finebin.root"
+        },
+        "PFJet400": {
+          "lumi": 1964.037,
+          "pileup_profile": "pileup_2016F2GH_PFJet400_finebin.root"
+        },
+        "PFJet450": {
+          "lumi": 16625.425,
+          "pileup_profile": "pileup_2016F2GH_PFJet450_finebin.root"
+        }
       }
     },
     "2016All": {
-      "PFJet140": {
-        "lumi": 23.949,
-        "pileup_profile": "pileup_2016All_PFJet140_finebin.root"
-      },
-      "PFJet200": {
-        "lumi": 102.669,
-        "pileup_profile": "pileup_2016All_PFJet200_finebin.root"
-      },
-      "PFJet260": {
-        "lumi": 587.522,
-        "pileup_profile": "pileup_2016All_PFJet260_finebin.root"
-      },
-      "PFJet320": {
-        "lumi": 1753.845,
-        "pileup_profile": "pileup_2016All_PFJet320_finebin.root"
-      },
-      "PFJet400": {
-        "lumi": 5139.49,
-        "pileup_profile": "pileup_2016All_PFJet400_finebin.root"
-      },
-      "PFJet450": {
-        "lumi": 35917.381,
-        "pileup_profile": "pileup_2016All_PFJet450_finebin.root"
+      "triggers": {
+        "PFJet140": {
+          "lumi": 23.949,
+          "pileup_profile": "pileup_2016All_PFJet140_finebin.root"
+        },
+        "PFJet200": {
+          "lumi": 102.669,
+          "pileup_profile": "pileup_2016All_PFJet200_finebin.root"
+        },
+        "PFJet260": {
+          "lumi": 587.522,
+          "pileup_profile": "pileup_2016All_PFJet260_finebin.root"
+        },
+        "PFJet320": {
+          "lumi": 1753.845,
+          "pileup_profile": "pileup_2016All_PFJet320_finebin.root"
+        },
+        "PFJet400": {
+          "lumi": 5139.49,
+          "pileup_profile": "pileup_2016All_PFJet400_finebin.root"
+        },
+        "PFJet450": {
+          "lumi": 35917.381,
+          "pileup_profile": "pileup_2016All_PFJet450_finebin.root"
+        }
       }
     }
   }

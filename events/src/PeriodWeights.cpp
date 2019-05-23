@@ -13,7 +13,7 @@ PeriodWeights::PeriodWeights(std::string const &name, std::string const &configP
   std::string const &triggerName_):
     AnalysisPlugin(name),
     config(configPath),
-    profilesDir(config.Get({"location"}).asString()),
+    profilesDir(config.Get({"pileup_profiles_location"}).asString()),
     triggerName(triggerName_),
     fileServiceName("TFileService"), fileService(nullptr),
     puPluginName("PileUp"), puPlugin(nullptr),
@@ -28,7 +28,7 @@ void PeriodWeights::BeginRun(Dataset const &dataset)
     fs::path profilePath("pileup_" + dataset.GetSourceDatasetID() + ".root");
 
     if (not fs::exists(profilesDir / profilePath))
-        profilePath = config.Get({"default_sim_profile"}).asString();
+        profilePath = config.Get({"default_sim_pileup_profile"}).asString();
 
     simPileupProfile.reset(ReadProfile(profilePath));
 
@@ -82,12 +82,13 @@ void PeriodWeights::ConstructPeriods()
 
     for (auto const &periodLabel: periodConfigs.getMemberNames())
     {
-        auto const &periodConfig = Config::Get(periodConfigs, {periodLabel, triggerName});
+        auto const &periodConfig = Config::Get(periodConfigs, {periodLabel});
+        auto const &periodTriggerConfig = Config::Get(periodConfig, {"triggers", triggerName});
 
         Period period;
-        period.luminosity = Config::Get(periodConfig, {"lumi"}).asDouble();
+        period.luminosity = Config::Get(periodTriggerConfig, {"lumi"}).asDouble();
         period.dataPileupProfile.reset(ReadProfile(
-          Config::Get(periodConfig, {"pileup_profile"}).asString()));
+          Config::Get(periodTriggerConfig, {"pileup_profile"}).asString()));
 
         periods.emplace(std::make_pair(periodLabel, std::move(period)));
     }
@@ -108,14 +109,18 @@ bool PeriodWeights::ProcessEvent()
 
     for (auto const &[periodLabel, period]: periods)
     {
+        double puWeight;
+
         if (puProbSim == 0.)
-            period.weight = 0.;
+            puWeight = 0.;
         else
         {
             double const puProbData = period.dataPileupProfile->GetBinContent(
               period.dataPileupProfile->FindFixBin(mu));
-            period.weight = puProbData / puProbSim * period.luminosity;
+            puWeight = puProbData / puProbSim;
         }
+
+        period.weight = period.luminosity * puWeight;
     }
 
 
