@@ -65,14 +65,6 @@ target_link_libraries(multijet
         Boost::boost Boost::program_options
 )
 
-add_executable(add_weights prog/addWeights.cpp)
-target_link_libraries(add_weights
-    PRIVATE
-        multijet-plugins
-    PRIVATE
-        Boost::boost Boost::program_options
-)
-
 add_executable(partition_runs prog/partition_runs.cpp)
 target_include_directories(partition_runs
     PRIVATE "$ENV{MENSURA_INSTALL}/src/PECReader"
