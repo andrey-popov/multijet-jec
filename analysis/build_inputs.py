@@ -48,7 +48,7 @@ if __name__ == '__main__':
             'By default constructed from path to simulation file.'
     )
     arg_parser.add_argument(
-        '-t', '--triggers', default='triggerBins.json',
+        '-t', '--triggers', default='trigger_bins.json',
         help='JSON file with definition of triggers bins.'
     )
     arg_parser.add_argument(

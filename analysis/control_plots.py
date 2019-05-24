@@ -35,7 +35,7 @@ if __name__ == '__main__':
         'weight', help='Name of ROOT file with weights for simulation'
     )
     arg_parser.add_argument(
-        '-c', '--config', default='plotConfig.json',
+        '-c', '--config', default='plot_config.json',
         help='JSON file with configuration for plotting'
     )
     arg_parser.add_argument(

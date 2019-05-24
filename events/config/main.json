@@ -16,7 +16,7 @@
     }
   },
 
-  "trigger_config": "triggerBins.json",
+  "trigger_config": "trigger_bins.json",
   "period_weight_config": "period_weights.json",
 
   "add_locations": ["/user/aapopov/Analyses/JetMET/JERC/"]
