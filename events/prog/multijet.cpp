@@ -118,8 +118,7 @@ int main(int argc, char **argv)
       ("syst,s", po::value<string>(), "Systematic shift")
       ("l3-res", "Enables L3 residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4")
-      ("output", po::value<string>()->default_value("output"),
-        "Name for output directory")
+      ("output,o", po::value<string>()->default_value("."), "Name for output directory")
       ("threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel");
     
     po::positional_options_description positionalOptions;
@@ -214,16 +213,7 @@ int main(int argc, char **argv)
     
     
     // Register services and plugins
-    ostringstream outputNameStream;
-    outputNameStream << optionsMap["output"].as<string>();
-    
-    if (systType != SystType::None)
-        outputNameStream << "_" << systTypeToString(systType) << "_" <<
-          ((systDirection == SystService::VarDirection::Up) ? "up" : "down");
-    
-    outputNameStream << "/%";
-    
-    manager.RegisterService(new TFileService(outputNameStream.str()));
+    manager.RegisterService(new TFileService(optionsMap["output"].as<string>() + "/%"));
     
     manager.RegisterPlugin(new PECInputData);
     manager.RegisterPlugin(new PECPileUpReader);
