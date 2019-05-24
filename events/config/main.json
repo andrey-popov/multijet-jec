@@ -19,7 +19,6 @@
   "trigger_config": "triggerBins.json",
   "period_weight_config": "period_weights.json",
 
-  // Additional locations for FileInPath
   "add_locations": ["/user/aapopov/Analyses/JetMET/JERC/"]
 }
 
