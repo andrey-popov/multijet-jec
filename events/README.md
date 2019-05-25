@@ -13,7 +13,7 @@ Software dependencies:
  * CMake 3.11
  * Boost 1.63
  * ROOT 6
- * [mensura framework](https://github.com/andrey-popov/mensura) of version ca3a15d9 or later
+ * [mensura framework](https://github.com/andrey-popov/mensura) of version 1bec1ef2 or later
 
 It is recommended to use [LCG_95apython3](http://lcginfo.cern.ch/release/95apython3/) environment. From `/cvmfs/`, it can be set up with the following command (change the architecture if needed):
 
@@ -26,7 +26,8 @@ Build mensura as explained in [its README]((https://github.com/andrey-popov/mens
 ```sh
 . ./env.sh
 cd build
-cmake .. && make
+cmake -DCMAKE_BUILD_TYPE=Release ..  # Change build type if needed
+make
 cd ..
 ```
 
