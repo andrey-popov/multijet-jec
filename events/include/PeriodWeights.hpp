@@ -38,6 +38,8 @@ private:
     /// An aggregate of period-specific data
     struct Period
     {
+        Period() noexcept;
+
         /// Integrated luminosity, in 1/pb
         double luminosity;
 

@@ -3,10 +3,19 @@
 #include <mensura/Processor.hpp>
 #include <mensura/ROOTLock.hpp>
 
+#include <limits>
 #include <utility>
 
 
 namespace fs = std::filesystem;
+
+
+PeriodWeights::Period::Period() noexcept:
+    weight{std::numeric_limits<Float_t>::quiet_NaN()},
+    prefiringWeightNominal{std::numeric_limits<Float_t>::quiet_NaN()},
+    prefiringWeightSyst{
+      std::numeric_limits<Float_t>::quiet_NaN(), std::numeric_limits<Float_t>::quiet_NaN()}
+{}
 
 
 PeriodWeights::PeriodWeights(std::string const &name, std::string const &configPath,
@@ -114,6 +123,8 @@ void PeriodWeights::ConstructPeriods()
 
         if (prefiringPlugin)
             period.index = prefiringPlugin->FindPeriodIndex(periodLabel);
+        else
+            period.index = -1;
 
         periods.emplace(std::make_pair(periodLabel, std::move(period)));
     }
