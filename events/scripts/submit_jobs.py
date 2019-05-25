@@ -148,16 +148,18 @@ if __name__ == '__main__':
             syst=args.syst, output_dir=output_dir
         )
 
+        submit_success = False
         itry = 0
         max_tries = 3
 
-        while (True):
+        while (not submit_success):
             itry += 1
 
             try:
                 subprocess.run(
                     command, input=job_script, encoding='ascii', check=True
                 )
+                submit_success = True
             except subprocess.CalledProcessError as error:
                 print(colored(
                     'Failed to submit task "{}". Exit status is {}.'.format(
