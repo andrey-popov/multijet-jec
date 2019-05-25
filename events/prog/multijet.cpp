@@ -115,7 +115,7 @@ int main(int argc, char **argv)
       ("help,h", "Prints help message")
       ("sample_def", po::value<vector<string>>(), "Definition of input samples (required)")
       ("config,c", po::value<string>()->default_value("main.json"), "Configuration file")
-      ("syst,s", po::value<string>(), "Systematic shift")
+      ("syst,s", po::value<string>()->default_value(""), "Systematic shift")
       ("l3-res", "Enables L3 residual corrections")
       ("wide", "Loosen selection to |eta(j1)| < 2.4")
       ("output,o", po::value<string>()->default_value("."), "Name for output directory")
@@ -170,15 +170,16 @@ int main(int argc, char **argv)
     SystType systType(SystType::None);
     SystService::VarDirection systDirection = SystService::VarDirection::Undefined;
     
-    if (optionsMap.count("syst"))
+    std::string const systArg{optionsMap["syst"].as<string>()};
+
+    if (not systArg.empty())
     {
-        string systArg(optionsMap["syst"].as<string>());
-        boost::to_lower(systArg);
+        std::string const systArgLower{boost::to_lower_copy(systArgLower)};
         
         std::regex systRegex("(l1res|l2res|jer)[-_]?(up|down)", std::regex::extended);
         std::smatch matchResult;
         
-        if (not std::regex_match(systArg, matchResult, systRegex))
+        if (not std::regex_match(systArgLower, matchResult, systRegex))
         {
             cerr << "Cannot recognize systematic variation \"" << systArg << "\".\n";
             return EXIT_FAILURE;
