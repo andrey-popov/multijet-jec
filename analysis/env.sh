@@ -1,5 +1,3 @@
-#!/bin/sh
-
-export PATH=$(pwd):$PATH
-export PYTHONPATH=$(pwd):$PYTHONPATH
+export PATH=$(pwd)/scripts:$PATH
+export PYTHONPATH=$(pwd)/python:$PYTHONPATH
 
