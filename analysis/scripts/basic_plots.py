@@ -330,9 +330,6 @@ if __name__ == '__main__':
         'sim', help='Name of ROOT file with simulation'
     )
     arg_parser.add_argument(
-        'weight_file', help='Name of ROOT file with weights for simulation'
-    )
-    arg_parser.add_argument(
         '-c', '--config', default='plot_config.json',
         help='JSON file with configuration for plotting'
     )
@@ -379,17 +376,14 @@ if __name__ == '__main__':
     # Fill the histograms
     data_file = ROOT.TFile(args.data)
     sim_file = ROOT.TFile(args.sim)
-    weight_file = ROOT.TFile(args.weight_file)
     
     for trigger, pt_range in config['triggers'].items():
         
         tree_data = data_file.Get(trigger + '/BalanceVars')
-        
         tree_sim = sim_file.Get(trigger + '/BalanceVars')
-        tree_weight = weight_file.Get(trigger + '/Weights')
-        tree_sim.AddFriend(tree_weight)
-        
-        tree_sim.SetBranchStatus('WeightDataset', False)
+
+        for weight_tree_name in ['GenWeights', 'PeriodWeights']:
+            tree_sim.AddFriend('{}/{}'.format(trigger, weight_tree_name))
         
         
         ROOT.gROOT.cd()
@@ -401,7 +395,11 @@ if __name__ == '__main__':
         
         for label, tree, selection in [
             ('data', tree_data, pt_selection),
-            ('sim', tree_sim, '({}) * TotalWeight[0]'.format(pt_selection))
+            (
+                'sim', tree_sim, '({}) * WeightGen * Weight_{}'.format(
+                    pt_selection, args.era
+                )
+            )
         ]:
             tree.Draw('PtJ1>>+' + hist_pt_lead[label].GetName(), selection, 'goff')
             tree.Draw('PtRecoil>>+' + hist_pt_recoil[label].GetName(), selection, 'goff')
@@ -413,7 +411,6 @@ if __name__ == '__main__':
     
     data_file.Close()
     sim_file.Close()
-    weight_file.Close()
     
     
     # In distributions, include under- and overflow bins

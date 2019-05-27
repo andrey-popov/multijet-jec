@@ -17,7 +17,7 @@ import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 
-from basicPlots import plot_distribution
+from basic_plots import plot_distribution
 from utils import mpl_style
 
 
@@ -32,9 +32,6 @@ if __name__ == '__main__':
         'sim', help='Name of ROOT file with simulation'
     )
     arg_parser.add_argument(
-        'weight', help='Name of ROOT file with weights for simulation'
-    )
-    arg_parser.add_argument(
         '-c', '--config', default='plot_config.json',
         help='JSON file with configuration for plotting'
     )
@@ -43,7 +40,7 @@ if __name__ == '__main__':
         help='Era to access luminosity and era label from configuration'
     )
     arg_parser.add_argument(
-        '-o', '--fig-dir', default='figControl',
+        '-o', '--fig-dir', default='fig',
         help='Directory to store figures'
     )
     args = arg_parser.parse_args()
@@ -83,15 +80,15 @@ if __name__ == '__main__':
     # Fill the histograms
     data_file = ROOT.TFile(args.data)
     sim_file = ROOT.TFile(args.sim)
-    weight_file = ROOT.TFile(args.weight)
     
     for trigger, pt_range in config['triggers'].items():
         
         tree_data = data_file.Get(trigger + '/BalanceVars')
         
         tree_sim = sim_file.Get(trigger + '/BalanceVars')
-        tree_weight = weight_file.Get(trigger + '/Weights')
-        tree_sim.AddFriend(tree_weight)
+
+        for weight_tree_name in ['GenWeights', 'PeriodWeights']:
+            tree_sim.AddFriend('{}/{}'.format(trigger, weight_tree_name))
         
         for tree in [tree_data, tree_sim]:
             tree.SetBranchStatus('*', False)
@@ -99,7 +96,8 @@ if __name__ == '__main__':
             for branch_name in ['PtJ1', 'PtBal', 'MPF']:
                 tree.SetBranchStatus(branch_name, True)
         
-        tree_sim.SetBranchStatus('TotalWeight', True)
+        for branch_name in ['WeightGen', 'Weight_' + args.era]:
+            tree_sim.SetBranchStatus(branch_name, True)
         
         
         ROOT.gROOT.cd()
@@ -111,14 +109,17 @@ if __name__ == '__main__':
         
         for label, tree, selection in [
             ('data', tree_data, pt_selection),
-            ('sim', tree_sim, '({}) * TotalWeight[0]'.format(pt_selection))
+            (
+                'sim', tree_sim, '({}) * WeightGen * Weight_{}'.format(
+                    pt_selection, args.era
+                )
+            )
         ]:
             tree.Draw('PtJ1:PtBal>>+' + hist_pt_bal[label].GetName(), selection, 'goff')
             tree.Draw('PtJ1:MPF>>+' + hist_mpf[label].GetName(), selection, 'goff')
     
     data_file.Close()
     sim_file.Close()
-    weight_file.Close()
     
     
     # Add under- and overflows in balance
