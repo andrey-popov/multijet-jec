@@ -62,14 +62,16 @@ void PeriodWeights::BeginRun(Dataset const &dataset)
 
     for (auto const &[periodLabel, period]: periods)
     {
-        tree->Branch(("Weight_" + periodLabel).c_str(), &period.weight);
+        tree->Branch(("Weight_" + periodLabel).c_str(), &period.weight)->SetTitle(
+          "Pileup and luminosity weight");
 
         if (prefiringPlugin)
         {
             tree->Branch(("Weight_" + periodLabel + "_L1TPrefiring").c_str(),
               &period.prefiringWeightNominal)->SetTitle("Nominal prefiring weight");
-            tree->Branch(("Weight_" + periodLabel + "_L1TPrefiringSyst").c_str(),
-              period.prefiringWeightSyst)->SetTitle(
+            std::string const systBranchName{"Weight_" + periodLabel + "_L1TPrefiringSyst"};
+            tree->Branch(systBranchName.c_str(), period.prefiringWeightSyst,
+              (systBranchName + "[2]/F").c_str())->SetTitle(
               "Relative up and down variations for prefiring weight");
         }
     }
