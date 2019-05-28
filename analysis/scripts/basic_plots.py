@@ -29,10 +29,12 @@ if __name__ == '__main__':
     # Parse arguments
     arg_parser = argparse.ArgumentParser(description=__doc__)
     arg_parser.add_argument(
-        'data', help='Name of ROOT file with data'
+        '-d', '--data', nargs='+',
+        help='Input files with data (required)'
     )
     arg_parser.add_argument(
-        'sim', help='Name of ROOT file with simulation'
+        '-s', '--sim', nargs='+',
+        help='Input files with simulation (required)'
     )
     arg_parser.add_argument(
         '-c', '--config', default='plot_config.json',
@@ -51,9 +53,9 @@ if __name__ == '__main__':
     if not os.path.exists(args.fig_dir):
         os.makedirs(args.fig_dir)
     
-    if args.era is None:
+    if args.era is None and len(args.data) == 1:
         # Try to figure the era label from the name of the data file
-        args.era = os.path.splitext(os.path.basename(args.data))[0]
+        args.era = os.path.splitext(os.path.basename(args.data[0]))[0]
     
     
     ROOT.gROOT.SetBatch(True)
@@ -103,15 +105,24 @@ if __name__ == '__main__':
     
     
     # Fill the histograms
-    data_file = ROOT.TFile(args.data)
-    sim_file = ROOT.TFile(args.sim)
-    
     for trigger, pt_range in config['triggers'].items():
-        tree_data = data_file.Get(trigger + '/BalanceVars')
-        tree_sim = sim_file.Get(trigger + '/BalanceVars')
+        chain_data = ROOT.TChain(trigger + '/BalanceVars')
 
-        for weight_tree_name in ['GenWeights', 'PeriodWeights']:
-            tree_sim.AddFriend('{}/{}'.format(trigger, weight_tree_name))
+        for f in args.data:
+            chain_data.AddFile(f)
+
+        chain_sim = ROOT.TChain(trigger + '/BalanceVars')
+        chain_sim_friends = [
+            ROOT.TChain('{}/{}'.format(trigger, name))
+            for name in ['GenWeights', 'PeriodWeights']
+        ]
+
+        for f in args.sim:
+            for chain in [chain_sim] + chain_sim_friends:
+                chain.AddFile(f)
+
+        for friend in chain_sim_friends:
+            chain_sim.AddFriend(friend)
         
         
         pt_selection = 'PtJ1 > {}'.format(pt_range[0])
@@ -120,9 +131,9 @@ if __name__ == '__main__':
             pt_selection += ' && PtJ1 < {}'.format(pt_range[1])
         
         for label, tree, selection in [
-            ('data', tree_data, pt_selection),
+            ('data', chain_data, pt_selection),
             (
-                'sim', tree_sim,
+                'sim', chain_sim,
                 '({}) * WeightGen * Weight_{}'.format(pt_selection, args.era)
             )
         ]:
@@ -134,9 +145,6 @@ if __name__ == '__main__':
 
             for hist in rdf_hists:
                 hist.add(label)
-
-    data_file.Close()
-    sim_file.Close()
     
     
     # In distributions, include under- and overflow bins
