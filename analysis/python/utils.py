@@ -262,7 +262,7 @@ mpl_style = {
     
     'axes.labelsize':              'large',
     'axes.formatter.use_mathtext': True,
-    'axes.formatter.limits':       (-2, 4),
+    'axes.formatter.limits':       (-3, 4),
     
     'xtick.top':          True,
     'xtick.direction':    'in',
