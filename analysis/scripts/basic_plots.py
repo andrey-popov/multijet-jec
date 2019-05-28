@@ -8,12 +8,10 @@ in bins of pt of the leading jet.  In all cases the ratio between data
 and simulation is included.
 """
 
-from array import array
 import argparse
 import json
 import math
 import os
-from uuid import uuid4
 
 import numpy as np
 
@@ -24,32 +22,7 @@ from matplotlib import pyplot as plt
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-from utils import mpl_style
-
-
-def make_hists(binning_def):
-    """Create a pair of 1D histograms from given binning."""
-    
-    r = binning_def['range']
-    binning = np.linspace(r[0], r[1], num=(r[1] - r[0]) / binning_def['step'] + 1)
-    
-    hist1 = ROOT.TH1D(uuid4().hex, '', len(binning) - 1, binning)
-    hist1.SetDirectory(ROOT.gROOT)
-    
-    hist2 = hist1.Clone(uuid4().hex)
-    
-    return {'data': hist1, 'sim': hist2}
-
-
-def make_profiles(binning):
-    """Create a pair of 1D profiles from given binning."""
-    
-    binning = array('d', binning)
-    prof1 = ROOT.TProfile(uuid4().hex, '', len(binning) - 1, binning)
-    prof1.SetDirectory(ROOT.gROOT)
-    prof2 = prof1.Clone(uuid4().hex)
-    
-    return {'data': prof1, 'sim': prof2}
+from utils import RDFHists, mpl_style
 
 
 def plot_distribution(
@@ -335,7 +308,7 @@ if __name__ == '__main__':
     )
     arg_parser.add_argument(
         '-e', '--era', default=None,
-        help='Era to access luminosity and era label from configuration'
+        help='Data-taking period'
     )
     arg_parser.add_argument(
         '-o', '--fig-dir', default='fig',
@@ -361,16 +334,40 @@ if __name__ == '__main__':
     era_label = '{} {} fb$^{{-1}}$ (13 TeV)'.format(
         config['eras'][args.era]['label'], config['eras'][args.era]['lumi']
     )
-    
-    
-    # Construct histograms
-    hist_pt_lead = make_hists(config['binning']['ptLead'])
-    hist_pt_recoil = make_hists(config['binning']['ptRecoil'])
-    hist_pt_miss = make_hists(config['binning']['ptMiss'])
-    
-    prof_pt_lead = make_profiles(config['balance']['binning'])
-    prof_pt_bal = make_profiles(config['balance']['binning'])
-    prof_mpf = make_profiles(config['balance']['binning'])
+
+
+    # Define histograms to be filled
+    hist_pt_lead = RDFHists(
+        ROOT.TH1D, config['binning']['ptLead'], ['PtJ1', 'weight'],
+        ['data', 'sim']
+    )
+    hist_pt_recoil = RDFHists(
+        ROOT.TH1D, config['binning']['ptRecoil'], ['PtRecoil', 'weight'],
+        ['data', 'sim']
+    )
+    hist_pt_miss = RDFHists(
+        ROOT.TH1D, config['binning']['ptMiss'], ['MET', 'weight'],
+        ['data', 'sim']
+    )
+
+    bal_binning = config['balance']['binning']
+    prof_pt_lead = RDFHists(
+        ROOT.TProfile, bal_binning, ['PtJ1', 'PtJ1', 'weight'],
+        ['data', 'sim']
+    )
+    prof_pt_bal = RDFHists(
+        ROOT.TProfile, bal_binning, ['PtJ1', 'PtBal', 'weight'],
+        ['data', 'sim']
+    )
+    prof_mpf = RDFHists(
+        ROOT.TProfile, bal_binning, ['PtJ1', 'MPF', 'weight'],
+        ['data', 'sim']
+    )
+
+    rdf_hists = [
+        hist_pt_lead, hist_pt_recoil, hist_pt_miss,
+        prof_pt_lead, prof_pt_bal, prof_mpf
+    ]
     
     
     # Fill the histograms
@@ -378,15 +375,12 @@ if __name__ == '__main__':
     sim_file = ROOT.TFile(args.sim)
     
     for trigger, pt_range in config['triggers'].items():
-        
         tree_data = data_file.Get(trigger + '/BalanceVars')
         tree_sim = sim_file.Get(trigger + '/BalanceVars')
 
         for weight_tree_name in ['GenWeights', 'PeriodWeights']:
             tree_sim.AddFriend('{}/{}'.format(trigger, weight_tree_name))
         
-        
-        ROOT.gROOT.cd()
         
         pt_selection = 'PtJ1 > {}'.format(pt_range[0])
         
@@ -396,26 +390,26 @@ if __name__ == '__main__':
         for label, tree, selection in [
             ('data', tree_data, pt_selection),
             (
-                'sim', tree_sim, '({}) * WeightGen * Weight_{}'.format(
-                    pt_selection, args.era
-                )
+                'sim', tree_sim,
+                '({}) * WeightGen * Weight_{}'.format(pt_selection, args.era)
             )
         ]:
-            tree.Draw('PtJ1>>+' + hist_pt_lead[label].GetName(), selection, 'goff')
-            tree.Draw('PtRecoil>>+' + hist_pt_recoil[label].GetName(), selection, 'goff')
-            tree.Draw('MET>>+' + hist_pt_miss[label].GetName(), selection, 'goff')
-            
-            tree.Draw('PtJ1:PtJ1>>+' + prof_pt_lead[label].GetName(), selection, 'goff')
-            tree.Draw('PtBal:PtJ1>>+' + prof_pt_bal[label].GetName(), selection, 'goff')
-            tree.Draw('MPF:PtJ1>>+' + prof_mpf[label].GetName(), selection, 'goff')
-    
+            df = ROOT.RDataFrame(tree)
+            df_filtered = df.Define('weight', selection).Filter('weight != 0')
+
+            for hist in rdf_hists:
+                hist.register(df_filtered)
+
+            for hist in rdf_hists:
+                hist.add(label)
+
     data_file.Close()
     sim_file.Close()
     
     
     # In distributions, include under- and overflow bins
     for p in [hist_pt_lead, hist_pt_recoil, hist_pt_miss]:
-        for hist in p.values():
+        for hist in p.hists.values():
             hist.SetBinContent(1, hist.GetBinContent(1) + hist.GetBinContent(0))
             hist.SetBinError(1, math.hypot(hist.GetBinError(1), hist.GetBinError(0)))
             

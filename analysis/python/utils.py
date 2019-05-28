@@ -1,5 +1,9 @@
+from array import array
+import collections
 from uuid import uuid4
+
 import numpy as np
+
 import ROOT
 
 
@@ -119,6 +123,115 @@ class Hist1D:
         """
         
         return self.contents[index], self.errors[index]
+
+
+class RDFHists:
+    """Simplifies filling of histograms with ROOT.RDataFrame.
+
+    This class provides a less verbose syntax to fill histogram-like
+    objects from one or more ROOT.RDataFrame.  Both ROOT histograms and
+    profiles are supported.  A single instance of RDFHists can contain
+    multiple versions of the histogram-like objects, which are
+    accessible with operator [].  This is normally expected to be used
+    to associate histograms in data and simulation.
+    """
+
+    def __init__(self, cls, binning_def, branches, versions):
+        """Initialize.
+
+        Arguments:
+            cls:  ROOT class for the contained histogram-like objects.
+            binning_def:  Binning definition (see below).
+            branches:  Names of branches to be given to the method of
+                ROOT.RDataFrame that will construct a histogram-like
+                object (such as ROOT.RDataFrame.Histo1D).
+            versions:  Iterable that defines versions of stored
+                histogram-like objects.
+
+        The binning definition can be specified in two ways: (1) a
+        dictionary that contains fields "range" and "step" and thus
+        defines a uniform binning and (2) a sequence of bin edges.  In
+        case of multiple dimensions, a sequence of the above should be
+        provided.
+        """
+
+        self.cls = cls
+        self.model = self._build_model(binning_def)
+        self.hists = {}
+
+        for version in versions:
+            hist = cls(*self.model)
+            hist.SetDirectory(None)
+
+            # Protect against a bug in ROOT [1]
+            # [1] https://sft.its.cern.ch/jira/browse/ROOT-10153
+            hist.Sumw2()
+
+            self.hists[version] = hist
+
+        self.branches = branches
+        self._proxy = None
+
+
+    def __getitem__(self, version):
+        """Return histogram-like with given version."""
+        return self.hists[version]
+
+
+    def add(self, version):
+        """Add registered proxy to histogram like with given label.
+
+        The proxy must have been registered earlier with method
+        register.  The lazy evaluation of ROOT.RDataFrame will be
+        triggered by this method.
+        """
+        self.hists[version].Add(self._proxy.GetValue())
+
+
+    def register(self, dataframe):
+        """Register this histogram-like to the given data frame.
+
+        The proxy object provided by the data frame is saved internally.
+        It will be accessed when method add is called.
+        """
+
+        if issubclass(self.cls, ROOT.TProfile):
+            self._proxy = dataframe.Profile1D(self.model, *self.branches)
+        elif issubclass(self.cls, ROOT.TH2):
+            self._proxy = dataframe.Histo2D(self.model, *self.branches)
+        elif issubclass(self.cls, ROOT.TH1):
+            self._proxy = dataframe.Histo1D(self.model, *self.branches)
+        else:
+            raise NotImplementedError(
+                'Type {} is not supported.'.format(self.cls)
+            )
+
+
+    @staticmethod
+    def _build_model(binning_def):
+
+        # Harmonize the format between 1D and multidimensional cases
+        if (isinstance(binning_def, collections.abc.Sequence) and
+            isinstance(binning_def[0], collections.abc.Container)):
+            # This is a sequence of binning definitions for multiple
+            # dimensions
+            binning_defs = binning_def
+        else:
+            # This is a binning definition for a single dimension
+            binning_defs = [binning_def]
+
+        model = ['', '']  # Empty name and title
+
+        for bd in binning_defs:
+            if isinstance(bd, collections.abc.Mapping):
+                r = bd['range']
+                num_bins = round((r[1] - r[0]) / bd['step'])
+                model += [num_bins, r[0], r[1]]
+            else:
+                binning = array('d', bd)
+                model += [len(binning) - 1, binning]
+
+        return tuple(model)
 
 
 def spline_to_root(spline):

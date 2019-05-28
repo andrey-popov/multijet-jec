@@ -2,7 +2,6 @@
 
 """Produces control plots for the multijet analysis."""
 
-from array import array
 import argparse
 import json
 import math
@@ -18,7 +17,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 
 from basic_plots import plot_distribution
-from utils import mpl_style
+from utils import RDFHists, mpl_style
 
 
 if __name__ == '__main__':
@@ -67,14 +66,19 @@ if __name__ == '__main__':
     
     # 2D histograms for balance observables.  Their slices will be
     # plotted.
-    binning = array('d', config['control']['binning'])
-    hist = ROOT.TH2D(uuid4().hex, '', 80, 0., 2., len(binning) - 1, binning)
-    hist_pt_bal = {'data': hist, 'sim': hist.Clone(uuid4().hex)}
-    hist_mpf = {'data': hist.Clone(uuid4().hex), 'sim': hist.Clone(uuid4().hex)}
+    binning_pt = config['control']['binning']
+    binning_bal = {'range': [0., 2.], 'step': 0.025}
     
-    for d in [hist_pt_bal, hist_mpf]:
-        for hist in d.values():
-            hist.SetDirectory(ROOT.gROOT)
+    hist_pt_bal = RDFHists(
+        ROOT.TH2D, [binning_bal, binning_pt], ['PtBal', 'PtJ1', 'weight'],
+        ['data', 'sim']
+    )
+    hist_mpf = RDFHists(
+        ROOT.TH2D, [binning_bal, binning_pt], ['MPF', 'PtJ1', 'weight'],
+        ['data', 'sim']
+    )
+
+    rdf_hists = [hist_pt_bal, hist_mpf]
     
     
     # Fill the histograms
@@ -82,25 +86,12 @@ if __name__ == '__main__':
     sim_file = ROOT.TFile(args.sim)
     
     for trigger, pt_range in config['triggers'].items():
-        
         tree_data = data_file.Get(trigger + '/BalanceVars')
-        
         tree_sim = sim_file.Get(trigger + '/BalanceVars')
 
         for weight_tree_name in ['GenWeights', 'PeriodWeights']:
             tree_sim.AddFriend('{}/{}'.format(trigger, weight_tree_name))
         
-        for tree in [tree_data, tree_sim]:
-            tree.SetBranchStatus('*', False)
-            
-            for branch_name in ['PtJ1', 'PtBal', 'MPF']:
-                tree.SetBranchStatus(branch_name, True)
-        
-        for branch_name in ['WeightGen', 'Weight_' + args.era]:
-            tree_sim.SetBranchStatus(branch_name, True)
-        
-        
-        ROOT.gROOT.cd()
         
         pt_selection = 'PtJ1 > {}'.format(pt_range[0])
         
@@ -110,13 +101,18 @@ if __name__ == '__main__':
         for label, tree, selection in [
             ('data', tree_data, pt_selection),
             (
-                'sim', tree_sim, '({}) * WeightGen * Weight_{}'.format(
-                    pt_selection, args.era
-                )
+                'sim', tree_sim,
+                '({}) * WeightGen * Weight_{}'.format(pt_selection, args.era)
             )
         ]:
-            tree.Draw('PtJ1:PtBal>>+' + hist_pt_bal[label].GetName(), selection, 'goff')
-            tree.Draw('PtJ1:MPF>>+' + hist_mpf[label].GetName(), selection, 'goff')
+            df = ROOT.RDataFrame(tree)
+            df_filtered = df.Define('weight', selection).Filter('weight != 0')
+
+            for hist in rdf_hists:
+                hist.register(df_filtered)
+
+            for hist in rdf_hists:
+                hist.add(label)
     
     data_file.Close()
     sim_file.Close()
@@ -124,7 +120,7 @@ if __name__ == '__main__':
     
     # Add under- and overflows in balance
     for d in [hist_pt_bal, hist_mpf]:
-        for hist in d.values():
+        for hist in d.hists.values():
             for pt_bin in range(0, hist.GetNbinsY() + 2):
                 hist.SetBinContent(
                     1, pt_bin,
