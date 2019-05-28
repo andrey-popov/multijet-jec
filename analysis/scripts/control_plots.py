@@ -15,8 +15,7 @@ from matplotlib import pyplot as plt
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-
-from basic_plots import plot_distribution
+from plotting import plot_distribution
 from utils import RDFHists, mpl_style
 
 
