@@ -78,12 +78,13 @@ bool GenWeights::ProcessEvent()
         double const nominal = generatorPlugin->GetNominalWeight();
         bfWeightGen *= nominal;
 
-        // Indices of weights for scales variations in ME are taken from [1]
-        // [1] https://github.com/andrey-popov/PEC-tuples/issues/86#issuecomment-481698177
-        bfWeightMERenorm[0] = generatorPlugin->GetAltWeight(3) / nominal;
-        bfWeightMERenorm[1] = generatorPlugin->GetAltWeight(6) / nominal;
-        bfWeightMEFact[0] = generatorPlugin->GetAltWeight(1) / nominal;
-        bfWeightMEFact[1] = generatorPlugin->GetAltWeight(2) / nominal;
+        // Indices of weights for scales variations in ME are set according to [1] (note that the
+        // first weight from input MiniAOD file is not stored in PEC tuples)
+        // [1] https://github.com/andrey-popov/multijet-jec/blob/969b9d530f2e60528a9eb2d2d37dcaaa205372e6/grid/python/MultijetJEC_cfg.py#L143-L145
+        bfWeightMERenorm[0] = generatorPlugin->GetAltWeight(2) / nominal;
+        bfWeightMERenorm[1] = generatorPlugin->GetAltWeight(5) / nominal;
+        bfWeightMEFact[0] = generatorPlugin->GetAltWeight(0) / nominal;
+        bfWeightMEFact[1] = generatorPlugin->GetAltWeight(1) / nominal;
     }
 
     tree->Fill();
