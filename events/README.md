@@ -46,9 +46,19 @@ partition_runs JetHT-Run2016F*.root -r 278802
 
 In the following the two parts are treated as independent eras 2016F1 and 2016F2. Of course, it is also possible to produce files for the two parts separately by applying appropriate luminosity masks when running over input data sets in Grid.
 
-The path to the JSON file that serves as a database of all available data set is [provided](https://github.com/andrey-popov/multijet-jec/blob/0b2ae13e09b4eccdc17782390844c72e9d2676f5/events/config/main.json#L3) in the main configuration. The format of this file is described in documentation for class [`DatasetBuilder`](https://github.com/andrey-popov/mensura/blob/master/include/mensura/DatasetBuilder.hpp) from mensura. For each data set, it specifies the names of included ROOT files and metadata such as cross sections for simulated stamples. The cross sections have been taken from [here](config/samples_descriptions.json).
 
-For user's convenience, the main configuration [defines](https://github.com/andrey-popov/multijet-jec/blob/0b2ae13e09b4eccdc17782390844c72e9d2676f5/events/config/main.json#L4-L15) several groups of data sets. Typically, a whole group would be processed together.
+### Database of samples
+
+Available data sets need to be specified in a JSON file with a format described in documentation for class [`DatasetBuilder`](https://github.com/andrey-popov/mensura/blob/master/include/mensura/DatasetBuilder.hpp) from mensura. For each data set, it specifies the names of included ROOT files and metadata such as cross sections for simulated stamples. The cross sections have been taken from [samples_descriptions.json](config/samples_descriptions.json). This database file can be created with
+
+```sh
+compute_sample_norm.py $results_dir --drop-alt-weights
+build_sample_database.py $results_dir -d $MULTIJET_JEC_INSTALL/config/samples_descriptions.json
+```
+
+where `$results_dir` is the directory with the input ROOT files and the scripts are from [mensura](https://github.com/andrey-popov/mensura/tree/master/scripts).
+
+The path to the database file is [provided](https://github.com/andrey-popov/multijet-jec/blob/0b2ae13e09b4eccdc17782390844c72e9d2676f5/events/config/main.json#L3) in the main configuration. For user's convenience, the configuration also [defines](https://github.com/andrey-popov/multijet-jec/blob/0b2ae13e09b4eccdc17782390844c72e9d2676f5/events/config/main.json#L4-L15) several groups of data sets. Typically, a whole group would be processed together.
 
 
 ### Jet corrections

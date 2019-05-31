@@ -18,6 +18,8 @@ As in component [`events`](../events), it is recommended to use [LCG_95apython3]
 . /cvmfs/sft.cern.ch/lcg/views/setupViews.sh LCG_95apython3 x86_64-slc6-gcc8-opt
 ```
 
+On top of this, file [`env.sh`](env.sh) needs to be sourced.
+
 
 ## Comparison between data and simulation
 
