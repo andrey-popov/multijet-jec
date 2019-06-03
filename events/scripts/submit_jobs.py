@@ -52,7 +52,7 @@ class Samples:
 job_script_template = """#!/bin/bash
 . /cvmfs/sft.cern.ch/lcg/views/setupViews.sh LCG_95apython3 x86_64-slc6-gcc8-opt
 cd $TMPDIR
-multijet {sample_def} --config "{config}" --syst "{syst}"
+multijet {sample_def} --config "{config}" --syst "{syst}" {add_options}
 cp *.root "{output_dir}"
 """
 
@@ -72,6 +72,10 @@ if __name__ == '__main__':
     arg_parser.add_argument(
         '-s', '--syst', default='',
         help='Requested systematic variation.'
+    )
+    arg_parser.add_argument(
+        '-a', '--add', default='',
+        help='Additional options to be forwarded to multijet application'
     )
     arg_parser.add_argument(
         '-o', '--output', default='.',
@@ -145,7 +149,7 @@ if __name__ == '__main__':
         ]
         job_script = job_script_template.format(
             sample_def=' '.join(job), config=args.config,
-            syst=args.syst, output_dir=output_dir
+            syst=args.syst, add_options=args.add, output_dir=output_dir
         )
 
         submit_success = False
