@@ -247,7 +247,7 @@ int main(int argc, char **argv)
         
         for (string const &period: {"BCD", "EF", "GH"})
         {
-            string const jecVersion = "Summer16_07Aug2017" + period + "_V20";
+            string const jecVersion = "Summer16_07Aug2017" + period + "_V11";
             
             vector<string> jecLevels{jecVersion + "_DATA_L1FastJet_AK4PFchs.txt",
               jecVersion + "_DATA_L2Relative_AK4PFchs.txt",
@@ -263,16 +263,15 @@ int main(int argc, char **argv)
                     
                     if (systType == SystType::JER)
                     {
-                        // Add closure-style L2Res corrections obtained with varied JER. Taken
-                        //from [1], "kFSR_Fit" versions.  Use the variant obtained with the pt
-                        //balance because the variations for MPF are one-sided in some cases.
-                        //[1] https://indico.cern.ch/event/770859/#11-l2rec-closure-and-jer-updow
+                        // Add closure-style L2Res corrections obtained with varied JER [1]
+                        // [1] https://indico.cern.ch/event/724150/#14-dijet-with-2016-legacy-data
+                        std::string const namePrefix{
+                            "Summer16_07Aug2017_V6_MPF_LOGLIN_L2Residual_pythia8_AK4PFchs_"};
+
                         if (systDirection == SystService::VarDirection::Up)
-                            jecLevels.emplace_back("Summer16_07Aug2017" + period +
-                              "_V18_pT_LOGLIN_L2Residual_pythia8_AK4PFchs_JERUp.txt");
+                            jecLevels.emplace_back(namePrefix + "JERup.txt");
                         else
-                            jecLevels.emplace_back("Summer16_07Aug2017" + period +
-                              "_V18_pT_LOGLIN_L2Residual_pythia8_AK4PFchs_JERDown.txt");
+                            jecLevels.emplace_back(namePrefix + "JERdown.txt");
                     }
                 }
             }
@@ -303,7 +302,7 @@ int main(int argc, char **argv)
         manager.RegisterPlugin(jetmetReader);
         
         
-        string const jecVersion("Summer16_07Aug2017_V20");
+        string const jecVersion("Summer16_07Aug2017_V11");
         
         // Corrections to be applied to jets and also to be propagated to MET. Although original
         //jets in simulation already have up-to-date corrections, they will be reapplied in order

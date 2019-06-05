@@ -8,8 +8,8 @@ set -e
 
 dirSource=`pwd`
 
-dataVersion="20"
-simVersion="20"
+dataVersion="11"
+simVersion="11"
 
 for period in BCD EF GH
 do
