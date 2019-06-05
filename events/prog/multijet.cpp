@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 
     if (not systArg.empty())
     {
-        std::string const systArgLower{boost::to_lower_copy(systArgLower)};
+        std::string const systArgLower{boost::to_lower_copy(systArg)};
         
         std::regex systRegex("(l1res|l2res|jer)[-_]?(up|down)", std::regex::extended);
         std::smatch matchResult;
