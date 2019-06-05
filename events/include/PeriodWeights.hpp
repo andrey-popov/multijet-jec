@@ -57,11 +57,12 @@ private:
         unsigned index;
 
         /**
-         * \brief Prefiring weights for the current period
+         * \brief Variation in prefiring weights for the current period
          *
-         * Used as buffers for the output tree.
+         * Used as buffers for the output tree. These weights are relative with respect to the
+         * nominal one.
          */
-        mutable Float_t prefiringWeightNominal, prefiringWeightSyst[2];
+        mutable Float_t prefiringWeightSyst[2];
     };
 
 public:

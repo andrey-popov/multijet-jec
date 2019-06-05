@@ -12,7 +12,6 @@ namespace fs = std::filesystem;
 
 PeriodWeights::Period::Period() noexcept:
     weight{std::numeric_limits<Float_t>::quiet_NaN()},
-    prefiringWeightNominal{std::numeric_limits<Float_t>::quiet_NaN()},
     prefiringWeightSyst{
       std::numeric_limits<Float_t>::quiet_NaN(), std::numeric_limits<Float_t>::quiet_NaN()}
 {}
@@ -63,13 +62,11 @@ void PeriodWeights::BeginRun(Dataset const &dataset)
     for (auto const &[periodLabel, period]: periods)
     {
         tree->Branch(("Weight_" + periodLabel).c_str(), &period.weight)->SetTitle(
-          "Pileup and luminosity weight");
+          "Weight for luminosity, pileup, and L1T prefiring (if enabled)");
 
         if (prefiringPlugin)
         {
-            tree->Branch(("Weight_" + periodLabel + "_L1TPrefiring").c_str(),
-              &period.prefiringWeightNominal)->SetTitle("Nominal prefiring weight");
-            std::string const systBranchName{"Weight_" + periodLabel + "_L1TPrefiringSyst"};
+            std::string const systBranchName{"Weight_" + periodLabel + "_L1TPrefiring"};
             tree->Branch(systBranchName.c_str(), period.prefiringWeightSyst,
               (systBranchName + "[2]/F").c_str())->SetTitle(
               "Relative up and down variations for prefiring weight");
@@ -167,7 +164,7 @@ bool PeriodWeights::ProcessEvent()
         {
             auto const srcPrefiringWeights = prefiringPlugin->GetWeights(period.index);
 
-            period.prefiringWeightNominal = srcPrefiringWeights[0];
+            period.weight *= srcPrefiringWeights[0];
             period.prefiringWeightSyst[0] = srcPrefiringWeights[1] / srcPrefiringWeights[0];
             period.prefiringWeightSyst[1] = srcPrefiringWeights[2] / srcPrefiringWeights[0];
         }
