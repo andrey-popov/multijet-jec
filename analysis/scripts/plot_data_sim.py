@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
-"""Produces plots of basic observables.
+"""Produces plots with a comparison between data and simulation.
 
 Plots distributions of pt of the leading jet and the recoil and the
 missing pt in data and simulation.  Also plots mean balance observables
-in bins of pt of the leading jet.  In all cases the ratio between data
-and simulation is included.
+in bins of pt of the leading jet.  In addition, produces control
+distributions of balance observables in wide bins in pt of the leading
+jet.  In all cases the ratio between data and simulation is included.
 """
 
 import argparse
 import json
 import math
 import os
+from uuid import uuid4
 
 import matplotlib as mpl
 mpl.use('Agg')  # Use a non-interactive backend
@@ -49,9 +51,14 @@ if __name__ == '__main__':
         help='Directory to store figures'
     )
     args = arg_parser.parse_args()
-    
-    if not os.path.exists(args.fig_dir):
-        os.makedirs(args.fig_dir)
+
+    control_fig_dir = os.path.join(args.fig_dir, 'control')
+
+    for fig_dir in [args.fig_dir, control_fig_dir]:
+        try:
+            os.makedirs(fig_dir)
+        except FileExistsError:
+            pass
     
     if args.era is None and len(args.data) == 1:
         # Try to figure the era label from the name of the data file
@@ -98,9 +105,22 @@ if __name__ == '__main__':
         ['data', 'sim']
     )
 
+    binning_pt = config['control']['binning']
+    binning_bal = {'range': [0., 2.], 'step': 0.025}
+    
+    hist_2d_pt_bal = RDFHists(
+        ROOT.TH2D, [binning_bal, binning_pt], ['PtBal', 'PtJ1', 'weight'],
+        ['data', 'sim']
+    )
+    hist_2d_mpf = RDFHists(
+        ROOT.TH2D, [binning_bal, binning_pt], ['MPF', 'PtJ1', 'weight'],
+        ['data', 'sim']
+    )
+
     rdf_hists = [
         hist_pt_lead, hist_pt_recoil, hist_pt_miss,
-        prof_pt_lead, prof_pt_bal, prof_mpf
+        prof_pt_lead, prof_pt_bal, prof_mpf,
+        hist_2d_pt_bal, hist_2d_mpf
     ]
     
     
@@ -158,9 +178,32 @@ if __name__ == '__main__':
             hist.SetBinError(
                 num_bins, math.hypot(hist.GetBinError(num_bins), hist.GetBinError(num_bins + 1))
             )
+
+    for hist in (
+        h for d in [hist_2d_pt_bal, hist_2d_mpf] for h in d.hists.values()
+    ):
+        for pt_bin in range(0, hist.GetNbinsY() + 2):
+            hist.SetBinContent(
+                1, pt_bin,
+                hist.GetBinContent(1, pt_bin) + hist.GetBinContent(0, pt_bin)
+            )
+            hist.SetBinError(
+                1, pt_bin,
+                math.hypot(hist.GetBinError(1, pt_bin), hist.GetBinError(0, pt_bin))
+            )
+            
+            n = hist.GetNbinsX()
+            hist.SetBinContent(
+                n, pt_bin,
+                hist.GetBinContent(n, pt_bin) + hist.GetBinContent(n + 1, pt_bin)
+            )
+            hist.SetBinError(
+                n, pt_bin,
+                math.hypot(hist.GetBinError(n, pt_bin), hist.GetBinError(n + 1, pt_bin))
+            )
     
     
-    # Plot distributions
+    # Plot 1D distributions
     fig, axes_upper, axes_lower = plot_distribution(
         hist_pt_lead['data'], hist_pt_lead['sim'],
         x_label=r'$p_\mathrm{T}^\mathrm{lead}$ [GeV]', era_label=era_label
@@ -206,3 +249,62 @@ if __name__ == '__main__':
     )
     fig.savefig(os.path.join(args.fig_dir, 'MPF.pdf'))
     plt.close(fig)
+
+
+    # Plot distributions of balance observables in bins of pt of the
+    # leading jet.  They are constructed from slices of the 2D
+    # histograms.
+    for hist_bal, label, x_label in [
+        (hist_2d_pt_bal, 'PtBal', r'$p_\mathrm{T}$ balance'),
+        (hist_2d_mpf, 'MPF', 'MPF')
+    ]:
+        num_bins_pt = hist_bal['data'].GetNbinsY()
+        
+        for pt_bin in range(1, num_bins_pt + 2):
+            hist_data = hist_bal['data'].ProjectionX(uuid4().hex, pt_bin, pt_bin, 'e')
+            hist_sim = hist_bal['sim'].ProjectionX(uuid4().hex, pt_bin, pt_bin, 'e')
+            
+            fig, axes_upper, axes_lower = plot_distribution(
+                hist_data, hist_sim, x_label=x_label, era_label=era_label
+            )
+            
+            if pt_bin == num_bins_pt + 1:
+                pt_bin_label = r'$p_\mathrm{{T}}^\mathrm{{lead}} > {:g}$ GeV'.format(
+                    hist_bal['data'].GetYaxis().GetBinLowEdge(pt_bin)
+                )
+            else:
+                pt_bin_label = r'${:g} < p_\mathrm{{T}}^\mathrm{{lead}} < {:g}$ GeV'.format(
+                    hist_bal['data'].GetYaxis().GetBinLowEdge(pt_bin),
+                    hist_bal['data'].GetYaxis().GetBinLowEdge(pt_bin + 1)
+                )
+            
+            axes_upper.text(
+                0., 1., pt_bin_label, ha='left', va='bottom', transform=axes_upper.transAxes
+            )
+            
+            
+            # Move the common exponent so that it does not collide with
+            # the pt bin label.  Technically, the actual exponent is
+            # turned invisible, and a new text object is added.
+            # Check the value of the common exponent as determined by
+            # the tick formatter.  To do it, need to feed locations of
+            # ticks to the formatter first.
+            ax = axes_upper.get_yaxis()
+            major_locs = ax.major.locator()
+            formatter = ax.get_major_formatter()
+            formatter.set_locs(major_locs)
+            
+            if formatter.orderOfMagnitude != 0:
+                # There is indeed a common exponent
+                ax.offsetText.set_visible(False)
+                
+                axes_upper.text(
+                    0., 1.05, '$\\times 10^{}$'.format(formatter.orderOfMagnitude),
+                    ha='right', va='bottom', transform=axes_upper.transAxes
+                )
+            
+            
+            fig.savefig(os.path.join(
+                control_fig_dir, '{}_ptBin{}.pdf'.format(label, pt_bin)
+            ))
+            plt.close(fig)
