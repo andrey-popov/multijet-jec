@@ -13,6 +13,9 @@ the resulting splines are stored in separate directories.
 
 The script also checks the number of events in each bin of the target
 binning and prints a warning if this number is below a threshold.
+
+Systematic uncertainties are not included.  They are constructed by a
+dedicated script.
 """
 
 import argparse
@@ -37,15 +40,12 @@ if __name__ == '__main__':
         epilog=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     arg_parser.add_argument(
-        'data', help='Input data file.'
+        '-d', '--data', nargs='+',
+        help='Input files with data (required)'
     )
     arg_parser.add_argument(
-        'sim', help='Input simulation file.'
-    )
-    arg_parser.add_argument(
-        '-w', '--weights',
-        help='File with weights for simulation. '
-            'By default constructed from path to simulation file.'
+        '-s', '--sim', nargs='+',
+        help='Input files with simulation (required)'
     )
     arg_parser.add_argument(
         '-t', '--triggers', default='trigger_bins.json',
@@ -56,18 +56,17 @@ if __name__ == '__main__':
         help='JSON file with binning in ptlead.'
     )
     arg_parser.add_argument(
+        '-e', '--era', default=None,
+        help='Data-taking period'
+    )
+    arg_parser.add_argument(
         '-o', '--output', default='multijet.root',
         help='Name for output ROOT file.'
     )
-    arg_parser.add_argument('--plots', default='fig', help='Directory for diagnostic plots.')
-    arg_parser.add_argument('--era', help='Era label for diagnostic plots.')
+    arg_parser.add_argument(
+        '--plots', default='fig', help='Directory for diagnostic plots.'
+    )
     args = arg_parser.parse_args()
-    
-    if args.weights is None:
-        if args.sim_file.endswith('.root'):
-            args.weights = args.sim_file[:-5] + '_weights.root'
-        else:
-            args.weights = args.sim_file + '_weights.root'
     
     
     ROOT.gROOT.SetBatch(True)
@@ -124,35 +123,36 @@ if __name__ == '__main__':
     binning_store.Write('Binning')
     
     
-    # Store data histograms. Since there is no overlap in pt of the
+    # Store data histograms.  Since there is no overlap in pt of the
     # leading jet between different trigger bins in data, corresponding
     # histograms are combined.
-    data_file = ROOT.TFile(args.data)
-    out_file.cd()
-    
     data_histograms = OrderedDict()
     
-    for trigger_bin in trigger_bins:
-        for name in [
-            'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'RelPtJetSumProj'
-        ]:
-            hist = data_file.Get('{}/{}'.format(trigger_bin.name, name))
-            
-            if name not in data_histograms:
-                hist.SetDirectory(out_file)
-                data_histograms[name] = hist
-            else:
-                data_histograms[name].Add(hist)
-    
-    data_file.Close()
+    for data_path in args.data:
+        data_file = ROOT.TFile(data_path)
+
+        for trigger_bin in trigger_bins:
+            for name in [
+                'PtLead', 'PtLeadProfile', 'PtBalProfile', 'MPFProfile', 'RelPtJetSumProj'
+            ]:
+                hist = data_file.Get('{}/{}'.format(trigger_bin.name, name))
+                
+                if name not in data_histograms:
+                    hist.SetDirectory(out_file)
+                    data_histograms[name] = hist
+                else:
+                    data_histograms[name].Add(hist)
+        
+        data_file.Close()
+
     out_file.Write()
     
     
     # Construct continuous model for mean balance observables in
     # simulation
     sim_fitter = SplineSimFitter(
-        args.sim, args.weights, trigger_bins,
-        diagnostic_plots_dir=args.plots + '/sim_fit', era=args.era
+        args.sim, args.era, trigger_bins,
+        diagnostic_plots_dir=args.plots + '/sim_fit'
     )
     sim_fitter.fit(['PtBal', 'MPF'])
     

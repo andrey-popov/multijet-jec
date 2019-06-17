@@ -58,15 +58,16 @@ class SimHistBuilder:
         return self.pt_binning
 
 
-    def fill(self, sim_path, weight_path, variables):
-        """Fill profiles from a simulation file.
+    def fill(self, sim_paths, era, variables):
+        """Fill profiles from files with simulation.
 
         Construct profiles of given variables versus pt of the leading
         jet.  Use binning defined in self.pt_binning.
 
         Arguments:
-            sim_path, weight_path:  Paths to ROOT files with balance
-                observables for simulation and event weights.
+            sim_paths:  Paths to ROOT files with balance observables for
+                simulation.
+            era:        Era label to access period-specific weights.
             variables:  An iterable with a list of variables whose
                 profiles are to be filled.  Each variable must be
                 represented by a single branch of the input tree.
@@ -103,35 +104,49 @@ class SimHistBuilder:
         }
         
         for profile in profiles.values(): 
-            profile.SetDirectory(ROOT.gROOT)
+            profile.SetDirectory(None)
+
+            # Protect against a bug in ROOT [1]
+            # [1] https://sft.its.cern.ch/jira/browse/ROOT-10153
+            profile.Sumw2()
         
 
-        sim_file = ROOT.TFile(sim_path)
-        weight_file = ROOT.TFile(weight_path)
-        ROOT.gROOT.cd()
-        
         for trigger_name in trigger_pt_ranges:
-            tree = sim_file.Get(trigger_name + '/BalanceVars')
-            tree.AddFriend(weight_file.Get(trigger_name + '/Weights'))
-            tree.SetBranchStatus('*', False)
+            chain = ROOT.TChain(trigger_name + '/BalanceVars')
+            friend_chains = [
+                ROOT.TChain('{}/{}'.format(trigger_name, tree_name))
+                for tree_name in ['GenWeights', 'PeriodWeights']
+            ]
+
+            for path in sim_paths:
+                for c in [chain] + friend_chains:
+                    c.AddFile(path)
+
+            for friend in friend_chains:
+                chain.AddFriend(friend)
+
             
-            for branch in itertools.chain(['PtJ1', 'TotalWeight'], variables):
-                tree.SetBranchStatus(branch, True)
-            
-            weight_expression = \
-                'TotalWeight[0] * (PtJ1 > {} && PtJ1 < {})'.format(
-                    *trigger_pt_ranges[trigger_name]
-                )
-            
+            pt_selection = 'PtJ1 > {} && PtJ1 < {}'.format(
+                *trigger_pt_ranges[trigger_name]
+            )
+            weight_expression = ' WeightGen * Weight_{}'.format(era)
+
+            df = ROOT.RDataFrame(chain)
+            df_filtered = df.Filter(pt_selection)\
+                .Define('weight', weight_expression)
+
+            proxies = {}
+
             for variable in variables:
-                tree.Draw(
-                    '{} : PtJ1 >>+ {}'.format(
-                        variable, profiles[variable].GetName()
-                    ),
-                    weight_expression, 'goff'
+                proxies[variable] = df_filtered.Profile1D(
+                    ROOT.RDF.TProfile1DModel(profiles[variable]),
+                    'PtJ1', variable, 'weight'
                 )
-        
-        
+
+            for variable in variables:
+                profiles[variable].Add(proxies[variable].GetValue())
+
+
         # Convert all profiles into a NumPy representation
         for variable in variables:
             profiles[variable] = Hist1D(profiles[variable])
@@ -154,27 +169,26 @@ class SplineSimFitter:
     """
     
     def __init__(
-        self, sim_path, weight_path, trigger_bins,
-        diagnostic_plots_dir=None, era=None
+        self, sim_paths, era, trigger_bins,
+        diagnostic_plots_dir=None
     ):
         """Initialize from paths to input files and trigger bins.
         
         Arguments:
-            sim_path, weight_path:  Paths to ROOT files with balance
-                observables for simulation and event weights.
+            sim_paths:  Paths to ROOT files with balance observables for
+                simulation.
+            era:        Era label to access period-specific weights.
             trigger_bins:  TriggerBins object.
             diagnostic_plots_dir:  Directory in which figures with
                 diagnostic plots are to be stored.  If None, the plots
                 will not be produced.
-            era:  Era label for diagnostic plots.
         """
         
-        self.sim_path = sim_path
-        self.weight_path = weight_path
+        self.sim_paths = sim_paths
+        self.era_label = era
         self.trigger_bins = trigger_bins
         
         self.diagnostic_plots_dir = diagnostic_plots_dir
-        self.era_label = era
         
         self.fit_results = {}
     
@@ -206,7 +220,7 @@ class SplineSimFitter:
         hist_builder = SimHistBuilder(self.trigger_bins)
         hist_builder.construct_binning(max_pt, num_bins)
         profiles = hist_builder.fill(
-            self.sim_path, self.weight_path, ['PtJ1'] + variables
+            self.sim_paths, self.era_label, ['PtJ1'] + variables
         )
         
         
