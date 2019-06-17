@@ -334,6 +334,7 @@ class SplineSimFitter:
             axes_lower.xaxis.set_minor_formatter(
                 mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4))
             )
+            axes_lower.ticklabel_format(axis='y', style='plain')
             
             axes_upper.set_ylabel(ylabel)
             axes_lower.set_xlabel('$\\tau_1$ [GeV]')

@@ -85,6 +85,9 @@ def plot_distribution(
     
     # Remove tick labels on the x axis of the upper axes
     axes_upper.set_xticklabels([''] * len(axes_upper.get_xticklabels()))
+
+    # Disable scientific notation for residuals
+    axes_lower.ticklabel_format(axis='y', style='plain')
     
     axes_upper.set_xlim(binning[0], binning[-1])
     axes_lower.set_xlim(binning[0], binning[-1])
@@ -231,6 +234,9 @@ def plot_balance(
     # consistent formatting (1000 instead of 10^3).
     axes_lower.xaxis.set_major_formatter(mpl.ticker.LogFormatter())
     axes_lower.xaxis.set_minor_formatter(mpl.ticker.LogFormatter(minor_thresholds=(2, 0.4)))
+
+    # Disable scientific notation for residuals
+    axes_lower.ticklabel_format(axis='y', style='plain')
     
     axes_upper.set_xlim(sim_err_band_x[0], sim_err_band_x[-1])
     axes_lower.set_xlim(sim_err_band_x[0], sim_err_band_x[-1])
