@@ -27,7 +27,7 @@ if __name__ == '__main__':
         epilog=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     arg_parser.add_argument('config', help='Configuration JSON file.')
-    arg_parser.add_argument('-e', '--era', default=None, help='Era to process')
+    arg_parser.add_argument('-e', '--era', help='Era to process')
     arg_parser.add_argument(
         '-t', '--triggers', default='trigger_bins.json',
         help='JSON file with definition of triggers bins.'
@@ -51,12 +51,7 @@ if __name__ == '__main__':
     
     
     # Read configuration files
-    if args.era:
-        syst_config = SystConfig(args.config, eras=[args.era])
-    else:
-        syst_config = SystConfig(args.config)
-
-    syst_config = syst_config[args.era]  # Only keep one era
+    syst_config = SystConfig(args.config, era=args.era)
 
     with open(args.binning) as f:
         binning = json.load(f)
@@ -97,7 +92,7 @@ if __name__ == '__main__':
     # Construct smoothed relative deviations in data
     data_fitter = DataVariationFitter(
         syst_config, trigger_bins, variables, binning,
-        era=args.era, diagnostic_plots_dir=args.plots + '/data_syst'
+        diagnostic_plots_dir=args.plots + '/data_syst'
     )
 
     for syst_label in syst_config.iter_group('data'):
@@ -118,7 +113,7 @@ if __name__ == '__main__':
     # Construct smoothed relative variations in simulation
     sim_fitter = SimVariationFitter(
         syst_config, trigger_bins, variables,
-        era=args.era, diagnostic_plots_dir=args.plots + '/sim_syst'
+        diagnostic_plots_dir=args.plots + '/sim_syst'
     )
 
     for syst_label in syst_config.iter_group('sim'):

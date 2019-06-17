@@ -58,19 +58,21 @@ class SimHistBuilder:
         return self.pt_binning
 
 
-    def fill(self, sim_paths, era, variables):
+    def fill(self, sim_paths, era, variables, add_weight=''):
         """Fill profiles from files with simulation.
 
         Construct profiles of given variables versus pt of the leading
         jet.  Use binning defined in self.pt_binning.
 
         Arguments:
-            sim_paths:  Paths to ROOT files with balance observables for
+            sim_paths:   Paths to ROOT files with balance observables for
                 simulation.
-            era:        Era label to access period-specific weights.
-            variables:  An iterable with a list of variables whose
+            era:         Era label to access period-specific weights.
+            variables:   An iterable with a list of variables whose
                 profiles are to be filled.  Each variable must be
                 represented by a single branch of the input tree.
+            add_weight:  Expression with an additional event weight to
+                be included.
 
         Return value:
             Dictionary that maps names of the variables into their
@@ -130,6 +132,9 @@ class SimHistBuilder:
                 *trigger_pt_ranges[trigger_name]
             )
             weight_expression = ' WeightGen * Weight_{}'.format(era)
+
+            if add_weight:
+                weight_expression += ' * ({})'.format(add_weight)
 
             df = ROOT.RDataFrame(chain)
             df_filtered = df.Filter(pt_selection)\
@@ -441,7 +446,8 @@ class VariationFitter:
 
 
     def _plot_diagnostics(
-        self, syst_label, raw_deviations, fit_splines, superscript=''
+        self, syst_label, raw_deviations, fit_splines, superscript='',
+        syst_label_legend=''
     ):
         """Produce diagnostic plots if enabled.
         
@@ -450,10 +456,14 @@ class VariationFitter:
         If self.diagnostic_plots_dir is None, do nothing.
         
         Arguments:
-            variable:  Name of variable representing balance observable.
+            syst_label:  Label of systematic variation.
             raw_deviations:  Dictionaries with utils.Hist1D that
                 represent raw deviations from the nominal <B>.
             fit_splines:  Fitted splines for the deviations.
+            superscript:  Superscript for mean balance observable.
+                Normally, it should be either "Sim" or "L2".
+            syst_label_legend:  Label for systematic variation to be
+                used in the legend.  If not given, will use syst_label.
         
         Return value:
             None.
@@ -468,6 +478,9 @@ class VariationFitter:
             os.makedirs(self.diagnostic_plots_dir)
         except FileExistsError:
             pass
+
+        if not syst_label_legend:
+            syst_label_legend = syst_label
         
         var_template = r'$\langle B_\mathrm{{{}}}^\mathrm{{{}}}\rangle$'
 
@@ -494,7 +507,7 @@ class VariationFitter:
                         self.mean_pt_values, deviation.contents[1:-1],
                         yerr=deviation.errors[1:-1],
                         marker='o', color=colour, lw=0., elinewidth=0.8,
-                        label='{}, {}'.format(syst_label, direction)
+                        label='{}, {}'.format(syst_label_legend, direction)
                     )
                     pt_values = np.geomspace(
                         deviation.binning[0], deviation.binning[-1], num=500
@@ -597,7 +610,7 @@ class SimVariationFitter(VariationFitter):
         class.
         """
         
-        super().__init__(variables, **kwargs)
+        super().__init__(variables, era=syst_config.period_weight, **kwargs)
 
         self.syst_config = syst_config
 
@@ -609,7 +622,7 @@ class SimVariationFitter(VariationFitter):
         self.hist_builder = SimHistBuilder(trigger_bins, max_pt=max_pt)
         self.hist_builder.construct_binning(self.max_pt, self.num_bins)
         profiles = self.hist_builder.fill(
-            self.syst_config.nominal.sim, self.syst_config.nominal.weights,
+            self.syst_config.nominal.sim_paths, self.syst_config.period_weight,
             ['PtJ1'] + self.variables
         )
 
@@ -647,7 +660,8 @@ class SimVariationFitter(VariationFitter):
         for direction in ['up', 'down']:
             samples = self.syst_config.variations[syst_label][direction]
             cur_profiles = self.hist_builder.fill(
-                samples.sim, samples.weights, self.variables
+                samples.sim_paths, self.syst_config.period_weight,
+                self.variables, add_weight=samples.add_weight
             )
 
             for variable in self.variables:
@@ -657,7 +671,8 @@ class SimVariationFitter(VariationFitter):
         smoothing_splines = self._smooth_deviations(deviations)
 
         self._plot_diagnostics(
-            syst_label, deviations, smoothing_splines, superscript='Sim'
+            syst_label, deviations, smoothing_splines, superscript='Sim',
+            syst_label_legend=self.syst_config.get_legend_label(syst_label)
         )
         
         
@@ -701,7 +716,7 @@ class DataVariationFitter(VariationFitter):
         class.
         """
         
-        super().__init__(variables, **kwargs)
+        super().__init__(variables, era=syst_config.period_weight, **kwargs)
 
         self.syst_config = syst_config
         self.trigger_bins = trigger_bins
@@ -712,7 +727,7 @@ class DataVariationFitter(VariationFitter):
         # Read nominal profiles from the input file and rebin them to
         # the target binning.
         profiles = self._read_histograms(
-            self.syst_config.nominal.data,
+            self.syst_config.nominal.data_paths,
             [name + 'Profile' for name in ['PtLead'] + self.variables]
         )
         nominal_profiles = {
@@ -750,7 +765,7 @@ class DataVariationFitter(VariationFitter):
         for direction in ['up', 'down']:
             samples = self.syst_config.variations[syst_label][direction]
             cur_profiles = self._read_histograms(
-                samples.data, [v + 'Profile' for v in self.variables]
+                samples.data_paths, [v + 'Profile' for v in self.variables]
             )
 
             for variable in self.variables:
@@ -761,7 +776,8 @@ class DataVariationFitter(VariationFitter):
         smoothing_splines = self._smooth_deviations(deviations)
 
         self._plot_diagnostics(
-            syst_label, deviations, smoothing_splines, superscript='L2'
+            syst_label, deviations, smoothing_splines, superscript='L2',
+            syst_label_legend=self.syst_config.get_legend_label(syst_label)
         )
 
 
@@ -781,16 +797,16 @@ class DataVariationFitter(VariationFitter):
         return smooth_deviations
 
 
-    def _read_histograms(self, path, names):
-        """Read histograms from data file.
+    def _read_histograms(self, paths, names):
+        """Read histograms from data files.
 
-        Read requested ROOT histograms from a data file.  Since trigger
+        Read requested ROOT histograms from data files.  Since trigger
         bins in data do not have overlaps in pt, merge the bins
         together.  Rebin the histograms to the binning given at
         initialization.
 
         Arguments:
-            path:  Path to ROOT file with data.
+            paths:  Paths to ROOT files with data.
             names:  Iterable with names of requested histograms.
 
         Return value:
@@ -798,19 +814,23 @@ class DataVariationFitter(VariationFitter):
             represent rebinned histograms.
         """
 
-        data_file = ROOT.TFile(path)
         root_histograms = {}
 
-        for name, trigger_bin in itertools.product(names, self.trigger_bins):
-            hist = data_file.Get('{}/{}'.format(trigger_bin.name, name))
+        for path in paths:
+            data_file = ROOT.TFile(path)
 
-            if name not in root_histograms:
-                hist.SetDirectory(None)
-                root_histograms[name] = hist
-            else:
-                root_histograms[name].Add(hist)
+            for name, trigger_bin in itertools.product(
+                names, self.trigger_bins
+            ):
+                hist = data_file.Get('{}/{}'.format(trigger_bin.name, name))
 
-        data_file.Close()
+                if name not in root_histograms:
+                    hist.SetDirectory(None)
+                    root_histograms[name] = hist
+                else:
+                    root_histograms[name].Add(hist)
+
+            data_file.Close()
 
         converted_histograms = {
             name: Hist1D(hist.Rebin(

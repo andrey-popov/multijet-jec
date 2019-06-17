@@ -5,94 +5,213 @@ import json
 import os
 
 
-class _Samples:
-    """Auxiliary class to aggregate files for a single variation.
-    
-    Contains names of input files for data, simulation, and weights for
-    simulation.
+class VariationSamples:
+    """Data and simulation samples for a single systematic variation.
+
+    This class provides fully qualified paths to input files with data
+    and simulation, as well as event weights for simulation.  This
+    allows to fully define inputs to construct data and simulation
+    distributions for the nominal configuration or a single systematic
+    variation alike.  When dealing with systematic variations, either
+    members related to real data or those for simulation might not be
+    set, which indicates that the systematic uncertainty does not affect
+    the corresponding part.
     """
 
-    __slots__ = ['data', 'sim', 'weights']
+    __slots__ = ['data_paths', 'sim_paths', 'period_weight', 'add_weight']
 
-    def __init__(self, data, sim, weights, directory='', era=''):
+    def __init__(
+        self, data_paths, sim_paths, period_weight,
+        eras=[], directory='', add_weight=''
+    ):
         """Initialize from file paths.
         
-        Prepend all paths with the given directory and format for the
-        given era.  See _qualify_path for details.
+        Arguments:
+            data_paths:  List of paths to data files.
+            sim_paths:   List of paths to simulation files.
+            period_weight:  Era label to identify period weight to be
+                used with simulation.
+            eras:  List of era labels to format paths to input files.
+            directory:    Directory with respect to which paths to input
+                files should be resolved.
+            add_weights:  Additional weight to be applied to simulation.
+
+        List of paths to input files are expanded using method
+        _qualify_paths.
         """
 
-        self.data = self._qualify_path(data, directory, era)
-        self.sim = self._qualify_path(sim, directory, era)
-        self.weights = self._qualify_path(weights, directory, era)
+        self.data_paths = self._qualify_paths(data_paths, directory, eras)
+        self.sim_paths = self._qualify_paths(sim_paths, directory, eras)
+        self.period_weight = period_weight
+        self.add_weight = add_weight
 
-        if bool(self.sim) != bool(self.weights):
+        if (self.add_weight or self.period_weight) and not self.sim_paths:
             raise RuntimeError(
-                'Files for simulation and weights must either both be present '
-                'or none should be given.'
+                'Weights can only be specified together with simulation files.'
+            )
+
+        if self.sim_paths and not self.period_weight:
+            raise RuntimeError(
+                'When using simulation, period weight must be specified.'
             )
 
 
     @classmethod
-    def from_config(cls, config, directory='', era=''):
-        """Initialize from a configuration.
-
-        The configuration must be the relevant part of the full JSON
-        configuration described in class SystConfig.
-        """
-        
-        data = config['data'] if 'data' in config else ''
-        sim = config['sim'] if 'sim' in config else ''
-        weights = config['weights'] if 'weights' in config else ''
-
-        return cls(data, sim, weights, directory=directory, era=era)
-
-
-    @staticmethod
-    def _qualify_path(path, directory='', era=''):
-        """Prepend path with directory and format it for era.
-
-        Prepend the path with the given directory (using os.path.join).
-        If the path contains a substring "{era}", replace it with given
-        era.  If the path is empty or None, return None.
-        """
-
-        if not path:
-            return None
-        else:
-            return os.path.join(directory, path.format(era=era))
-
-
-
-class SystConfigEra:
-    """Configuration for systematic variations in a specific era."""
-
-    def __init__(self, config, era):
+    def from_config(cls, config, period_weight, eras=[], directory=''):
         """Initialize from a configuration.
 
         Arguments:
-            config:  Dictionary with configuration described in
-                documentation for class SystConfig.
-            era:  Era for which the configuration is to be instantiated.
+            config:  Configuration describing a single variation.  Must
+                be a part of the full configuration described in class
+                SystConfig.
+            period_weight:  Era label to identify period weight to be
+                used with simulation.
+            eras:  List of era labels to format paths to input files.
+            directory:    Directory with respect to which paths to input
+                files should be resolved.
         """
+        
+        data_paths = config['data'] if 'data' in config else []
+        sim_paths = config['sim'] if 'sim' in config else []
+        add_weight = config['add_weight'] if 'add_weight' in config else None
+
+        return cls(
+            data_paths, sim_paths, period_weight,
+            eras=eras, directory=directory, add_weight=add_weight
+        )
+
+
+    @staticmethod
+    def _qualify_paths(paths, directory='', eras=[]):
+        """Prepend paths with directory and format them for eras.
+
+        If a path contains a substring "{era}", copy it multiple times
+        replacing the substring with actual era labels.  Prepend each
+        resulting path with the given directory.
+        """
+
+        # For each path that contains a fragment "{era}", replace it
+        # with all provided era labels
+        expanded_paths = []
+
+        for path in paths:
+            if '{era}' in path:
+                if not eras:
+                    raise RuntimeError(
+                        'Path "{}" requires a substitution with era label '
+                        'but not eras have been provided.'.format(path)
+                    )
+
+                for era in eras:
+                    expanded_paths.append(path.format(era=era))
+            else:
+                expanded_paths.append(path)
+
+        full_paths = [
+            os.path.join(directory, path)
+            for path in expanded_paths
+        ]
+
+        return full_paths
+
+
+
+class SystConfig:
+    """Configuration for systematic variations.
+    
+    The configuration is described by a JSON file of the following
+    format:
+      {
+        "directory":  <string, optional>,
+        "eras":  <list of strings with names of eras>,
+        "period_weight": <name of era for period weights>,
+        "nominal":  <samples>,
+        "variations": {
+          <label>: {
+            "up":  <samples>,
+            "down":  <samples>,
+            "legend_label": <label to be used in plots, optional>
+          },
+          // ...
+        }
+      }
+    Each group <samples> above define a set of files for one specific
+    variation.  It it described by the following dictionary:
+      {
+        "data":  <list of paths>,
+        "sim":  <list of paths>,
+        "add_weight": <string>
+      }
+    which gives location of ROOT files with data and simulation.  Either
+    of the two entries can be omitted if the systematic variation
+    applies only to simulation or only to data.  All paths will be
+    prepended with the optional source directory, given at the top level
+    of the configuration.  If a path contains a substring "{era}", it
+    will be replaced with names of all eras specified at the top level
+    of the configuration (unless this behaviour is overridden in the
+    initializer).  Optional parameter "add_weight" specifies an
+    additional weight to be applied to simulation.
+    """
+
+    def __init__(self, path, era=None):
+        """Initialize from a configuration file.
+        
+        Arguments:
+            path:  Path to a JSON configuration file.
+            era:   Era to override the list of eras specified in the
+                configuration file.  If given, only this era will be
+                considered, and the parameter "period_weight" will also
+                be overwritten with this era name.
+        """
+        
+        with open(path) as f:
+            config = json.load(f)
+
+        if era:
+            self.eras = [era]
+            self.period_weight = era
+        else:
+            self.eras = config['eras']
+            self.period_weight = config['period_weight']
+
 
         if 'directory' in config:
             directory = config['directory']
         else:
             directory = ''
 
-        self.nominal = _Samples.from_config(
-            config['nominal'], directory=directory, era=era
+        self.nominal = VariationSamples.from_config(
+            config['nominal'], self.period_weight,
+            eras=self.eras, directory=directory
         )
 
         self.variations = OrderedDict()
+        self.legend_labels = {}
 
         for syst_label, entry in config['variations'].items():
             self.variations[syst_label] = {
-                direction: _Samples.from_config(
-                    entry[direction], directory=directory, era=era
+                direction: VariationSamples.from_config(
+                    entry[direction], self.period_weight,
+                    eras=self.eras, directory=directory
                 )
                 for direction in ['up', 'down']
             }
+
+            if 'legend_label' in entry:
+                self.legend_labels[syst_label] = entry['legend_label']
+
+
+    def get_legend_label(self, syst_label):
+        """Return legend label for given systematic variation.
+
+        If no legend label has been provided in the configuration,
+        return syst_label.
+        """
+
+        if syst_label in self.legend_labels:
+            return self.legend_labels[syst_label]
+        else:
+            return syst_label
 
 
     def iter_group(self, group='all'):
@@ -111,109 +230,16 @@ class SystConfigEra:
 
         if group == 'data':
             return filter(
-                lambda label: self.variations[label]['up'].data is not None,
+                lambda label: self.variations[label]['up'].data_paths,
                 self.variations
             )
         elif group == 'sim':
             return filter(
-                lambda label: self.variations[label]['up'].sim is not None,
+                lambda label: self.variations[label]['up'].sim_paths,
                 self.variations
             )
         elif group == 'all':
             return iter(self.variations)
         else:
             raise RuntimeError('Unknown group "{}".'.format(group))
-
-
-
-class SystConfig:
-    """Configuration for systematic variations in multiple eras.
-    
-    The configuration is described by a JSON file of the following
-    format:
-      {
-        "directory":  <string, optional>,
-        "eras":  <list of strings with names of eras>,
-        "nominal":  <samples>,
-        "variations": {
-          <label>: {
-            "up":  <samples>,
-            "down":  <samples>
-          },
-          // ...
-        }
-      }
-    Each group <samples> above define a set of files for one specific
-    variation.  It it described by the following dictionary:
-      {
-        "data":  <path>,
-        "sim":  <path>,
-        "weights":  <path>
-      }
-    which gives location of ROOT files with data, simulation, and
-    weights for simulation.  Either entry "data" or the pair "sim" and
-    "weights" can be omitted if the systematic variation applies only to
-    simulation or only to data.  All paths will be prepended with the
-    optional source directory, given at the top level of the
-    configuration.  If a path contains a substring "{era}", it will be
-    replaced with the label of the era when the configuration is
-    instantiated for a specific era.
-    """
-
-    def __init__(self, path, eras=None):
-        """Initialize from a configuration file.
-        
-        Arguments:
-            path:  Path to a JSON configuration file.
-            eras:  Eras for which configurations are to be instantiated.
-                If given, overrides the list of eras provided in the
-                configuration file.  If None (default), the list from
-                the configuration file is used.
-        """
-        
-        with open(path) as f:
-            config = json.load(f)
-
-        if eras is None:
-            self.eras = config['eras']
-        else:
-            self.eras = eras
-
-        # Construct configuration objects for individual eras in the
-        # same order as they are listed in the file.  User might want to
-        # process eras in a specific order.
-        self.configs = OrderedDict()
-
-        for era in self.eras:
-            self.configs[era] = SystConfigEra(config, era)
-
-
-    def __getitem__(self, era=None):
-        """Return configuration for given era.
-        
-        Arguments:
-            era:  Label of the desired era.  If None (default), return
-                configuration for the first era (as given in the
-                configuration file).
-
-        Return value:
-            SystConfigEra for requested era.
-        """
-
-        if era is None:
-            return self.configs[self.eras[0]]
-        else:
-            return self.configs[era]
-
-
-    def __iter__(self):
-        """Return iterator over configurations for different eras."""
-
-        return iter(self.configs)
-
-
-    def __len__(self):
-        """Return the number of eras."""
-
-        return len(self.eras)
 
