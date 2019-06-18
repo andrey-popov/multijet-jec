@@ -1,0 +1,48 @@
+{
+  "directory": "/user/aapopov/Analyses/JetMET/2019.06.05_L3Res-Summer16_07Aug2017_V11/Tuples/tuples",
+  "eras": ["2016BCD", "2016EF1", "2016F2GH"],
+  "period_weight": "2016All",
+  "nominal": {
+    "data": ["{era}.root"],
+    "sim": ["simulation.root"]
+  },
+  "variations": {
+    "L1Res": {
+      "up": {
+        "sim": ["simulation_l1res_up.root"]
+      },
+      "down": {
+        "sim": ["simulation_l1res_down.root"]
+      }
+    },
+    "L2Res": {
+      "up": {
+        "sim": ["simulation_l2res_up.root"]
+      },
+      "down": {
+        "sim": ["simulation_l2res_down.root"]
+      }
+    },
+    "JER": {
+      "up": {
+        "data": ["{era}_jer_up.root"],
+        "sim": ["simulation_jer_up.root"]
+      },
+      "down": {
+        "data": ["{era}_jer_down.root"],
+        "sim": ["simulation_jer_down.root"]
+      }
+    },
+    "MultijetMEFactor": {
+      "up": {
+        "sim": ["simulation.root"],
+        "add_weight": "WeightMEFact[0]"
+      },
+      "down": {
+        "sim": ["simulation.root"],
+        "add_weight": "WeightMEFact[1]"
+      },
+      "legend_label": "$\\mu_\\mathrm{F}$"
+    }
+  }
+}
