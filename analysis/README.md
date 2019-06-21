@@ -75,4 +75,4 @@ Saving systematic variations in the form of relative deviations in a separate fi
 
 In addition to storing the (smoothed) relative variations in a ROOT file, script `build_syst_vars.py` also plots them, together with the inputs that have been fitted to produce the variations.
 
-Finally, the files produced by the two scripts above are combined using `hadd`. The resulting file is used in the fit of the L3Res correction, see the [dedicated repository](https://github.com/andrey-popov/jec-fit-prototype).
+Finally, the files produced by the two scripts above are combined using `hadd`. The resulting file is used in the fit of the L3Res correction, see the [dedicated repository](https://github.com/andrey-popov/multijet-jec-fit).

@@ -6,4 +6,4 @@ This repository contains software code used for jet p<sub>T</sub> calibration wi
  * [`events`](events/) Event selection and production of ROOT trees with balance observables.
  * [`analysis`](analysis/) Comparison of data and simulation, construction of inputs for the global fit of jet p<sub>T</sub> corrections.
 
-Further information about each of the steps is given in corresponding README files. The setup to fit the corrections is provided in a [dedicated repository](https://github.com/andrey-popov/jec-fit-prototype).
+Further information about each of the steps is given in corresponding README files. The setup to fit the corrections is provided in a [dedicated repository](https://github.com/andrey-popov/multijet-jec-fit).
