@@ -67,7 +67,10 @@ void JERCJetMETUpdate::BeginRun(Dataset const &)
     // Read services for jet corrections
     jetCorrFull = dynamic_cast<JetCorrectorService const *>(
       GetMaster().GetService(jetCorrFullName));
-    jetCorrL1 = dynamic_cast<JetCorrectorService const *>(GetMaster().GetService(jetCorrL1Name));
+
+    if (not jetCorrL1Name.empty())
+        jetCorrL1 = dynamic_cast<JetCorrectorService const *>(
+          GetMaster().GetService(jetCorrL1Name));
 }
 
 
@@ -123,9 +126,10 @@ bool JERCJetMETUpdate::ProcessEvent()
 {
     // Update IOV in jet correctors
     auto const run = eventIDPlugin->GetEventID().Run();
-    
-    for (auto const &corrService: {jetCorrFull, jetCorrL1})
-        corrService->SelectIOV(run);
+    jetCorrFull->SelectIOV(run);
+
+    if (jetCorrL1)
+        jetCorrL1->SelectIOV(run);
     
     
     jets.clear();
@@ -152,7 +156,8 @@ bool JERCJetMETUpdate::ProcessEvent()
         if (jet.Pt() > minPtForT1)
         {
             double const weight = WeightJet(jet.Pt());
-            updatedMET -= (jet.P4() - srcJet.RawP4() * jetCorrL1->Eval(srcJet, rho)) * weight;
+            double const puCorr = (jetCorrL1) ? jetCorrL1->Eval(srcJet, rho) : 1.;
+            updatedMET -= (jet.P4() - srcJet.RawP4() * puCorr) * weight;
         }
         
         

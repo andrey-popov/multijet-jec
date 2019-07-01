@@ -37,7 +37,8 @@ public:
      * \param name  Name for the plugin.
      * \param jetCorrFullName  Name of JetCorrectorService that provides the full jet correction.
      * \param jetCorrL1Name  Name of JetCorrectorService that provides L1 jet correction used in
-     *     the type 1 MET correction.
+     *     the type 1 MET correction. Can be an empty string to indicate that raw jet momenta should
+     *     be used in the type 1 correction.
      */
     JERCJetMETUpdate(std::string const &name, std::string const &jetCorrFullName,
       std::string const &jetCorrL1Name);
@@ -116,7 +117,11 @@ private:
     JetCorrectorService const *jetCorrFull;
     std::string jetCorrFullName;
     
-    /// Non-owning pointer to and name of service to recorrect jets up to L1 for T1 MET
+    /**
+     * \brief Non-owning pointer to and name of service to recorrect jets up to L1 for T1 MET
+     *
+     * Can be empty.
+     */
     JetCorrectorService const *jetCorrL1;
     std::string jetCorrL1Name;
     
